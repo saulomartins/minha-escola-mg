@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acesso - Central de Inteligência Minha Escola MG</title>
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --primary-dark: #172554;
+            --secondary: #059669;
+            --danger: #dc2626;
+            --warning: #d97706;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background: radial-gradient(circle at top center, #1e293b 0%, #0f172a 100%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: rgba(30, 41, 59, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 480px;
+            padding: 40px 32px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            backdrop-filter: blur(12px);
+        }
+
+        .brand-header {
+            margin-bottom: 28px;
+        }
+
+        .badge-gov {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(30, 58, 138, 0.4);
+            border: 1px solid rgba(59, 130, 246, 0.4);
+            color: #93c5fd;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            padding: 6px 14px;
+            border-radius: 9999px;
+            margin-bottom: 16px;
+        }
+
+        .brand-header h1 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 6px;
+            letter-spacing: -0.02em;
+        }
+
+        .brand-header p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 24px 0;
+        }
+
+        .auth-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin: 20px 0;
+            min-height: 50px;
+        }
+
+        .notice-box {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px 16px;
+            text-align: left;
+            font-size: 0.82rem;
+            color: #cbd5e1;
+            line-height: 1.5;
+            margin-top: 20px;
+        }
+
+        .notice-box strong {
+            color: #ffffff;
+        }
+
+        /* Alertas Dinâmicos */
+        .alert-box {
+            display: none;
+            border-radius: 8px;
+            padding: 14px 16px;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            margin-bottom: 20px;
+            text-align: left;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .alert-warning {
+            background: rgba(217, 119, 6, 0.15);
+            border: 1px solid #d97706;
+            color: #fef3c7;
+        }
+
+        .alert-danger {
+            background: rgba(220, 38, 38, 0.15);
+            border: 1px solid #dc2626;
+            color: #fee2e2;
+        }
+
+        .alert-info {
+            background: rgba(30, 58, 138, 0.25);
+            border: 1px solid #3b82f6;
+            color: #dbeafe;
+        }
+
+        /* Dev Button */
+        .dev-container {
+            background: rgba(30, 58, 138, 0.2);
+            border: 1px dashed #3b82f6;
+            border-radius: 10px;
+            padding: 16px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .dev-container p {
+            font-size: 0.8rem;
+            color: #93c5fd;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+
+        .btn-dev {
+            background: #1e3a8a;
+            color: white;
+            border: 1px solid #3b82f6;
+            border-radius: 8px;
+            padding: 10px 18px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .btn-dev:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        .footer-note {
+            margin-top: 28px;
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <div class="brand-header">
+            <div class="badge-gov">
+                🏛️ Governo de Minas Gerais • Prodemge
+            </div>
+            <h1>Central de Inteligência</h1>
+            <p>Minha Escola MG • Diagnósticos, IA e Análise de Avaliações</p>
+        </div>
+
+        <!-- Alerta de Erro ou Pendência -->
+        <div id="alert-box" class="alert-box">
+            <div id="alert-content"></div>
+        </div>
+
+        <!-- Botão Google Oficial (Google Identity Services) -->
+        {% if google_client_id %}
+        <div class="auth-box">
+            <div id="g_id_onload"
+                 data-client_id="{{ google_client_id }}"
+                 data-context="signin"
+                 data-ux_mode="popup"
+                 data-callback="handleGoogleLogin"
+                 data-auto_prompt="false">
+            </div>
+
+            <div class="g_id_signin"
+                 data-type="standard"
+                 data-shape="rectangular"
+                 data-theme="outline"
+                 data-text="signin_with"
+                 data-size="large"
+                 data-logo_alignment="left"
+                 data-width="320">
+            </div>
+        </div>
+        {% else %}
+        <div class="alert-box alert-info" style="display: block;">
+            <strong>ℹ️ Modo de Desenvolvimento Local</strong><br>
+            A chave <code>GOOGLE_CLIENT_ID</code> ainda não foi informada nas variáveis de ambiente. Você pode acessar direto como <strong>Super Administrador</strong> abaixo:
+        </div>
+        {% endif %}
+
+        {% if not google_client_id %}
+        <!-- Botão de Acesso Direto como Administrador (Visível apenas se o Google Client ID não estiver configurado) -->
+        <div class="dev-container">
+            <p><strong>Administrador Geral Registrado:</strong><br><code>saulomartins.costa@gmail.com</code></p>
+            <button class="btn-dev" onclick="devLogin()">
+                👑 Entrar como Administrador Geral
+            </button>
+        </div>
+        {% endif %}
+
+        <div class="notice-box">
+            <strong>🔒 Política de Acesso e Privacidade:</strong><br>
+            Este sistema contém dados analíticos institucionais. O acesso é restrito e monitorado. Somente contas Gmail previamente cadastradas ou autorizadas pelo Administrador possuem permissão de entrada.
+        </div>
+
+        <div class="footer-note">
+            © 2026 Prodemge & Secretaria de Estado de Educação de Minas Gerais
+        </div>
+    </div>
+
+    <script>
+        // Callback executado pelo Google Identity Services após login bem-sucedido
+        async function handleGoogleLogin(response) {
+            const credential = response.credential;
+            showAlert("Validando credencial com o Google...", "info");
+
+            try {
+                const res = await fetch("/api/auth/google", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ credential: credential })
+                });
+
+                const data = await res.json();
+
+                if (res.ok && data.status === "ok") {
+                    showAlert("✅ Autenticado com sucesso! Carregando painel...", "info");
+                    window.location.href = "/";
+                } else if (data.status === "pending") {
+                    showAlert(`
+                        <strong>⏳ Acesso em Análise</strong><br>
+                        Olá, <strong>${data.name || data.email}</strong>!<br>
+                        Seu e-mail (<code>${data.email}</code>) foi registrado, mas <strong>ainda não possui aprovação ativa</strong>.<br><br>
+                        Uma notificação de solicitação foi enviada para o administrador <strong>Saulo Martins Costa</strong> (<code>saulomartins.costa@gmail.com</code>). Aguarde a liberação.
+                    `, "warning");
+                } else if (data.status === "blocked") {
+                    showAlert(`
+                        <strong>🚫 Acesso Bloqueado</strong><br>
+                        O e-mail <code>${data.email}</code> teve o acesso suspenso pelo administrador.<br>
+                        Caso necessite de permissão, entre em contato com o gestor do sistema.
+                    `, "danger");
+                } else {
+                    showAlert(`❌ Erro de autenticação: ${data.detail || data.message || "Tente novamente."}`, "danger");
+                }
+            } catch (err) {
+                showAlert(`❌ Erro ao conectar com o servidor: ${err.message}`, "danger");
+            }
+        }
+
+        // Login direto de desenvolvimento / teste local
+        async function devLogin() {
+            showAlert("Iniciando sessão de administrador...", "info");
+            try {
+                const res = await fetch("/api/auth/dev-login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" }
+                });
+                const data = await res.json();
+                if (res.ok && data.status === "ok") {
+                    window.location.href = "/";
+                } else {
+                    showAlert(`❌ Erro: ${data.detail || "Falha no login"}`, "danger");
+                }
+            } catch (err) {
+                showAlert(`❌ Erro: ${err.message}`, "danger");
+            }
+        }
+
+        function showAlert(htmlMessage, type) {
+            const box = document.getElementById("alert-box");
+            const content = document.getElementById("alert-content");
+            box.className = `alert-box alert-${type}`;
+            content.innerHTML = htmlMessage;
+            box.style.display = "block";
+        }
+    </script>
+</body>
+</html>
