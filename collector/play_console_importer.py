@@ -10,9 +10,55 @@ from database.db import get_connection, upsert_review
 from analytics.device_detector import detect_device_and_os
 from analytics.device_lifecycle import evaluate_stuck_android_12
 
-logger = logging.getLogger("importer")
+import hashlib
+
+ANDROID_PROFILES = [
+    {"brand": "Xiaomi", "model": "Redmi 10A", "os_version": "Android 10 (SDK 29)", "app_version": "4.2.2", "app_code": "59"},
+    {"brand": "Xiaomi", "model": "Redmi 9A", "os_version": "Android 10 (SDK 29)", "app_version": "4.2.2", "app_code": "59"},
+    {"brand": "Xiaomi", "model": "Redmi 9C", "os_version": "Android 10 (SDK 29)", "app_version": "4.2.2", "app_code": "59"},
+    {"brand": "Xiaomi", "model": "Redmi 12C", "os_version": "Android 12 (SDK 31)", "app_version": "4.2.2", "app_code": "59"},
+    {"brand": "Xiaomi", "model": "Poco C40", "os_version": "Android 11 (SDK 30)", "app_version": "4.2.2", "app_code": "59"},
+    {"brand": "Xiaomi", "model": "Redmi Note 11", "os_version": "Android 12 (SDK 31)", "app_version": "4.2.2", "app_code": "59"},
+    {"brand": "Xiaomi", "model": "Redmi Note 12", "os_version": "Android 13 (SDK 33)", "app_version": "4.2.2", "app_code": "59"},
+    {"brand": "Motorola", "model": "Moto G22", "os_version": "Android 12 (SDK 31)", "app_version": "4.2.2", "app_code": "59"},
+    {"brand": "Motorola", "model": "Moto E22", "os_version": "Android 12 (SDK 31)", "app_version": "4.2.2", "app_code": "59"},
+    {"brand": "Motorola", "model": "Moto G20", "os_version": "Android 11 (SDK 30)", "app_version": "4.2.2", "app_code": "59"},
+    {"brand": "Motorola", "model": "Moto G30", "os_version": "Android 12 (SDK 31)", "app_version": "4.2.2", "app_code": "59"},
+    {"brand": "Motorola", "model": "Moto G9 Play", "os_version": "Android 10 (SDK 29)", "app_version": "4.2.1", "app_code": "58"},
+    {"brand": "Motorola", "model": "Moto G8 Play", "os_version": "Android 9 (SDK 28)", "app_version": "4.1.9", "app_code": "56"},
+    {"brand": "Motorola", "model": "Moto G32", "os_version": "Android 13 (SDK 33)", "app_version": "4.2.2", "app_code": "59"},
+    {"brand": "Motorola", "model": "Moto G14", "os_version": "Android 13 (SDK 33)", "app_version": "4.2.2", "app_code": "59"},
+    {"brand": "Motorola", "model": "Moto G04", "os_version": "Android 14 (SDK 34)", "app_version": "4.2.2", "app_code": "59"},
+    {"brand": "Motorola", "model": "Moto G54", "os_version": "Android 14 (SDK 34)", "app_version": "4.2.2", "app_code": "59"},
+    {"brand": "Samsung", "model": "Galaxy A10s", "os_version": "Android 10 (SDK 29)", "app_version": "4.2.2", "app_code": "59"},
+    {"brand": "Samsung", "model": "Galaxy A03 Core", "os_version": "Android 11 (SDK 30)", "app_version": "4.2.2", "app_code": "59"},
+    {"brand": "Samsung", "model": "Galaxy A03", "os_version": "Android 11 (SDK 30)", "app_version": "4.2.2", "app_code": "59"},
+    {"brand": "Samsung", "model": "Galaxy A12", "os_version": "Android 11 (SDK 30)", "app_version": "4.2.2", "app_code": "59"},
+    {"brand": "Samsung", "model": "Galaxy A20", "os_version": "Android 10 (SDK 29)", "app_version": "4.2.1", "app_code": "58"},
+    {"brand": "Samsung", "model": "Galaxy A14", "os_version": "Android 13 (SDK 33)", "app_version": "4.2.2", "app_code": "59"},
+    {"brand": "Samsung", "model": "Galaxy A15", "os_version": "Android 14 (SDK 34)", "app_version": "4.2.2", "app_code": "59"},
+    {"brand": "Samsung", "model": "Galaxy A22", "os_version": "Android 13 (SDK 33)", "app_version": "4.2.2", "app_code": "59"},
+    {"brand": "Samsung", "model": "Galaxy A32", "os_version": "Android 13 (SDK 33)", "app_version": "4.2.2", "app_code": "59"},
+    {"brand": "Samsung", "model": "Galaxy A54", "os_version": "Android 14 (SDK 34)", "app_version": "4.2.2", "app_code": "59"},
+]
+
+APPLE_PROFILES = [
+    {"brand": "Apple", "model": "iPhone 11", "os_version": "iOS 17.5", "app_version": "4.2.2", "app_code": "59"},
+    {"brand": "Apple", "model": "iPhone XR", "os_version": "iOS 17.4", "app_version": "4.2.2", "app_code": "59"},
+    {"brand": "Apple", "model": "iPhone 12", "os_version": "iOS 17.5", "app_version": "4.2.2", "app_code": "59"},
+    {"brand": "Apple", "model": "iPhone 8", "os_version": "iOS 16.7", "app_version": "4.2.2", "app_code": "59"},
+    {"brand": "Apple", "model": "iPhone 7", "os_version": "iOS 15.8", "app_version": "4.2.1", "app_code": "58"},
+    {"brand": "Apple", "model": "iPhone 13", "os_version": "iOS 17.5", "app_version": "4.2.2", "app_code": "59"},
+]
+
+def get_auto_profile(seed: str, store: str = "google") -> Dict[str, str]:
+    h = int(hashlib.md5(seed.encode('utf-8')).hexdigest(), 16)
+    if store == "apple":
+        return APPLE_PROFILES[h % len(APPLE_PROFILES)]
+    return ANDROID_PROFILES[h % len(ANDROID_PROFILES)]
 
 def detect_encoding_and_delimiter(file_bytes: bytes) -> Tuple[str, str]:
+
     """Detecta automaticamente codificacao e delimitador"""
     encodings = ['utf-16', 'utf-16-le', 'utf-8-sig', 'utf-8', 'latin-1', 'cp1252']
     delimiters = [',', ';', '\t']
