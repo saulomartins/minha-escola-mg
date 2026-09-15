@@ -5,10 +5,72 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minha Escola MG - Central de Avaliações e Diagnóstico de Problemas</title>
     <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com">
+async function uploadPlayConsoleCsv(input) {
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+        const resp = await fetch('/api/reviews/import-play-console', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await resp.json();
+        if (data.success) {
+            alert(`✅ Importação concluída com sucesso!\n\n` +
+                  `• Comentários atualizados com telemetria oficial: ${data.updated_reviews}\n` +
+                  `• Novos comentários inseridos: ${data.new_reviews}\n` +
+                  `• Total processado do CSV: ${data.total_in_file}\n\n` +
+                  `Todos os comentários foram enriquecidos com Aparelho (Redmi, Moto, Galaxy...), SO Android e Código de Versão.`);
+            window.location.reload();
+        } else {
+            alert('❌ Erro na importação: ' + (data.message || 'Falha ao processar CSV'));
+        }
+    } catch (e) {
+        alert('❌ Erro ao enviar arquivo: ' + e.message);
+    } finally {
+        input.value = '';
+    }
+}
+
+</script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js">
+async function uploadPlayConsoleCsv(input) {
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+        const resp = await fetch('/api/reviews/import-play-console', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await resp.json();
+        if (data.success) {
+            alert(`✅ Importação concluída com sucesso!\n\n` +
+                  `• Comentários atualizados com telemetria oficial: ${data.updated_reviews}\n` +
+                  `• Novos comentários inseridos: ${data.new_reviews}\n` +
+                  `• Total processado do CSV: ${data.total_in_file}\n\n` +
+                  `Todos os comentários foram enriquecidos com Aparelho (Redmi, Moto, Galaxy...), SO Android e Código de Versão.`);
+            window.location.reload();
+        } else {
+            alert('❌ Erro na importação: ' + (data.message || 'Falha ao processar CSV'));
+        }
+    } catch (e) {
+        alert('❌ Erro ao enviar arquivo: ' + e.message);
+    } finally {
+        input.value = '';
+    }
+}
+
+</script>
     <style>
         .star-filled { color: #f59e0b; }
         .star-empty { color: #d1d5db; }
@@ -104,6 +166,10 @@
             </div>
 
             <div class="flex flex-wrap items-center gap-2">
+                <button onclick="document.getElementById('play-console-csv-input').click()" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-3.5 py-2 rounded-lg shadow transition flex items-center gap-2 border border-blue-500" title="Importar relatório oficial do Google Play Console (CSV) para atualizar aparelhos, SO Android e versão de todos os comentários">
+                    <i class="fa-solid fa-file-import"></i> Importar CSV Play Console
+                </button>
+                <input type="file" id="play-console-csv-input" accept=".csv" class="hidden" onchange="uploadPlayConsoleCsv(this)" />
                 <button onclick="exportToExcel('excel', 'all')" class="bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold px-3.5 py-2 rounded-lg shadow transition flex items-center gap-2 border border-emerald-600" title="Exportar TODOS os 500 comentários da base completa para Excel (.xlsx)">
                     <i class="fa-solid fa-file-excel"></i> Exportar Excel (Base Completa)
                 </button>
@@ -3632,7 +3698,38 @@
             }
         }
 
-    </script>
+    
+async function uploadPlayConsoleCsv(input) {
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+        const resp = await fetch('/api/reviews/import-play-console', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await resp.json();
+        if (data.success) {
+            alert(`✅ Importação concluída com sucesso!\n\n` +
+                  `• Comentários atualizados com telemetria oficial: ${data.updated_reviews}\n` +
+                  `• Novos comentários inseridos: ${data.new_reviews}\n` +
+                  `• Total processado do CSV: ${data.total_in_file}\n\n` +
+                  `Todos os comentários foram enriquecidos com Aparelho (Redmi, Moto, Galaxy...), SO Android e Código de Versão.`);
+            window.location.reload();
+        } else {
+            alert('❌ Erro na importação: ' + (data.message || 'Falha ao processar CSV'));
+        }
+    } catch (e) {
+        alert('❌ Erro ao enviar arquivo: ' + e.message);
+    } finally {
+        input.value = '';
+    }
+}
+
+</script>
     <!-- Modal Conceder Novo Acesso -->
     <div id="modal-add-user" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">

@@ -5,7 +5,7 @@ import asyncio
 import logging
 from typing import Optional, List, Dict, Any
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, BackgroundTasks, HTTPException
+from fastapi import FastAPI, Request, BackgroundTasks, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse, JSONResponse, Response, RedirectResponse
 import io
 import csv
@@ -29,6 +29,7 @@ from auth.google_auth import (
     authenticate_google_user, dev_login_admin, SESSION_COOKIE_NAME
 )
 from analytics.device_detector import detect_device_and_os
+from collector.play_console_importer import import_play_console_csv
 from collector.google_play import fetch_google_play_reviews
 from collector.apple_store import fetch_apple_store_reviews
 from ai.analyzer import analyze_review, test_gemini_key
@@ -653,6 +654,21 @@ def api_export_reviews(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f'attachment; filename="Avaliacoes_Minha_Escola_MG_{file_suffix}.xlsx"'}
     )
+
+
+@app.post("/api/reviews/import-play-console")
+async def api_import_play_console(file: UploadFile = File(...)):
+    """
+    Importa relatório CSV oficial exportado do Google Play Developer Console.
+    Atualiza 100% dos comentários com telemetria oficial (Aparelho, Marca, SO Android e Código da Versão).
+    """
+    try:
+        content = await file.read()
+        res = import_play_console_csv(content)
+        return res
+    except Exception as e:
+        logger.error(f"Erro ao importar CSV do Play Console: {e}")
+        return JSONResponse(status_code=500, content={"success": False, "message": f"Erro ao processar CSV: {str(e)}"})
 
 @app.post("/api/reviews/apply-all-auto-replies")
 def api_apply_all_auto_replies():
