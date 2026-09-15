@@ -356,11 +356,18 @@ def get_stats() -> Dict[str, Any]:
         "apple_total": apple_total,
         "avg_total": round(avg_total, 2),
         "avg_google": round(avg_google, 2),
-        "avg_apple": round(avg_apple, 2),
-        "google_official_score": 4.5,
-        "google_ratings_count": 2893,
+        "google_official_score": 4.7,
+        "google_ratings_count": 3305,
+        "google_official_histogram": {
+            "1": 141,
+            "2": 46,
+            "3": 56,
+            "4": 312,
+            "5": 2744
+        },
         "apple_official_score": 4.0,
         "apple_ratings_count": 1211,
+
         "total_downloads": "1.000.000+",
         "developer": "Prodemge - Secretaria de Educação de MG",
         "sentiments": sentiments,

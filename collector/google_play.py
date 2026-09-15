@@ -19,8 +19,10 @@ def get_google_play_metadata() -> Dict[str, Any]:
             "reviews_count": data.get("reviews", 0),
             "icon": data.get("icon", ""),
             "installs": data.get("installs", "1.000.000+"),
-            "version": data.get("version", "")
+            "version": data.get("version", ""),
+            "histogram": data.get("histogram", [141, 46, 56, 312, 2744])
         }
+
     except Exception as e:
         logger.error(f"Erro ao obter metadados da Google Play: {e}")
         return {}

@@ -261,7 +261,7 @@ async function uploadPlayConsoleCsv(input) {
                         <h3 class="text-3xl font-extrabold text-slate-900" id="stat-google-avg">-</h3>
                         <div class="flex text-sm" id="stat-google-stars"></div>
                     </div>
-                    <p class="text-xs text-slate-400 mt-1" id="stat-google-sub">2.893 notas oficiais • 1M+ downloads</p>
+                    <p class="text-xs text-slate-400 mt-1" id="stat-google-sub">3.305 notas oficiais • 1M+ downloads</p>
                 </div>
                 <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center text-xl">
                     <i class="fa-solid fa-star"></i>
@@ -2136,10 +2136,11 @@ async function uploadPlayConsoleCsv(input) {
                 document.getElementById('stat-google-total').innerText = `${data.google_total} de texto`;
                 document.getElementById('stat-apple-total').innerText = `${data.apple_total} de texto`;
                 
-                const gScore = data.google_official_score || 4.5;
+                const gScore = data.google_official_score || 4.7;
                 document.getElementById('stat-google-avg').innerText = gScore.toFixed(1);
                 document.getElementById('stat-google-stars').innerHTML = renderStars(Math.round(gScore));
-                document.getElementById('stat-google-sub').innerText = `${(data.google_ratings_count || 2893).toLocaleString('pt-BR')} notas oficiais • 1M+ downloads`;
+                document.getElementById('stat-google-sub').innerText = `${(data.google_ratings_count || 3305).toLocaleString('pt-BR')} notas oficiais • 1M+ downloads`;
+
                 
                 const aScore = data.apple_official_score || 4.0;
                 document.getElementById('stat-apple-avg').innerText = aScore.toFixed(1);
