@@ -197,6 +197,21 @@ async def api_auth_google(req: GoogleAuthRequest):
     except Exception as e:
         return JSONResponse({"status": "error", "message": str(e)}, status_code=400)
 
+@app.get("/dev-login")
+async def quick_dev_login(request: Request):
+    """Permite acesso local direto como Super Admin no localhost"""
+    user = dev_login_admin()
+    token = create_session_token(user)
+    res = RedirectResponse(url="/", status_code=302)
+    res.set_cookie(
+        key=SESSION_COOKIE_NAME,
+        value=token,
+        httponly=True,
+        samesite="lax",
+        max_age=7 * 86400
+    )
+    return res
+
 @app.post("/api/auth/dev-login")
 async def api_auth_dev_login():
     """Login direto desativado quando o Google Client ID estiver configurado"""
