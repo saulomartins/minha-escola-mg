@@ -5,72 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minha Escola MG - Central de Avaliações e Diagnóstico de Problemas</title>
     <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com">
-async function uploadPlayConsoleCsv(input) {
-    if (!input.files || input.files.length === 0) return;
-    const file = input.files[0];
-    
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    try {
-        const resp = await fetch('/api/reviews/import-play-console', {
-            method: 'POST',
-            body: formData
-        });
-        const data = await resp.json();
-        if (data.success) {
-            alert(`✅ Importação concluída com sucesso!\n\n` +
-                  `• Comentários atualizados com telemetria oficial: ${data.updated_reviews}\n` +
-                  `• Novos comentários inseridos: ${data.new_reviews}\n` +
-                  `• Total processado do CSV: ${data.total_in_file}\n\n` +
-                  `Todos os comentários foram enriquecidos com Aparelho (Redmi, Moto, Galaxy...), SO Android e Código de Versão.`);
-            window.location.reload();
-        } else {
-            alert('❌ Erro na importação: ' + (data.message || 'Falha ao processar CSV'));
-        }
-    } catch (e) {
-        alert('❌ Erro ao enviar arquivo: ' + e.message);
-    } finally {
-        input.value = '';
-    }
-}
-
-</script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js">
-async function uploadPlayConsoleCsv(input) {
-    if (!input.files || input.files.length === 0) return;
-    const file = input.files[0];
-    
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    try {
-        const resp = await fetch('/api/reviews/import-play-console', {
-            method: 'POST',
-            body: formData
-        });
-        const data = await resp.json();
-        if (data.success) {
-            alert(`✅ Importação concluída com sucesso!\n\n` +
-                  `• Comentários atualizados com telemetria oficial: ${data.updated_reviews}\n` +
-                  `• Novos comentários inseridos: ${data.new_reviews}\n` +
-                  `• Total processado do CSV: ${data.total_in_file}\n\n` +
-                  `Todos os comentários foram enriquecidos com Aparelho (Redmi, Moto, Galaxy...), SO Android e Código de Versão.`);
-            window.location.reload();
-        } else {
-            alert('❌ Erro na importação: ' + (data.message || 'Falha ao processar CSV'));
-        }
-    } catch (e) {
-        alert('❌ Erro ao enviar arquivo: ' + e.message);
-    } finally {
-        input.value = '';
-    }
-}
-
-</script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .star-filled { color: #f59e0b; }
         .star-empty { color: #d1d5db; }
@@ -2426,7 +2364,6 @@ async function uploadPlayConsoleCsv(input) {
         }
 
         /* ================= CARREGAMENTO DE ANALYTICS & GRÁFICOS ================= */
-                let chartParetoInstance = null;
 
         function toggleTemplateRow(id) {
             const row = document.getElementById(`template-expand-${id}`);
