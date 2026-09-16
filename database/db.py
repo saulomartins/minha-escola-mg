@@ -349,6 +349,35 @@ def get_stats() -> Dict[str, Any]:
     cursor.execute("SELECT device_brand, COUNT(*) as count FROM reviews WHERE device_brand IS NOT NULL AND device_brand != 'Android Geral' GROUP BY device_brand ORDER BY count DESC")
     brand_dist = {row['device_brand']: row['count'] for row in cursor.fetchall()}
 
+    # Metadados oficiais das lojas em tempo real
+    apple_official_score = 4.2
+    apple_ratings_count = 1581
+    try:
+        from collector.apple_store import get_apple_store_metadata
+        a_meta = get_apple_store_metadata()
+        if a_meta.get("score"):
+            apple_official_score = float(a_meta["score"])
+        if a_meta.get("ratings_count"):
+            apple_ratings_count = int(a_meta["ratings_count"])
+    except Exception:
+        pass
+
+    google_official_score = 4.7
+    google_ratings_count = 3305
+    google_hist = {"1": 141, "2": 46, "3": 56, "4": 312, "5": 2744}
+    try:
+        from collector.google_play import get_google_play_metadata
+        g_meta = get_google_play_metadata()
+        if g_meta.get("score"):
+            google_official_score = float(g_meta["score"])
+        if g_meta.get("ratings_count"):
+            google_ratings_count = int(g_meta["ratings_count"])
+        if g_meta.get("histogram") and len(g_meta["histogram"]) >= 5:
+            h = g_meta["histogram"]
+            google_hist = {"1": h[0], "2": h[1], "3": h[2], "4": h[3], "5": h[4]}
+    except Exception:
+        pass
+
     conn.close()
     return {
         "total": total,
@@ -356,17 +385,13 @@ def get_stats() -> Dict[str, Any]:
         "apple_total": apple_total,
         "avg_total": round(avg_total, 2),
         "avg_google": round(avg_google, 2),
-        "google_official_score": 4.7,
-        "google_ratings_count": 3305,
-        "google_official_histogram": {
-            "1": 141,
-            "2": 46,
-            "3": 56,
-            "4": 312,
-            "5": 2744
-        },
-        "apple_official_score": 4.0,
-        "apple_ratings_count": 1211,
+        "avg_apple": round(avg_apple, 2),
+        "google_official_score": google_official_score,
+        "google_ratings_count": google_ratings_count,
+        "google_official_histogram": google_hist,
+        "apple_official_score": apple_official_score,
+        "apple_ratings_count": apple_ratings_count,
+
 
         "total_downloads": "1.000.000+",
         "developer": "Prodemge - Secretaria de Educação de MG",

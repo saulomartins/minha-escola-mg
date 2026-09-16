@@ -278,7 +278,7 @@ async function uploadPlayConsoleCsv(input) {
                         <h3 class="text-3xl font-extrabold text-slate-900" id="stat-apple-avg">-</h3>
                         <div class="flex text-sm" id="stat-apple-stars"></div>
                     </div>
-                    <p class="text-xs text-slate-400 mt-1" id="stat-apple-sub">1.211 notas oficiais na App Store</p>
+                    <p class="text-xs text-slate-400 mt-1" id="stat-apple-sub">1.581 notas oficiais na App Store</p>
                 </div>
                 <div class="w-12 h-12 bg-slate-100 text-slate-700 rounded-full flex items-center justify-center text-xl">
                     <i class="fa-solid fa-mobile-screen"></i>
@@ -2142,10 +2142,11 @@ async function uploadPlayConsoleCsv(input) {
                 document.getElementById('stat-google-sub').innerText = `${(data.google_ratings_count || 3305).toLocaleString('pt-BR')} notas oficiais • 1M+ downloads`;
 
                 
-                const aScore = data.apple_official_score || 4.0;
+                const aScore = data.apple_official_score || 4.2;
                 document.getElementById('stat-apple-avg').innerText = aScore.toFixed(1);
                 document.getElementById('stat-apple-stars').innerHTML = renderStars(Math.round(aScore));
-                document.getElementById('stat-apple-sub').innerText = `${(data.apple_ratings_count || 1211).toLocaleString('pt-BR')} notas oficiais na App Store`;
+                document.getElementById('stat-apple-sub').innerText = `${(data.apple_ratings_count || 1581).toLocaleString('pt-BR')} notas oficiais na App Store`;
+
                 
                 document.getElementById('stat-sentiment-pos').innerText = data.sentiments['POSITIVO'] || 0;
                 document.getElementById('stat-sentiment-neu').innerText = data.sentiments['NEUTRO'] || 0;
