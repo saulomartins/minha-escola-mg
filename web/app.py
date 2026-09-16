@@ -513,8 +513,9 @@ def api_export_reviews(
     headers = [
         "ID", "Loja", "Data", "Usuário", "Estrelas", "Sentimento", "Categoria",
         "Causa-Raiz (Diagnóstico)", "Marca Celular", "Modelo Celular", "Sistema Operacional",
-        "Versão SO", "Versão Máxima Suportada", "Status Suporte Fabricante/Google",
+        "Versão SO Atual", "Última Versão Oficial Fabricante", "Status Suporte Fabricante",
         "Preso no Android <= 12 (Sem Atualização)",
+
         "Versão App", "Título", "Comentário do Usuário", "Resposta Oficial / Sugerida",
         "Status", "Publicada na Loja"
     ]
@@ -537,8 +538,9 @@ def api_export_reviews(
         resp_display = r.get("local_response") or r.get("ai_suggested_response") or ""
 
         life = get_device_lifecycle(r.get("device_brand"), r.get("device_model"))
-        max_os_display = life.get("max_os", "-")
+        max_os_display = life.get("last_official_os") or life.get("max_os", "-")
         support_display = life.get("support_status", "-")
+
         
         is_stuck = r.get("is_stuck_android_12")
         stuck_cell = "SIM (Não atualiza > Android 12)" if is_stuck else "NÃO"

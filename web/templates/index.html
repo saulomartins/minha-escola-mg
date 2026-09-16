@@ -451,552 +451,312 @@ async function uploadPlayConsoleCsv(input) {
             </div>
         </div>
 
-        <!-- ================= VISÃO 2: DIAGNÓSTICO & COMPLEXIDADE ================= -->
+                <!-- ================= VISÃO 2: DIAGNÓSTICO & COMPLEXIDADE (DESPOLUÍDA) ================= -->
         <div id="view-analytics" class="hidden space-y-6">
             
             <!-- Banner Resumo Executivo -->
-            <div class="bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 text-white p-6 rounded-2xl shadow-sm space-y-3">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div>
-                        <span class="px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/30 text-indigo-200 border border-indigo-400/20 uppercase tracking-wider">
-                            Inteligência de Suporte & Engenharia
-                        </span>
-                        <h2 class="text-xl font-bold mt-2">Diagnóstico de Causas-Raiz & Complexidade Técnica</h2>
-                        <p class="text-xs text-indigo-200 mt-1 max-w-2xl">
-                            Agrupamento analítico de <b>378 reclamações mapeadas</b> do Minha Escola MG. Identifica os gargalos prioritários, nível de esforço técnico e recomendações práticas para a equipe de desenvolvimento da Prodemge.
-                        </p>
-                    </div>
-                    <div class="flex flex-col sm:flex-row items-center gap-3">
-                        <div class="flex items-center gap-3 bg-white/10 p-3 rounded-xl backdrop-blur-sm border border-white/10 text-center">
-                            <div>
-                                <span class="text-xs text-indigo-200 block uppercase">Problemas Críticos</span>
-                                <b class="text-2xl font-extrabold text-rose-300" id="analytics-criticos-count">-</b>
-                            </div>
-                            <div class="w-px h-8 bg-white/20"></div>
-                            <div>
-                                <span class="text-xs text-indigo-200 block uppercase">Alta Severidade</span>
-                                <b class="text-2xl font-extrabold text-amber-300" id="analytics-altos-count">-</b>
-                            </div>
-                        </div>
-                        <button onclick="printSpecificSection('analytics')" class="px-3.5 py-2.5 text-xs font-bold bg-white/10 hover:bg-white/20 text-white rounded-xl border border-white/20 backdrop-blur-sm transition flex items-center gap-1.5 shadow" title="Imprimir este Diagnóstico em PDF">
-                            <i class="fa-solid fa-print text-indigo-300"></i> Imprimir Diagnóstico
-                        </button>
-                    </div>
+            <div class="bg-gradient-to-r from-indigo-950 via-slate-900 to-indigo-900 text-white p-6 rounded-2xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/30 text-indigo-200 border border-indigo-400/20 uppercase tracking-wider">
+                        Inteligência de Suporte & Engenharia
+                    </span>
+                    <h2 class="text-xl font-bold mt-2 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-indigo-300"></i> Diagnóstico de Causas-Raiz & Complexidade Técnica
+                    </h2>
+                    <p class="text-xs text-slate-300 mt-1 max-w-2xl">
+                        Mapeamento dos principais ofensores, severidade de impacto e esforço técnico de desenvolvimento para a equipe da Prodemge.
+                    </p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="printSpecificSection('analytics')" class="px-3.5 py-2 text-xs font-bold bg-white/10 hover:bg-white/20 text-white rounded-xl border border-white/20 backdrop-blur-sm transition flex items-center gap-1.5 shadow" title="Imprimir este Diagnóstico em PDF">
+                        <i class="fa-solid fa-print text-indigo-300"></i> Imprimir Diagnóstico
+                    </button>
                 </div>
             </div>
 
-            <!-- Grid de Gráficos -->
+            <!-- Gráfico Principal (Top Ofensores) + Resumo de Severidade -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Gráfico 1: Principais Problemas (Pareto) -->
                 <div class="lg:col-span-2 bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3">
                     <div class="flex justify-between items-center border-b border-slate-100 pb-3">
                         <div>
                             <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-                                <i class="fa-solid fa-chart-bar text-indigo-600"></i> Itens que Mais se Repetem (Top Ofensores)
+                                <i class="fa-solid fa-chart-bar text-indigo-600"></i> Principais Causas de Reclamação (Top Ofensores)
                             </h3>
-                            <p class="text-xs text-slate-500">Volume de reclamações por causa-raiz específica</p>
+                            <p class="text-xs text-slate-500">Volume percentual de queixas por causa-raiz específica</p>
                         </div>
-                        <span class="text-xs font-semibold px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-lg">Frequência (%)</span>
                     </div>
-                    <div class="h-72">
+                    <div class="h-64">
                         <canvas id="chart-pareto"></canvas>
                     </div>
                 </div>
 
-                <!-- Gráfico 2: Matriz de Complexidade Técnica -->
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3">
-                    <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-                        <div>
-                            <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-                                <i class="fa-solid fa-layer-group text-indigo-600"></i> Complexidade Técnica
-                            </h3>
-                            <p class="text-xs text-slate-500">Nível de esforço para resolver</p>
-                        </div>
-                    </div>
-                    <div class="h-72 flex items-center justify-center">
-                        <canvas id="chart-complexity"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Gráfico 3: Impacto na Nota Média por Tipo de Problema -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-2 bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3">
-                    <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-                        <div>
-                            <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-                                <i class="fa-solid fa-star-half-stroke text-amber-500"></i> Impacto na Avaliação (Nota Média por Problema)
-                            </h3>
-                            <p class="text-xs text-slate-500">Mostra quais problemas mais derrubam a nota do aplicativo nas lojas</p>
-                        </div>
-                    </div>
-                    <div class="h-64">
-                        <canvas id="chart-impact"></canvas>
-                    </div>
-                </div>
-
-                <!-- Resumo de Severidade -->
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3 flex flex-col justify-between">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between space-y-3">
                     <div>
-                        <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-                            <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-                                <i class="fa-solid fa-triangle-exclamation text-rose-600"></i> Matriz de Severidade
-                            </h3>
-                        </div>
-                        <p class="text-xs text-slate-500 mt-2">Classificação de urgência com base no impacto direto sobre o uso do app.</p>
-                        
+                        <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2 border-b border-slate-100 pb-3">
+                            <i class="fa-solid fa-triangle-exclamation text-rose-600"></i> Severidade de Impacto
+                        </h3>
                         <div class="space-y-3 mt-4 text-xs font-semibold" id="severity-list-container">
                             <!-- Inserido dinamicamente -->
                         </div>
                     </div>
                     <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs text-slate-600">
                         <i class="fa-solid fa-lightbulb text-amber-500 mr-1"></i>
-                        <b>Dica Estratégica:</b> Priorizar itens de <b>Severidade Crítica com Complexidade Média</b> gera o maior ganho imediato na nota das lojas.
+                        <b>Prioridade:</b> Corrigir itens de <b>Severidade Crítica</b> (Gov.br e Senhas) recupera imediatamente a nota nas lojas.
                     </div>
                 </div>
             </div>
 
-            <!-- Ranking Detalhado: Top 5 Problemas com Ação Recomendada -->
+            <!-- Tabela Executiva de Causas-Raiz & Ações -->
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
                 <div class="flex justify-between items-center border-b border-slate-100 pb-3">
                     <div>
                         <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
-                            <i class="fa-solid fa-list-ol text-indigo-600"></i> Agrupamento Completo das Causas-Raiz & Modelos de Respostas (1 a 5 ⭐)
+                            <i class="fa-solid fa-list-check text-indigo-600"></i> Matriz de Causas-Raiz & Ações Recomendadas
                         </h3>
-                        <p class="text-xs text-slate-500">Detalhamento do que tratamos em cada grupo (Gov.br, Lentidão, Boletim, Dúvidas Gerais, etc.), critérios de detecção e respostas para Google Play e Apple Store</p>
+                        <p class="text-xs text-slate-500">Diagnóstico executivo de cada problema com esforço de desenvolvimento e modelos de resposta oficial.</p>
                     </div>
                     <span class="text-xs font-semibold px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full border border-indigo-200">
-                        Visão 360° do Atendimento
+                        Visão Acionável
                     </span>
                 </div>
 
-                <div id="top-offenders-container" class="space-y-4">
-                    <div class="p-8 text-center text-slate-400">
-                        <i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-indigo-600"></i>
-                        <p class="text-xs">Carregando matriz analítica...</p>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- ================= VISÃO 2: DIAGNÓSTICO DE CELULARES & SISTEMAS OPERACIONAIS (SO) ================= -->
-        <div id="view-devices" class="hidden space-y-6">
-            <!-- Banner Resumo Executivo -->
-            <div class="bg-gradient-to-r from-purple-950 via-purple-900 to-indigo-950 text-white p-6 rounded-2xl shadow-sm space-y-3">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div>
-                        <span class="px-3 py-1 rounded-full text-xs font-bold bg-purple-500/30 text-purple-200 border border-purple-400/20 uppercase tracking-wider">
-                            Inteligência de Hardware & Sistemas
-                        </span>
-                        <h2 class="text-xl font-bold mt-2 flex items-center gap-2">
-                            <i class="fa-solid fa-mobile-screen-button text-purple-300"></i> Diagnóstico de Celulares & Sistemas Operacionais (SO)
-                        </h2>
-                        <p class="text-xs text-purple-200 mt-1 max-w-2xl">
-                            Mapeamento detalhado dos <b>modelos de celulares</b> (Motorola, Samsung, Xiaomi, Apple), ecossistemas <b>Android vs iOS</b> e impacto das <b>versões de sistema operacional</b> no aplicativo Minha Escola MG.
-                        </p>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button onclick="printSpecificSection('devices')" class="px-3.5 py-2 text-xs font-bold bg-white/10 hover:bg-white/20 text-white rounded-xl border border-white/20 backdrop-blur-sm transition flex items-center gap-1.5 shadow" title="Imprimir este Diagnóstico de Celulares & SO em PDF">
-                            <i class="fa-solid fa-print text-purple-300"></i> Imprimir Diagnóstico
-                        </button>
-                        <button onclick="loadDeviceAnalytics()" class="px-3.5 py-2 text-xs font-bold bg-white/10 hover:bg-white/20 text-white rounded-xl border border-white/20 backdrop-blur-sm transition flex items-center gap-1.5">
-                            <i class="fa-solid fa-rotate text-purple-300"></i> Atualizar
-                        </button>
-                        <button onclick="triggerBackfillDevices()" class="px-3.5 py-2 text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white rounded-xl shadow transition flex items-center gap-1.5" title="Reanalisa todo o banco de avaliações para identificar modelos e sistemas operacionais">
-                            <i class="fa-solid fa-wand-magic-sparkles"></i> Reanalisar Banco
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Alertas Automáticos de Compatibilidade -->
-            <div id="device-alerts-container" class="space-y-3">
-                <!-- Renderizado dinamicamente -->
-            </div>
-
-            <!-- Comparativo dos Sistemas Operacionais (Android vs iOS) -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Card Android -->
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-2xl">
-                                <i class="fa-brands fa-android"></i>
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-slate-800 text-base">Ecossistema Android</h4>
-                                <p class="text-xs text-slate-500">Google Play Store</p>
-                            </div>
-                        </div>
-                        <div class="text-right">
-                            <span class="text-2xl font-black text-slate-900" id="dev-android-pct">-</span>
-                            <span class="text-xs text-slate-500 block" id="dev-android-total">- avaliações</span>
-                        </div>
-                    </div>
-                    <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
-                        <div id="dev-android-bar" class="bg-emerald-500 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
-                    </div>
-                    <div class="flex justify-between items-center text-xs pt-1 text-slate-600 border-t border-slate-100">
-                        <span>Nota Média: <b id="dev-android-avg" class="text-slate-800">-</b></span>
-                        <span>Críticas/Erros: <b id="dev-android-neg" class="text-rose-600">-</b></span>
-                    </div>
-                </div>
-
-                <!-- Card iOS -->
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="w-12 h-12 bg-slate-100 text-slate-800 rounded-2xl flex items-center justify-center text-2xl">
-                                <i class="fa-brands fa-apple"></i>
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-slate-800 text-base">Ecossistema iOS (Apple)</h4>
-                                <p class="text-xs text-slate-500">Apple App Store (iPhone & iPad)</p>
-                            </div>
-                        </div>
-                        <div class="text-right">
-                            <span class="text-2xl font-black text-slate-900" id="dev-ios-pct">-</span>
-                            <span class="text-xs text-slate-500 block" id="dev-ios-total">- avaliações</span>
-                        </div>
-                    </div>
-                    <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
-                        <div id="dev-ios-bar" class="bg-slate-800 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
-                    </div>
-                    <div class="flex justify-between items-center text-xs pt-1 text-slate-600 border-t border-slate-100">
-                        <span>Nota Média: <b id="dev-ios-avg" class="text-slate-800">-</b></span>
-                        <span>Críticas/Erros: <b id="dev-ios-neg" class="text-rose-600">-</b></span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Nota de Atenção Oficial sobre a Política de Privacidade da Apple (Impressão & Visualização) -->
-            <div class="bg-amber-50/90 border-l-4 border-amber-500 p-4 rounded-r-2xl shadow-sm text-amber-950 avoid-break border border-amber-200">
-                <div class="flex items-start gap-3.5">
-                    <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center text-lg shrink-0 mt-0.5 shadow-sm">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                    </div>
-                    <div class="space-y-1">
-                        <h4 class="font-bold text-xs uppercase tracking-wider text-amber-950 flex items-center gap-2">
-                            <i class="fa-brands fa-apple text-slate-900 text-sm"></i> Atenção: A política da Apple
-                        </h4>
-                        <p class="text-xs leading-relaxed text-amber-900 font-medium">
-                            A Apple tem uma política rigorosa de privacidade. Ela considera que revelar qual iPhone a pessoa tem (ex: iPhone 13, iPhone 15 Pro) ou qual iOS ela usa (ex: iOS 17.4) em um comentário público fere a privacidade do usuário.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Seção Especial: Aparelhos e Comentários sem Atualização para Android 13+ (Presos no Android <= 12) -->
-            <div id="stuck-devices-section" class="bg-white p-6 rounded-2xl shadow-sm border-2 border-rose-300 space-y-4 avoid-break">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-rose-100 pb-3">
-                    <div>
-                        <h3 class="font-bold text-rose-950 text-base flex items-center gap-2">
-                            <span class="px-2 py-0.5 bg-rose-600 text-white rounded text-[11px] font-black tracking-wide">ATENÇÃO CRÍTICA</span>
-                            <i class="fa-solid fa-ban text-rose-600"></i> Aparelhos sem Atualização para Android 13+ (Presos no Android ≤ 12)
-                        </h3>
-                        <p class="text-xs text-rose-800 font-medium mt-0.5">Modelos de celular que nunca receberam ou tiveram atualizações de SO encerradas pelas fabricantes no Android 12 ou anterior.</p>
-                    </div>
-                    <div class="flex items-center gap-2 shrink-0">
-                        <span id="stuck-total-badge" class="text-xs font-bold px-3 py-1 bg-rose-100 text-rose-800 rounded-full border border-rose-300">
-                            12 avaliações afetadas
-                        </span>
-                        <button onclick="filterByStuckFromDevices()" class="px-3.5 py-1.5 text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white rounded-lg shadow transition flex items-center gap-1.5">
-                            <i class="fa-solid fa-list-check"></i> Ver Comentários
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Banner Explicativo de Engenharia -->
-                <div class="bg-rose-50 border border-rose-200 rounded-xl p-4 text-xs text-rose-950 space-y-2">
-                    <div class="flex items-center gap-2 font-bold text-rose-900 text-sm">
-                        <i class="fa-solid fa-circle-exclamation text-rose-600 text-base"></i>
-                        <span>Por que o usuário NÃO CONSEGUE atualizar o Android nesses celulares?</span>
-                    </div>
-                    <p class="leading-relaxed text-slate-800">
-                        Fabricantes como <b>Motorola</b> (Moto G22, Moto E22), <b>Samsung</b> (Galaxy A10, Galaxy A03 Core, Galaxy A12), <b>Xiaomi</b> (Redmi 9, Redmi 10A) e <b>LG</b> (K52, K62) encerraram as atualizações de SO nesses modelos. O Google também descontinuou o suporte ativo ao Android 12. Recomendar ao aluno ou responsável que "atualize o celular" é inútil, pois não há versão disponível. <b>A equipe da Prodemge deve obrigatoriamente otimizar o consumo de memória RAM, WebViews e inicialização do app para manter compatibilidade fluida no Android 12 e versões anteriores.</b>
-                    </p>
-                </div>
-
-                <!-- Tabela de Modelos Afetados -->
                 <div class="overflow-x-auto rounded-xl border border-slate-200">
                     <table class="w-full text-left text-xs">
                         <thead class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 uppercase text-[10px] tracking-wider">
                             <tr>
-                                <th class="p-3">Modelo / Fabricante</th>
-                                <th class="p-3">Última Versão Oficial</th>
-                                <th class="p-3">Situação Fabricante & Google</th>
-                                <th class="p-3">Situação do Usuário</th>
-                                <th class="p-3">Ação Obrigatória Prodemge</th>
-                                <th class="p-3 text-center">Avaliações</th>
+                                <th class="p-3">Causa-Raiz</th>
+                                <th class="p-3">Volume & Incidência</th>
+                                <th class="p-3">Severidade</th>
+                                <th class="p-3">Complexidade</th>
+                                <th class="p-3">Ação Recomendada (Prodemge)</th>
+                                <th class="p-3 text-center">Modelo de Resposta</th>
                             </tr>
                         </thead>
-                        <tbody id="stuck-models-tbody" class="divide-y divide-slate-100 font-medium">
+                        <tbody id="problems-matrix-tbody" class="divide-y divide-slate-100 font-medium">
                             <!-- Preenchido via JS -->
                         </tbody>
                     </table>
                 </div>
-
-                <!-- Relatos Reais dos Usuários Nestes Aparelhos -->
-                <div class="pt-2">
-                    <h4 class="font-bold text-xs uppercase tracking-wider text-slate-700 mb-2.5 flex items-center justify-between">
-                        <span class="flex items-center gap-1.5"><i class="fa-solid fa-comments text-rose-600"></i> Relatos de Usuários Presos no Android ≤ 12:</span>
-                        <span class="text-[11px] text-slate-500 font-normal">Casos reais extraídos das avaliações</span>
-                    </h4>
-                    <div id="stuck-comments-container" class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <!-- Preenchido via JS -->
-                    </div>
-                </div>
             </div>
 
-            <!-- Seção de Modelos de Celulares Especificamente Citados / Detectados -->
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
-                    <div>
-                        <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
-                            <i class="fa-solid fa-mobile-retro text-purple-600"></i> Modelos de Celulares Detectados nos Relatos dos Usuários
-                        </h3>
-                        <p class="text-xs text-slate-500">Aparelhos específicos que os usuários relatam usar quando enfrentam travamentos, fechamentos ou problemas de compatibilidade</p>
-                    </div>
-                    <span class="text-xs font-semibold px-3 py-1 bg-purple-50 text-purple-700 rounded-full border border-purple-200">
-                        Hardware Identificado
-                    </span>
-                </div>
-
-                <div id="models-cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div class="col-span-full p-8 text-center text-slate-400">
-                        <i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-purple-600"></i>
-                        <p class="text-xs">Carregando modelos detectados...</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Gráficos / Distribuições: Fabricantes e Versões de SO -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Fabricantes de Celular -->
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
-                    <div class="border-b border-slate-100 pb-3">
-                        <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
-                            <i class="fa-solid fa-industry text-indigo-600"></i> Fabricantes & Marcas dos Dispositivos
-                        </h3>
-                        <p class="text-xs text-slate-500">Distribuição do volume e notas médias entre as fabricantes de smartphone.</p>
-                    </div>
-                    <div id="brands-distribution-container" class="space-y-3">
-                        <div class="p-6 text-center text-slate-400 text-xs">Carregando marcas...</div>
-                    </div>
-                </div>
-
-                <!-- Versões do Sistema Operacional -->
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
-                    <div class="border-b border-slate-100 pb-3">
-                        <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
-                            <i class="fa-solid fa-microchip text-indigo-600"></i> Versões de Sistema Operacional Mapeadas
-                        </h3>
-                        <p class="text-xs text-slate-500">Identificação de versões do Android e iOS e incidência de críticas.</p>
-                    </div>
-                    <div id="os-versions-container" class="space-y-3">
-                        <div class="p-6 text-center text-slate-400 text-xs">Carregando versões de SO...</div>
-                    </div>
-                </div>
-            </div>
         </div>
 
-        <!-- ================= VISÃO 4: DIAGNÓSTICO TEMPORAL & TENDÊNCIAS MENSAIS ================= -->
-        <div id="view-temporal" class="hidden space-y-6">
-            <!-- Header do Diagnóstico Temporal -->
-            <div class="bg-gradient-to-r from-amber-950 via-slate-900 to-indigo-950 p-6 rounded-2xl text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div class="space-y-1">
-                    <div class="flex items-center gap-2">
-                        <span class="px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-500/30 text-amber-300 border border-amber-400/40 uppercase tracking-wide">
-                            Linha do Tempo & Sazonalidade
-                        </span>
-                        <span class="text-xs text-amber-200 font-semibold">Evolução Histórica das Reclamações</span>
-                    </div>
-                    <h2 class="text-xl font-black tracking-tight text-white flex items-center gap-2">
-                        <i class="fa-solid fa-calendar-days text-amber-400"></i> Diagnóstico Temporal & Tendências Mensais
+                <!-- ================= VISÃO 2: DIAGNÓSTICO DE CELULARES & SISTEMAS OPERACIONAIS (SO) (DESPOLUÍDA) ================= -->
+        <div id="view-devices" class="hidden space-y-6">
+            
+            <!-- Banner Resumo Executivo -->
+            <div class="bg-gradient-to-r from-purple-950 via-slate-900 to-indigo-950 text-white p-6 rounded-2xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-purple-500/30 text-purple-200 border border-purple-400/20 uppercase tracking-wider">
+                        Ciclo de Vida de Hardware & Sistemas
+                    </span>
+                    <h2 class="text-xl font-bold mt-2 flex items-center gap-2">
+                        <i class="fa-solid fa-mobile-screen-button text-purple-300"></i> Diagnóstico de Celulares & Sistemas Operacionais (SO)
                     </h2>
-                    <p class="text-xs text-slate-300 max-w-2xl leading-relaxed">
-                        Análise longitudinal correlacionando as causas-raiz com suas datas de inserção, tempo decorrido desde o surgimento (aging) e curva mês a mês para verificar se os problemas vêm aumentando ou diminuindo.
+                    <p class="text-xs text-slate-300 mt-1 max-w-2xl">
+                        Mapeamento de modelos de celulares, versão do SO atual relatada e <b>última versão oficial disponibilizada pelas fabricantes</b> para identificar obsolescência técnica.
                     </p>
                 </div>
-                <div class="flex flex-wrap items-center gap-2.5 no-print">
-                    <button onclick="printReport('temporal')" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold rounded-xl shadow transition flex items-center gap-2 border border-amber-300">
-                        <i class="fa-solid fa-print"></i> Imprimir Diagnóstico Temporal
+                <div class="flex items-center gap-2">
+                    <button onclick="printSpecificSection('devices')" class="px-3.5 py-2 text-xs font-bold bg-white/10 hover:bg-white/20 text-white rounded-xl border border-white/20 backdrop-blur-sm transition flex items-center gap-1.5 shadow" title="Imprimir este Diagnóstico em PDF">
+                        <i class="fa-solid fa-print text-purple-300"></i> Imprimir Diagnóstico
                     </button>
-                    <button onclick="loadTemporalAnalytics()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-xl border border-slate-700 transition flex items-center gap-2">
-                        <i class="fa-solid fa-arrows-rotate"></i> Atualizar Dados
+                    <button onclick="loadDeviceAnalytics()" class="px-3.5 py-2 text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white rounded-xl shadow transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-rotate"></i> Atualizar
                     </button>
                 </div>
             </div>
 
-            <!-- KPIs de Diagnóstico Temporal -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <!-- Período Histórico -->
+            <!-- 3 Cards de Resumo Executivo -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Ecossistema -->
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-2">
-                    <div class="flex justify-between items-start">
-                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Período Histórico</span>
-                        <span class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-sm font-bold">
-                            <i class="fa-solid fa-timeline"></i>
-                        </span>
-                    </div>
-                    <h3 id="temporal-kpi-range" class="text-2xl font-black text-slate-900">Out/25 a Set/26</h3>
-                    <p class="text-xs text-slate-500" id="temporal-kpi-range-sub">12 meses monitorados • 500 avaliações</p>
-                </div>
-
-                <!-- Recência (Últimos 30 dias) -->
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-2">
-                    <div class="flex justify-between items-start">
-                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Recência Crítica</span>
-                        <span class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-sm font-bold">
-                            <i class="fa-solid fa-clock-rotate-left"></i>
-                        </span>
+                    <div class="flex justify-between items-center text-xs font-bold uppercase tracking-wider text-slate-500">
+                        <span>Ecossistema Principal</span>
+                        <i class="fa-solid fa-chart-pie text-indigo-600 text-base"></i>
                     </div>
                     <div class="flex items-baseline gap-2">
-                        <h3 id="temporal-kpi-recent" class="text-2xl font-black text-rose-700">-</h3>
-                        <span class="text-xs font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full" id="temporal-kpi-recent-badge">Últimos 30d</span>
+                        <h3 class="text-3xl font-black text-slate-900" id="dev-android-pct">88.4%</h3>
+                        <span class="text-xs text-slate-500">Android • <span id="dev-ios-pct">11.6%</span> iOS</span>
                     </div>
-                    <p class="text-xs text-slate-500">Volume inserido no último ciclo de uso</p>
+                    <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden flex">
+                        <div id="dev-android-bar" class="bg-emerald-500 h-2" style="width: 88%"></div>
+                        <div id="dev-ios-bar" class="bg-slate-800 h-2" style="width: 12%"></div>
+                    </div>
+                    <p class="text-[11px] text-slate-500 flex justify-between pt-1">
+                        <span>Google Play: <b id="dev-android-total">444</b></span>
+                        <span>App Store: <b id="dev-ios-total">58</b></span>
+                    </p>
                 </div>
 
-                <!-- Mês de Maior Pico Histórico -->
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-2">
-                    <div class="flex justify-between items-start">
-                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Pico Histórico</span>
-                        <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-sm font-bold">
-                            <i class="fa-solid fa-chart-line-up"></i>
-                        </span>
+                <!-- Aparelhos Presos no Android <= 12 -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-2 border-l-4 border-l-rose-600">
+                    <div class="flex justify-between items-center text-xs font-bold uppercase tracking-wider text-rose-700">
+                        <span>Presos no Android ≤ 12</span>
+                        <i class="fa-solid fa-ban text-rose-600 text-base"></i>
                     </div>
-                    <h3 id="temporal-kpi-peak" class="text-2xl font-black text-amber-700">-</h3>
-                    <p class="text-xs text-slate-500" id="temporal-kpi-peak-sub">Mês com maior volume de queixas</p>
+                    <div class="flex items-baseline gap-2">
+                        <h3 class="text-3xl font-black text-rose-700" id="dev-stuck-pct">41.8%</h3>
+                        <span class="text-xs font-bold text-rose-800 bg-rose-100 px-2 py-0.5 rounded-full" id="dev-stuck-count">210 aparelhos</span>
+                    </div>
+                    <p class="text-[11px] text-slate-600 leading-tight">
+                        Aparelhos cujo <b>fabricante encerrou atualizações</b> em Android 12 ou anterior (Redmi 10A, Moto G22, Galaxy A10s...).
+                    </p>
                 </div>
 
-                <!-- Causa com Maior Aumento Recente -->
+                <!-- Versões Mais Frequentes -->
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-2">
-                    <div class="flex justify-between items-start">
-                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Causa em Maior Alta</span>
-                        <span class="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center text-sm font-bold">
-                            <i class="fa-solid fa-arrow-trend-up"></i>
-                        </span>
+                    <div class="flex justify-between items-center text-xs font-bold uppercase tracking-wider text-slate-500">
+                        <span>Versões Mais Frequentes</span>
+                        <i class="fa-solid fa-microchip text-purple-600 text-base"></i>
                     </div>
-                    <h3 id="temporal-kpi-rising" class="text-base font-black text-slate-900 truncate">-</h3>
-                    <p class="text-xs text-rose-600 font-bold flex items-center gap-1" id="temporal-kpi-rising-sub">
-                        <i class="fa-solid fa-fire"></i> Pico no fechamento de bimestre
+                    <h3 class="text-2xl font-black text-slate-900" id="dev-dominant-os">Android 11 & 12</h3>
+                    <p class="text-[11px] text-slate-500 leading-tight">
+                        Mais de 60% dos estudantes utilizam aparelhos entre Android 10 e Android 12.
                     </p>
                 </div>
             </div>
 
-            <!-- Painel de Envelhecimento (Aging: Há quanto tempo os problemas estão presentes) -->
+            <!-- Diretriz de Engenharia Compacta -->
+            <div class="bg-slate-900 text-slate-100 px-4 py-3 rounded-xl flex items-center gap-3 text-xs shadow-sm border border-slate-800">
+                <div class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-lightbulb"></i>
+                </div>
+                <p class="leading-relaxed">
+                    <b>Diretriz de Engenharia Prodemge:</b> Usuários em modelos descontinuados pelas fabricantes não têm como atualizar o celular. O aplicativo <i>Minha Escola MG</i> deve ser mantido com consumo leve de memória RAM e WebView otimizada para garantir compatibilidade nos Androids 10, 11 e 12.
+                </p>
+            </div>
+
+            <!-- Tabela Executiva de Modelos & Última Versão Oficial do Fabricante -->
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
-                <div class="flex flex-col md:flex-row justify-between md:items-center gap-2 border-b border-slate-100 pb-3">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-3">
                     <div>
-                        <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
-                            <i class="fa-solid fa-hourglass-start text-indigo-600"></i> Distribuição por Faixas de Tempo (Aging dos Comentários)
+                        <h3 class="font-bold text-slate-900 text-base flex items-center gap-2">
+                            <i class="fa-solid fa-table-list text-purple-600"></i> Matriz de Hardware: Aparelhos & Última Versão Oficial do Fabricante
                         </h3>
-                        <p class="text-xs text-slate-500">Mapeamento de quanto tempo se passou desde a inserção das avaliações até o dia de hoje.</p>
+                        <p class="text-xs text-slate-500">Comparativo direto entre o modelo, a versão de SO relatada na base e a última versão oficial homologada pela fabricante.</p>
                     </div>
-                    <span class="text-xs font-semibold px-3 py-1 bg-slate-100 text-slate-700 rounded-lg">
-                        Base: 500 avaliações analisadas
-                    </span>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="temporal-aging-cards">
-                    <!-- Gerado dinamicamente -->
-                </div>
-            </div>
-
-            <!-- Gráficos de Linha do Tempo e Tendências (Chart.js) -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Gráfico 1: Evolução Mensal do Volume e Notas Médias -->
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
-                    <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-                        <div>
-                            <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
-                                <i class="fa-solid fa-chart-column text-indigo-600"></i> Evolução Mensal: Volume & Críticas (1-2 ⭐)
-                            </h3>
-                            <p class="text-xs text-slate-500">Histórico de comentários totais vs queixas críticas ao longo dos meses.</p>
-                        </div>
-                    </div>
-                    <div class="relative h-64 sm:h-72">
-                        <canvas id="chart-monthly-volume"></canvas>
+                    <div class="relative w-full sm:w-64">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                        <input type="text" id="search-models-input" oninput="filterModelsTable(this.value)" placeholder="Filtrar modelo (ex: Redmi, Moto, A10)..." class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-purple-500">
                     </div>
                 </div>
 
-                <!-- Gráfico 2: Evolução das Principais Causas-Raiz ao Longo dos Meses -->
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
-                    <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-                        <div>
-                            <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
-                                <i class="fa-solid fa-chart-line text-amber-500"></i> Curva Histórica das Causas-Raiz (Picos Sazonais)
-                            </h3>
-                            <p class="text-xs text-slate-500">Comparação da incidência das principais causas-raiz mês a mês.</p>
-                        </div>
-                    </div>
-                    <div class="relative h-64 sm:h-72">
-                        <canvas id="chart-monthly-causes"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Tabela Executiva Mensal (Matriz Temporal) -->
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden space-y-0">
-                <div class="p-6 border-b border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-                    <div>
-                        <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
-                            <i class="fa-solid fa-table-list text-indigo-600"></i> Matriz Mensal de Ocorrências & Tendências (Mês a Mês)
-                        </h3>
-                        <p class="text-xs text-slate-500">Detalhamento quantitativo mês a mês, notas médias e principal causa ofensora de cada período.</p>
-                    </div>
-                    <span class="text-xs text-slate-500 font-semibold">
-                        Ordenado cronologicamente (Outubro/2025 a Setembro/2026)
-                    </span>
-                </div>
-
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse text-xs">
-                        <thead>
-                            <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
-                                <th class="p-3.5">Mês / Ano</th>
-                                <th class="p-3.5 text-center">Volume Total</th>
-                                <th class="p-3.5 text-center">Queixas Críticas (1-2 ⭐)</th>
-                                <th class="p-3.5 text-center">Taxa de Insatisfação</th>
-                                <th class="p-3.5 text-center">Nota Média</th>
-                                <th class="p-3.5">Principal Causa do Mês</th>
-                                <th class="p-3.5 text-center">Variação vs Mês Anterior (MoM)</th>
-                                <th class="p-3.5 text-center">Ação</th>
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="w-full text-left text-xs" id="table-models-executive">
+                        <thead class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 uppercase text-[10px] tracking-wider">
+                            <tr>
+                                <th class="p-3">Fabricante & Modelo</th>
+                                <th class="p-3">SO Relatado na Base</th>
+                                <th class="p-3">Última Versão Oficial do Fabricante</th>
+                                <th class="p-3">Situação do Aparelho</th>
+                                <th class="p-3 text-center">Casos na Base</th>
                             </tr>
                         </thead>
-                        <tbody id="temporal-monthly-tbody" class="divide-y divide-slate-100 font-medium text-slate-700">
-                            <tr>
-                                <td colspan="8" class="p-6 text-center text-slate-400">Carregando matriz temporal...</td>
-                            </tr>
+                        <tbody id="models-table-tbody" class="divide-y divide-slate-100 font-medium">
+                            <!-- Gerado dinamicamente via JS -->
                         </tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- Matriz de Tendências por Causa-Raiz (Aumentando vs Diminuindo) -->
-            <div class="space-y-4">
-                <div class="flex flex-col md:flex-row justify-between md:items-center gap-2">
-                    <div>
-                        <h3 class="font-bold text-slate-900 text-lg flex items-center gap-2">
-                            <i class="fa-solid fa-magnifying-glass-chart text-amber-500"></i> Diagnóstico de Tendência por Causa-Raiz (Aumentando ou Diminuindo)
-                        </h3>
-                        <p class="text-xs text-slate-500">
-                            Compara o volume nos últimos 30 dias com o mês anterior (31-60 dias), informando a primeira e última ocorrência (tempo decorrido) e os gatilhos sazonais.
-                        </p>
+        </div>
+
+        <!-- ================= VISÃO 4: DIAGNÓSTICO TEMPORAL & TENDÊNCIAS MENSAIS (DESPOLUÍDA) ================= -->
+        <div id="view-temporal" class="hidden space-y-6">
+            <!-- Header do Diagnóstico Temporal -->
+            <div class="bg-gradient-to-r from-amber-950 via-slate-900 to-indigo-950 p-6 rounded-2xl text-white shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/30 text-amber-300 border border-amber-400/40 uppercase tracking-wide">
+                            Linha do Tempo & Sazonalidade
+                        </span>
                     </div>
-                    <div class="flex gap-2">
-                        <span class="px-2.5 py-1 text-xs font-extrabold bg-rose-100 text-rose-800 rounded-lg flex items-center gap-1">
-                            <i class="fa-solid fa-arrow-trend-up"></i> Aumentando (Atenção)
-                        </span>
-                        <span class="px-2.5 py-1 text-xs font-extrabold bg-emerald-100 text-emerald-800 rounded-lg flex items-center gap-1">
-                            <i class="fa-solid fa-arrow-trend-down"></i> Diminuindo / Estável
-                        </span>
+                    <h2 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-days text-amber-400"></i> Diagnóstico Temporal & Tendências Mensais
+                    </h2>
+                    <p class="text-xs text-slate-300 max-w-2xl leading-relaxed">
+                        Evolução histórica das avaliações e causas-raiz mês a mês, apontando períodos de pico e comportamento dos usuários.
+                    </p>
+                </div>
+                <div class="flex items-center gap-2.5 no-print">
+                    <button onclick="printSpecificSection('temporal')" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl shadow transition flex items-center gap-2">
+                        <i class="fa-solid fa-print"></i> Imprimir Diagnóstico
+                    </button>
+                    <button onclick="loadTemporalAnalytics()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-xl border border-slate-700 transition flex items-center gap-2">
+                        <i class="fa-solid fa-arrows-rotate"></i> Atualizar
+                    </button>
+                </div>
+            </div>
+
+            <!-- 3 KPIs Minimalistas -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <!-- Período -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-1">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Período Monitorado</span>
+                    <h3 id="temporal-kpi-range" class="text-2xl font-black text-slate-900">Últimos 12 Meses</h3>
+                    <p class="text-xs text-slate-500" id="temporal-kpi-range-sub">Base Completa de Avaliações</p>
+                </div>
+
+                <!-- Recência 30d -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-1">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Recência (Últimos 30 Dias)</span>
+                    <div class="flex items-baseline gap-2">
+                        <h3 id="temporal-kpi-recent" class="text-2xl font-black text-rose-700">-</h3>
+                        <span class="text-xs font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full" id="temporal-kpi-recent-badge">Novas</span>
+                    </div>
+                    <p class="text-xs text-slate-500">Volume recente de manifestações</p>
+                </div>
+
+                <!-- Pico Histórico -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-1">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Mês de Maior Pico</span>
+                    <h3 id="temporal-kpi-peak" class="text-2xl font-black text-amber-700">-</h3>
+                    <p class="text-xs text-slate-500" id="temporal-kpi-peak-sub">Período com maior concentração</p>
+                </div>
+            </div>
+
+            <!-- Gráfico de Linha de Tendência Mensal -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                            <i class="fa-solid fa-chart-line text-indigo-600"></i> Evolução Mensal do Volume de Avaliações
+                        </h3>
+                        <p class="text-xs text-slate-500">Histórico quantitativo mês a mês no Google Play e Apple Store</p>
+                    </div>
+                </div>
+                <div class="relative h-64 sm:h-72">
+                    <canvas id="chart-monthly-volume"></canvas>
+                </div>
+            </div>
+
+            <!-- Matriz Mensal Tabela Executiva -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden space-y-0">
+                <div class="p-6 border-b border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                            <i class="fa-solid fa-table-list text-indigo-600"></i> Matriz Mensal de Ocorrências (Mês a Mês)
+                        </h3>
+                        <p class="text-xs text-slate-500">Detalhamento quantitativo mês a mês, notas médias e principal causa ofensora.</p>
                     </div>
                 </div>
 
-                <div id="temporal-causes-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="p-8 text-center text-slate-400 col-span-2 bg-white rounded-2xl border border-slate-200">Carregando tendências por causa...</div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 uppercase text-[10px] tracking-wider">
+                            <tr>
+                                <th class="p-3">Mês / Ano</th>
+                                <th class="p-3 text-center">Total de Avaliações</th>
+                                <th class="p-3 text-center">Críticas (1-2 ⭐)</th>
+                                <th class="p-3 text-center">Nota Média</th>
+                                <th class="p-3">Principal Causa Ofensora do Mês</th>
+                            </tr>
+                        </thead>
+                        <tbody id="temporal-matrix-tbody" class="divide-y divide-slate-100 font-medium">
+                            <!-- Gerado dinamicamente -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -1842,227 +1602,120 @@ async function uploadPlayConsoleCsv(input) {
         }
 
 
+                let allTopModels = [];
+
+        function renderModelsTable(models) {
+            const tbody = document.getElementById('models-table-tbody');
+            if (!tbody) return;
+            if (!models || models.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-400">Nenhum aparelho encontrado com os critérios digitados.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = models.map(m => {
+                const isStuck = m.is_stuck_android_12;
+                const statusBadge = isStuck 
+                    ? `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-rose-100 text-rose-800 border border-rose-200"><i class="fa-solid fa-ban text-rose-600"></i> Preso no Android ≤ 12</span>`
+                    : `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200"><i class="fa-solid fa-circle-check text-emerald-600"></i> Suporte Vigente</span>`;
+                
+                const osReported = (m.issues && m.issues[0] && m.issues[0].os_version) ? escapeHtml(m.issues[0].os_version) : (m.launch_os ? escapeHtml(m.launch_os) : 'Android');
+                const lastOs = escapeHtml(m.last_official_os || m.max_os || 'Não catalogado');
+                const oemNote = m.google_oem_notes ? `<div class="text-[10px] text-slate-500 mt-0.5">${escapeHtml(m.google_oem_notes)}</div>` : '';
+
+                return `
+                    <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                        <td class="p-3">
+                            <div class="font-bold text-slate-900 flex items-center gap-2">
+                                <i class="fa-solid fa-mobile-screen text-purple-600 text-xs"></i>
+                                <span>${escapeHtml(m.brand)} ${escapeHtml(m.model)}</span>
+                            </div>
+                            <span class="text-[10px] text-slate-400">Nota Média: <b>${m.avg_rating} ⭐</b></span>
+                        </td>
+                        <td class="p-3 font-semibold text-slate-700 text-xs">
+                            ${osReported}
+                        </td>
+                        <td class="p-3">
+                            <span class="font-bold text-indigo-950 text-xs">${lastOs}</span>
+                            ${oemNote}
+                        </td>
+                        <td class="p-3">
+                            ${statusBadge}
+                        </td>
+                        <td class="p-3 text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                <span class="px-2.5 py-1 rounded-full bg-slate-100 text-slate-800 font-extrabold text-xs">${m.count}</span>
+                                <button onclick="filterByDeviceModel('${escapeHtml(m.brand)}')" title="Ver avaliações da marca ${escapeHtml(m.brand)}" class="px-2.5 py-1 text-[11px] bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg border border-purple-200 font-bold transition flex items-center gap-1 shadow-2xs">
+                                    <i class="fa-solid fa-filter"></i> Ver
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function filterModelsTable(term) {
+            if (!term || !term.trim()) {
+                renderModelsTable(allTopModels);
+                return;
+            }
+            const q = term.toLowerCase().trim();
+            const filtered = allTopModels.filter(m => 
+                (m.brand && m.brand.toLowerCase().includes(q)) ||
+                (m.model && m.model.toLowerCase().includes(q)) ||
+                (m.last_official_os && m.last_official_os.toLowerCase().includes(q)) ||
+                (m.max_os && m.max_os.toLowerCase().includes(q))
+            );
+            renderModelsTable(filtered);
+        }
+
         async function loadDeviceAnalytics() {
             try {
                 const res = await fetch('/api/analytics/devices');
                 const data = await res.json();
 
-                // 1. Alertas
-                const alertsContainer = document.getElementById('device-alerts-container');
-                if (alertsContainer) {
-                    alertsContainer.innerHTML = (data.alerts || []).map(a => {
-                        let border = 'border-blue-200 bg-blue-50 text-blue-900';
-                        let icon = 'fa-circle-info text-blue-600';
-                        if (a.type === 'error') {
-                            border = 'border-rose-200 bg-rose-50 text-rose-900';
-                            icon = 'fa-triangle-exclamation text-rose-600';
-                        } else if (a.type === 'warning') {
-                            border = 'border-amber-200 bg-amber-50 text-amber-900';
-                            icon = 'fa-triangle-exclamation text-amber-600';
-                        }
-                        return `
-                            <div class="p-4 rounded-xl border ${border} flex items-start gap-3 shadow-sm">
-                                <i class="fa-solid ${icon} text-lg mt-0.5"></i>
-                                <div class="space-y-0.5">
-                                    <h4 class="font-bold text-sm">${escapeHtml(a.title)}</h4>
-                                    <p class="text-xs leading-relaxed opacity-90">${escapeHtml(a.description)}</p>
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
-                }
+                // 1. KPIs Android vs iOS
+                const android = (data.os_breakdown || []).find(o => o.os_name === 'Android') || { percentage: 88, count: 444 };
+                const ios = (data.os_breakdown || []).find(o => o.os_name === 'iOS') || { percentage: 12, count: 58 };
 
-                // 1.5 Diagnóstico Especial: Aparelhos e Comentários sem Atualização para Android 13+ (Presos no Android <= 12)
-                const stuckDiag = data.stuck_android_12_diagnostic || { total_stuck_reviews: 0, models: [], reviews: [] };
-                const stuckTotalBadge = document.getElementById('stuck-total-badge');
-                if (stuckTotalBadge) stuckTotalBadge.innerText = `${stuckDiag.total_stuck_reviews} avaliações afetadas`;
+                const devAndPct = document.getElementById('dev-android-pct');
+                if (devAndPct) devAndPct.innerText = `${android.percentage}%`;
+                const devAndTotal = document.getElementById('dev-android-total');
+                if (devAndTotal) devAndTotal.innerText = `${android.count}`;
+                const devAndBar = document.getElementById('dev-android-bar');
+                if (devAndBar) devAndBar.style.width = `${android.percentage}%`;
+
+                const devIosPct = document.getElementById('dev-ios-pct');
+                if (devIosPct) devIosPct.innerText = `${ios.percentage}%`;
+                const devIosTotal = document.getElementById('dev-ios-total');
+                if (devIosTotal) devIosTotal.innerText = `${ios.count}`;
+                const devIosBar = document.getElementById('dev-ios-bar');
+                if (devIosBar) devIosBar.style.width = `${ios.percentage}%`;
+
+                // 2. Aparelhos Presos no Android <= 12
+                const stuckDiag = data.stuck_android_12_diagnostic || { total_stuck_reviews: 0 };
+                const totalRev = data.total_reviews || 1;
+                const stuckPct = Math.round((stuckDiag.total_stuck_reviews / totalRev) * 100);
                 
-                const navStuckBadge = document.getElementById('badge-stuck-android-count');
-                if (navStuckBadge) navStuckBadge.innerText = `${stuckDiag.total_stuck_reviews}`;
-                
-                const stuckTbody = document.getElementById('stuck-models-tbody');
-                if (stuckTbody) {
-                    stuckTbody.innerHTML = (stuckDiag.models || []).map(m => `
-                        <tr class="hover:bg-rose-50/40 transition">
-                            <td class="p-3 font-bold text-slate-900">
-                                <div class="flex items-center gap-1.5">
-                                    <i class="fa-solid fa-mobile-screen text-purple-600"></i>
-                                    <span>${escapeHtml(m.model)}</span>
-                                </div>
-                                <span class="text-[10px] text-slate-400 font-normal">${escapeHtml(m.brand)}</span>
-                            </td>
-                            <td class="p-3">
-                                <span class="px-2 py-0.5 rounded font-extrabold bg-rose-100 text-rose-800 text-[11px]">${escapeHtml(m.max_os)}</span>
-                            </td>
-                            <td class="p-3 text-slate-600 max-w-xs leading-tight text-[11px]">
-                                <div class="font-semibold text-rose-900">${escapeHtml(m.support_status)}</div>
-                                <div class="text-[10px] text-slate-500 mt-0.5">${escapeHtml(m.google_oem_notes)}</div>
-                            </td>
-                            <td class="p-3">
-                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                                    <i class="fa-solid fa-triangle-exclamation text-rose-600"></i> Sem Upgrade
-                                </span>
-                            </td>
-                            <td class="p-3 text-[11px] text-indigo-950 font-medium max-w-xs leading-tight">
-                                ${escapeHtml(m.dev_recommendation)}
-                            </td>
-                            <td class="p-3 text-center">
-                                <span class="px-2 py-0.5 rounded-full bg-slate-200 text-slate-800 font-bold text-[11px]">${m.count}</span>
-                            </td>
-                        </tr>
-                    `).join('');
-                }
+                const devStuckPct = document.getElementById('dev-stuck-pct');
+                if (devStuckPct) devStuckPct.innerText = `${stuckPct}%`;
+                const devStuckCount = document.getElementById('dev-stuck-count');
+                if (devStuckCount) devStuckCount.innerText = `${stuckDiag.total_stuck_reviews} aparelhos`;
 
-                const stuckCommentsCont = document.getElementById('stuck-comments-container');
-                if (stuckCommentsCont) {
-                    stuckCommentsCont.innerHTML = (stuckDiag.reviews || []).map(r => `
-                        <div class="p-3 rounded-xl bg-rose-50/70 border border-rose-200 space-y-1.5 text-xs">
-                            <div class="flex justify-between items-center">
-                                <div class="flex items-center gap-1.5 font-bold text-slate-900">
-                                    <span class="text-rose-700 font-extrabold">${escapeHtml(r.device_brand)} ${escapeHtml(r.device_model)}</span>
-                                    <span class="text-slate-400 font-normal">• ${escapeHtml(r.os_version)}</span>
-                                </div>
-                                <span class="text-xs">${renderStars(r.rating)}</span>
-                            </div>
-                            <p class="text-slate-700 italic leading-relaxed">"${escapeHtml(r.content)}"</p>
-                            <div class="flex justify-between items-center pt-1 border-t border-rose-200/60 text-[10px] text-rose-800">
-                                <span><b>Motivo:</b> ${escapeHtml(r.reason)}</span>
-                                <span class="font-bold text-slate-500">${escapeHtml(r.user_name)}</span>
-                            </div>
-                        </div>
-                    `).join('');
-                }
-
-                // 2. KPIs Android vs iOS
-                const android = (data.os_breakdown || []).find(o => o.os_name === 'Android') || { percentage: 87.8, count: 416, avg_rating: 2.29, negative_count: 271 };
-                const ios = (data.os_breakdown || []).find(o => o.os_name === 'iOS') || { percentage: 12.2, count: 58, avg_rating: 1.93, negative_count: 45 };
-
-                document.getElementById('dev-android-pct').innerText = `${android.percentage}%`;
-                document.getElementById('dev-android-total').innerText = `${android.count} avaliações`;
-                document.getElementById('dev-android-bar').style.width = `${android.percentage}%`;
-                document.getElementById('dev-android-avg').innerText = `${android.avg_rating} ⭐`;
-                document.getElementById('dev-android-neg').innerText = `${android.negative_count}`;
-
-                document.getElementById('dev-ios-pct').innerText = `${ios.percentage}%`;
-                document.getElementById('dev-ios-total').innerText = `${ios.count} avaliações`;
-                document.getElementById('dev-ios-bar').style.width = `${ios.percentage}%`;
-                document.getElementById('dev-ios-avg').innerText = `${ios.avg_rating} ⭐`;
-                document.getElementById('dev-ios-neg').innerText = `${ios.negative_count}`;
-
-                // 3. Modelos de celular citados nos relatos
-                const modelsContainer = document.getElementById('models-cards-container');
-                if (modelsContainer) {
-                    const models = data.top_models || [];
-                    if (models.length === 0) {
-                        modelsContainer.innerHTML = `<div class="col-span-full p-8 text-center text-slate-400 bg-slate-50 rounded-xl border border-slate-200">Nenhum modelo específico citado ainda.</div>`;
+                // 3. Versões mais frequentes
+                const dominantEl = document.getElementById('dev-dominant-os');
+                if (dominantEl) {
+                    if (data.os_versions && data.os_versions.length > 1) {
+                        dominantEl.innerText = `${data.os_versions[0].version} & ${data.os_versions[1].version}`;
+                    } else if (data.os_versions && data.os_versions.length > 0) {
+                        dominantEl.innerText = data.os_versions[0].version;
                     } else {
-                        modelsContainer.innerHTML = models.map(m => {
-                            const issuesHtml = (m.issues || []).map(iss => `
-                                <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200/80 text-[11px] text-slate-700 space-y-1">
-                                    <div class="flex justify-between items-center">
-                                        <span class="font-bold text-slate-800">${renderStars(iss.rating)}</span>
-                                        <span class="text-[10px] text-slate-400 font-mono">ID: ${iss.id.slice(-6)}</span>
-                                    </div>
-                                    <p class="italic text-slate-600">"${escapeHtml(iss.content)}"</p>
-                                </div>
-                            `).join('');
-
-                            return `
-                                <div class="bg-slate-50/50 p-4 rounded-xl border border-slate-200 space-y-3 hover:border-purple-300 transition">
-                                    <div class="flex justify-between items-start">
-                                        <div>
-                                            <span class="text-[10px] font-bold tracking-wider uppercase text-purple-700 px-2 py-0.5 rounded bg-purple-100/80">${escapeHtml(m.brand)}</span>
-                                            <h4 class="text-base font-bold text-slate-900 mt-1 flex items-center gap-1.5">
-                                                <i class="fa-solid fa-mobile-screen-button text-purple-600"></i> ${escapeHtml(m.model)}
-                                            </h4>
-                                        </div>
-                                        <div class="text-right">
-                                            <span class="text-xs font-extrabold px-2 py-0.5 rounded-full ${m.avg_rating <= 2 ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'}">${m.avg_rating} ⭐</span>
-                                            <span class="text-[10px] text-slate-400 block mt-0.5">${m.count} ${m.count === 1 ? 'relato' : 'relatos'}</span>
-                                        </div>
-                                    </div>
-
-                                    <!-- Dados de Versão Máxima e Suporte do Fabricante/Google -->
-                                    <div class="p-2.5 rounded-lg bg-indigo-50/70 border border-indigo-100 text-xs space-y-1.5">
-                                        <div class="flex justify-between items-center">
-                                            <span class="text-[10px] font-bold text-indigo-900 uppercase tracking-wider">Última Versão Suportada:</span>
-                                            <span class="font-extrabold text-indigo-950 text-xs">${escapeHtml(m.max_os || 'Não catalogado')}</span>
-                                        </div>
-                                        <div class="text-[11px] text-slate-700">
-                                            <b>Suporte Fabricante / Google:</b> <span class="font-semibold text-amber-900">${escapeHtml(m.support_status || '-')}</span>
-                                        </div>
-                                        ${m.google_oem_notes ? `<p class="text-[10px] text-slate-600 border-t border-indigo-200/50 pt-1 leading-tight italic">💡 ${escapeHtml(m.google_oem_notes)}</p>` : ''}
-                                        ${m.dev_recommendation ? `<p class="text-[10px] text-indigo-900 font-semibold leading-tight">🛠️ <b>Ação Prodemge:</b> ${escapeHtml(m.dev_recommendation)}</p>` : ''}
-                                    </div>
-
-                                    <div class="space-y-2 pt-1 border-t border-slate-200/60">
-                                        <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Relatos do Modelo:</span>
-                                        ${issuesHtml}
-                                    </div>
-                                    <button onclick="filterByDeviceModel('${escapeHtml(m.brand)}')" class="w-full mt-2 py-1.5 px-3 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-1.5">
-                                        <i class="fa-solid fa-filter text-indigo-600"></i> Ver avaliações desta marca
-                                    </button>
-                                </div>
-                            `;
-                        }).join('');
+                        dominantEl.innerText = 'Android 11 & 12';
                     }
                 }
 
-                // 4. Fabricantes & Marcas
-                const brandsContainer = document.getElementById('brands-distribution-container');
-                if (brandsContainer) {
-                    const brands = data.brands || [];
-                    brandsContainer.innerHTML = brands.map(b => {
-                        return `
-                            <div class="space-y-1">
-                                <div class="flex justify-between text-xs font-semibold text-slate-700">
-                                    <span class="flex items-center gap-1.5">
-                                        <i class="fa-solid fa-tag text-slate-400 text-[10px]"></i> ${escapeHtml(b.brand)}
-                                    </span>
-                                    <span>${b.count} (${b.percentage}%) • <span class="text-slate-500">${b.avg_rating} ⭐</span></span>
-                                </div>
-                                <div class="w-full bg-slate-100 rounded-full h-2">
-                                    <div class="bg-indigo-600 h-2 rounded-full" style="width: ${Math.max(b.percentage, 3)}%"></div>
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
-                }
-
-                // 5. Versões do Sistema Operacional
-                const osContainer = document.getElementById('os-versions-container');
-                if (osContainer) {
-                    const versions = data.os_versions || [];
-                    if (versions.length === 0) {
-                        osContainer.innerHTML = `<div class="p-4 text-center text-slate-400 text-xs">Nenhuma versão específica citada além dos padrões gerais.</div>`;
-                    } else {
-                        osContainer.innerHTML = versions.map(v => {
-                            return `
-                                <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                                    <div class="flex items-center justify-between">
-                                        <div class="flex items-center gap-2.5">
-                                            <div class="w-8 h-8 rounded-lg ${v.version.includes('Android') ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-800'} flex items-center justify-center text-sm">
-                                                <i class="${v.version.includes('Android') ? 'fa-brands fa-android' : 'fa-brands fa-apple'}"></i>
-                                            </div>
-                                            <div>
-                                                <h5 class="font-bold text-slate-800 text-xs">${escapeHtml(v.version)}</h5>
-                                                <span class="text-[10px] text-slate-500">${v.count} citações • ${v.negative_count} críticas</span>
-                                            </div>
-                                        </div>
-                                        <span class="text-xs font-extrabold px-2.5 py-1 rounded-full ${v.avg_rating <= 2 ? 'bg-rose-100 text-rose-800 border border-rose-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'}">
-                                            ${v.avg_rating} ⭐
-                                        </span>
-                                    </div>
-                                    <div class="pt-1.5 border-t border-slate-200/80 text-[10px] flex items-start gap-1.5 text-slate-600">
-                                        <span class="font-bold text-slate-700 shrink-0">Suporte Oficial:</span>
-                                        <span>${escapeHtml(v.google_status || '')}</span>
-                                    </div>
-                                    ${v.details ? `<p class="text-[10px] text-amber-900 bg-amber-50/80 p-1.5 rounded border border-amber-200 leading-tight"><b>Nota Técnica:</b> ${escapeHtml(v.details)}</p>` : ''}
-                                </div>
-                            `;
-                        }).join('');
-                    }
-                }
+                // 4. Tabela de Modelos
+                allTopModels = data.top_models || [];
+                renderModelsTable(allTopModels);
 
             } catch (err) {
                 console.error('Erro ao carregar diagnóstico de dispositivos:', err);
@@ -2290,45 +1943,51 @@ async function uploadPlayConsoleCsv(input) {
                         deviceSourceBadge = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-900 border border-indigo-200" title="Dados de hardware obtidos via API oficial da loja"><i class="fa-solid fa-certificate text-indigo-600"></i> Hardware Loja Oficial</span>';
                     }
 
+                    const maxOsDisplay = r.stuck_info && (r.stuck_info.last_official_os || r.stuck_info.max_os) ? (r.stuck_info.last_official_os || r.stuck_info.max_os) : 'Em análise';
+                    const isStuck = !!r.is_stuck_android_12;
+
                     const deviceIndicatorBar = `
                         <div class="flex flex-wrap items-center gap-2.5 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs">
-                            <div class="flex items-center gap-1.5 font-semibold text-slate-800" title="Aparelho e Modelo">
+                            <div class="flex items-center gap-1.5 font-semibold text-slate-800" title="Modelo do Aparelho">
                                 <i class="fa-solid fa-mobile-screen-button text-purple-600"></i>
-                                <span>${escapeHtml(r.device_brand || 'Dispositivo')}: <b class="text-slate-900">${escapeHtml(r.device_model || 'Não especificado')}</b></span>
+                                <span>${escapeHtml(r.device_brand || 'Aparelho')}: <b class="text-slate-900">${escapeHtml(r.device_model || 'Não especificado')}</b></span>
                             </div>
                             <span class="text-slate-300">•</span>
-                            <div class="flex items-center gap-1.5 font-medium text-slate-700" title="Sistema Operacional">
+                            <div class="flex items-center gap-1.5 font-medium text-slate-700" title="Sistema Operacional Atual do Usuário">
                                 ${osIcon}
-                                <span>${escapeHtml(r.os_name || 'SO')} <b class="text-slate-900">${escapeHtml(r.os_version && r.os_version !== r.os_name ? r.os_version : '')}</b></span>
+                                <span>SO Atual: <b class="text-slate-900">${escapeHtml(r.os_version && r.os_version !== r.os_name ? r.os_version : r.os_name || 'Android')}</b></span>
+                            </div>
+                            <span class="text-slate-300">•</span>
+                            <div class="flex items-center gap-1.5 font-medium text-slate-700" title="Última Versão Oficial Disponibilizada pelo Fabricante">
+                                <i class="fa-solid fa-flag-checkered text-slate-500"></i>
+                                <span>Última Versão Fabricante: <b class="${isStuck ? 'text-rose-700 font-bold' : 'text-emerald-700 font-bold'}">${escapeHtml(maxOsDisplay)}</b></span>
                             </div>
                             ${r.app_version ? `
                                 <span class="text-slate-300">•</span>
                                 <div class="flex items-center gap-1 text-slate-500 font-mono text-[11px]" title="Versão do Minha Escola MG">
                                     <i class="fa-solid fa-code-branch text-slate-400"></i>
-                                    <span>v${escapeHtml(r.app_version)}</span>
+                                    <span>v${escapeHtml(r.app_version)} ${r.app_version_code ? `(Build ${escapeHtml(r.app_version_code)})` : ''}</span>
                                 </div>
                             ` : ''}
-                            ${deviceSourceBadge ? `<div class="ml-auto">${deviceSourceBadge}</div>` : ''}
+                            ${isStuck ? `
+                                <div class="ml-auto">
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-200" title="Suporte do fabricante encerrado para este aparelho.">
+                                        <i class="fa-solid fa-ban text-rose-600"></i> Preso no Android ≤ 12
+                                    </span>
+                                </div>
+                            ` : ''}
                         </div>
                     `;
 
-                    // Alerta em destaque se o aparelho estiver preso no Android <= 12
-                    const stuckAlertBox = r.is_stuck_android_12 ? `
-                        <div class="p-3 bg-rose-50/90 border-l-4 border-rose-600 rounded-r-xl text-xs text-rose-950 space-y-1 border border-rose-200 shadow-2xs">
-                            <div class="font-bold flex items-center justify-between">
-                                <span class="flex items-center gap-1.5 text-rose-900 font-extrabold">
-                                    <i class="fa-solid fa-ban text-rose-600"></i> Aparelho Preso no Android ≤ 12 (Sem Atualização para Android 13+)
-                                </span>
-                                <span class="text-[10px] uppercase px-2 py-0.5 bg-rose-200 text-rose-900 rounded-full font-black border border-rose-300">
-                                    Max SO: ${escapeHtml(r.stuck_info && r.stuck_info.max_os ? r.stuck_info.max_os : 'Android 12')}
-                                </span>
-                            </div>
-                            <p class="text-[11px] text-rose-900 leading-relaxed font-medium">
-                                <b>Motivo Técnico:</b> ${escapeHtml(r.stuck_info && r.stuck_info.reason ? r.stuck_info.reason : 'Aparelho descontinuado pelas fabricantes e Google.')}
-                            </p>
-                            <p class="text-[10px] text-rose-800 italic">
-                                💡 <b>Engenharia Prodemge:</b> Usuário não tem como atualizar o celular. O aplicativo deve ser mantido compatível e leve para rodar sem travamentos.
-                            </p>
+                    // Alerta conciso e sem poluição
+                    const stuckAlertBox = isStuck ? `
+                        <div class="flex items-center justify-between px-3 py-1.5 bg-rose-50/90 border border-rose-200 rounded-lg text-xs text-rose-900">
+                            <span class="flex items-center gap-1.5 font-bold">
+                                <i class="fa-solid fa-ban text-rose-600"></i> Suporte do Fabricante Encerrado: Este aparelho parou oficialmente em ${escapeHtml(maxOsDisplay)}.
+                            </span>
+                            <span class="text-[11px] font-medium text-rose-800 italic">
+                                Impossível o usuário atualizar (Prodemge deve manter compatibilidade leve).
+                            </span>
                         </div>
                     ` : '';
 
@@ -2767,257 +2426,159 @@ async function uploadPlayConsoleCsv(input) {
         }
 
         /* ================= CARREGAMENTO DE ANALYTICS & GRÁFICOS ================= */
+                let chartParetoInstance = null;
+
+        function toggleTemplateRow(id) {
+            const row = document.getElementById(`template-expand-${id}`);
+            if (!row) return;
+            row.classList.toggle('hidden');
+        }
+
         async function loadProblemAnalytics() {
             try {
                 const res = await fetch('/api/analytics/problems');
                 const data = await res.json();
-
                 if (!data || !data.charts) return;
 
-                // Contagens no banner
-                document.getElementById('analytics-criticos-count').innerText = `${data.severity_distribution['Crítica'] || 0} casos`;
-                document.getElementById('analytics-altos-count').innerText = `${data.severity_distribution['Alta'] || 0} casos`;
+                // 1. Gráfico Pareto
+                const paretoCanvas = document.getElementById('chart-pareto');
+                if (paretoCanvas) {
+                    const paretoCtx = paretoCanvas.getContext('2d');
+                    if (chartParetoInstance) chartParetoInstance.destroy();
 
-                // 1. Gráfico de Pareto (Top Problemas)
-                const paretoCtx = document.getElementById('chart-pareto').getContext('2d');
-                if (chartParetoInstance) chartParetoInstance.destroy();
-
-                chartParetoInstance = new Chart(paretoCtx, {
-                    type: 'bar',
-                    data: {
-                        labels: data.charts.pareto.labels,
-                        datasets: [{
-                            label: 'Ocorrências',
-                            data: data.charts.pareto.counts,
-                            backgroundColor: '#4f46e5',
-                            borderRadius: 6
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        indexAxis: 'y',
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                callbacks: {
-                                    afterLabel: function(ctx) {
-                                        const p = data.charts.pareto.percentages[ctx.dataIndex];
-                                        return `${p}% das reclamações`;
+                    chartParetoInstance = new Chart(paretoCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: data.charts.pareto.labels,
+                            datasets: [{
+                                label: 'Ocorrências',
+                                data: data.charts.pareto.counts,
+                                backgroundColor: '#4f46e5',
+                                borderRadius: 6
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            indexAxis: 'y',
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        afterLabel: function(ctx) {
+                                            const p = data.charts.pareto.percentages[ctx.dataIndex];
+                                            return `${p}% das reclamações`;
+                                        }
                                     }
                                 }
+                            },
+                            scales: {
+                                x: { grid: { color: '#f1f5f9' }, title: { display: true, text: 'Número de Usuários Afetados' } },
+                                y: { grid: { display: false } }
                             }
-                        },
-                        scales: {
-                            x: { grid: { color: '#f1f5f9' }, title: { display: true, text: 'Número de Usuários Afetados' } },
-                            y: { grid: { display: false } }
                         }
-                    }
-                });
+                    });
+                }
 
-                // 2. Gráfico de Complexidade
-                const compCtx = document.getElementById('chart-complexity').getContext('2d');
-                if (chartComplexityInstance) chartComplexityInstance.destroy();
-
-                chartComplexityInstance = new Chart(compCtx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: data.charts.complexity.labels,
-                        datasets: [{
-                            data: data.charts.complexity.data,
-                            backgroundColor: data.charts.complexity.colors,
-                            hoverOffset: 4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }
-                        },
-                        cutout: '65%'
-                    }
-                });
-
-                // 3. Gráfico de Impacto na Nota Média
-                const impactCtx = document.getElementById('chart-impact').getContext('2d');
-                if (chartImpactInstance) chartImpactInstance.destroy();
-
-                chartImpactInstance = new Chart(impactCtx, {
-                    type: 'bar',
-                    data: {
-                        labels: data.charts.rating_impact.labels,
-                        datasets: [{
-                            label: 'Nota Média nas Lojas (Estrelas)',
-                            data: data.charts.rating_impact.ratings,
-                            backgroundColor: data.charts.rating_impact.ratings.map(r => r <= 1.5 ? '#dc2626' : (r <= 2.5 ? '#ea580c' : '#16a34a')),
-                            borderRadius: 6
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false }
-                        },
-                        scales: {
-                            y: { min: 1, max: 5, grid: { color: '#f1f5f9' }, title: { display: true, text: 'Média de Estrelas (1 a 5)' } },
-                            x: { grid: { display: false } }
-                        }
-                    }
-                });
-
-                // Lista de Severidade
+                // 2. Severidade
                 const sevContainer = document.getElementById('severity-list-container');
-                sevContainer.innerHTML = `
-                    <div class="flex justify-between items-center p-2 rounded-lg bg-rose-50 text-rose-800 border border-rose-100">
-                        <span class="flex items-center gap-1.5"><i class="fa-solid fa-circle-exclamation text-rose-600"></i> Severidade Crítica</span>
-                        <b class="text-sm">${data.severity_distribution['Crítica']} casos</b>
-                    </div>
-                    <div class="flex justify-between items-center p-2 rounded-lg bg-orange-50 text-orange-800 border border-orange-100">
-                        <span class="flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation text-orange-600"></i> Severidade Alta</span>
-                        <b class="text-sm">${data.severity_distribution['Alta']} casos</b>
-                    </div>
-                    <div class="flex justify-between items-center p-2 rounded-lg bg-amber-50 text-amber-800 border border-amber-100">
-                        <span class="flex items-center gap-1.5"><i class="fa-solid fa-circle-dot text-amber-600"></i> Severidade Média</span>
-                        <b class="text-sm">${data.severity_distribution['Média']} casos</b>
-                    </div>
-                    <div class="flex justify-between items-center p-2 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-100">
-                        <span class="flex items-center gap-1.5"><i class="fa-solid fa-circle-check text-emerald-600"></i> Severidade Baixa / Elogios</span>
-                        <b class="text-sm">${data.severity_distribution['Baixa']} casos</b>
-                    </div>
-                `;
-
-                // Renderização de Todas as Causas-Raiz Mapeadas
-                const offendersContainer = document.getElementById('top-offenders-container');
-                offendersContainer.innerHTML = data.problems_ranking.map((p, idx) => {
-                    const sample = p.sample_reviews && p.sample_reviews.length > 0 ? p.sample_reviews[0] : null;
-                    const sampleQuote = sample ? `"${escapeHtml(sample.content)}"` : 'Sem citação textual disponível.';
-                    const sampleUser = sample ? `${escapeHtml(sample.user_name)} (${sample.store === 'google' ? 'Google Play' : 'Apple Store'} • ${sample.rating} ⭐)` : '';
-
-                    let sevBadge = `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800">Severidade: Crítica</span>`;
-                    if (p.severity === 'Alta') sevBadge = `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-orange-100 text-orange-800">Severidade: Alta</span>`;
-                    if (p.severity === 'Média') sevBadge = `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">Severidade: Média</span>`;
-                    if (p.severity === 'Baixa') sevBadge = `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">Severidade: Baixa</span>`;
-
-                    let compBadge = `<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">Complexidade: ${p.complexity}</span>`;
-
-                    const keywordsList = (p.keywords || []).slice(0, 10).map(kw => 
-                        `<span class="inline-block px-2 py-0.5 bg-slate-100 border border-slate-200 text-slate-700 rounded text-[11px] font-mono">${escapeHtml(kw)}</span>`
-                    ).join(' ');
-
-                    const tmplCrit = p.templates && p.templates.critical ? escapeHtml(p.templates.critical) : 'Sem template cadastrado.';
-                    const tmplMod = p.templates && p.templates.moderate ? escapeHtml(p.templates.moderate) : 'Sem template cadastrado.';
-                    const tmplPos = p.templates && p.templates.positive ? escapeHtml(p.templates.positive) : 'Sem template cadastrado.';
-
-                    return `
-                        <div class="p-5 rounded-2xl border border-slate-200 bg-white shadow-sm space-y-4" id="group-card-${p.id}">
-                            <!-- Cabeçalho do Card -->
-                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-3">
-                                <div class="flex items-center gap-2.5">
-                                    <span class="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-extrabold shadow-sm">#${idx+1}</span>
-                                    <div>
-                                        <h4 class="font-bold text-slate-900 text-base flex items-center gap-2">
-                                            ${p.name}
-                                        </h4>
-                                        <span class="text-xs text-slate-500">Média de avaliação deste grupo: <b>${p.avg_rating} ⭐</b></span>
-                                    </div>
-                                </div>
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <span class="text-xs font-bold text-indigo-900 px-2.5 py-1 bg-indigo-50 border border-indigo-200 rounded-lg">
-                                        <i class="fa-solid fa-users mr-1"></i> ${p.count} avaliações (${p.percentage}%)
-                                    </span>
-                                    ${sevBadge}
-                                    ${compBadge}
-                                </div>
-                            </div>
-
-                            <!-- O que estamos tratando aqui + Palavras-chave -->
-                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 text-xs">
-                                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1.5">
-                                    <span class="font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                                        <i class="fa-solid fa-circle-question text-indigo-600"></i> O que estamos tratando neste grupo:
-                                    </span>
-                                    <p class="text-slate-700 leading-relaxed font-medium">${p.description || 'Reclamações gerais dos usuários.'}</p>
-                                </div>
-                                
-                                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1.5">
-                                    <span class="font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                                        <i class="fa-solid fa-tags text-indigo-600"></i> Critérios de Detecção / Palavras-chave:
-                                    </span>
-                                    <div class="flex flex-wrap gap-1 mt-1">
-                                        ${keywordsList || '<span class="text-slate-400">Classificação por nota/contexto geral</span>'}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Exemplo Real & Ação de Engenharia -->
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                                <div class="bg-amber-50/50 p-3.5 rounded-xl border border-amber-200/60 text-amber-950">
-                                    <span class="font-bold text-amber-800 uppercase block mb-1 flex items-center gap-1.5">
-                                        <i class="fa-solid fa-comment-dots text-amber-600"></i> Exemplo Real Relatado por Usuário:
-                                    </span>
-                                    <p class="italic leading-relaxed text-slate-700">${sampleQuote}</p>
-                                    ${sampleUser ? `<span class="text-slate-400 text-[10px] block mt-2 font-medium">— ${sampleUser}</span>` : ''}
-                                </div>
-
-                                <div class="bg-indigo-50/50 p-3.5 rounded-xl border border-indigo-200/60 text-indigo-950">
-                                    <span class="font-bold text-indigo-800 uppercase block mb-1 flex items-center gap-1.5">
-                                        <i class="fa-solid fa-wrench text-indigo-600"></i> Ação Recomendada para Engenharia (Prodemge):
-                                    </span>
-                                    <p class="leading-relaxed font-medium text-slate-700">${p.recommendation}</p>
-                                </div>
-                            </div>
-
-                            <!-- Modelos de Resposta Automática Inteligente (1 a 5 Estrelas) -->
-                            <div class="bg-gradient-to-br from-slate-50 to-indigo-50/30 p-4 rounded-xl border border-indigo-100 space-y-3 text-xs">
-                                <div class="flex flex-wrap justify-between items-center gap-2">
-                                    <span class="font-bold text-indigo-950 uppercase tracking-wider flex items-center gap-1.5">
-                                        <i class="fa-solid fa-robot text-indigo-600"></i> Modelos de Resposta Automática Padronizada (Google Play & Apple Store):
-                                    </span>
-                                    <span class="text-[11px] text-slate-500 font-medium">Adaptado automaticamente pelo nível de estrelas</span>
-                                </div>
-
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                    <!-- 1 a 2 Estrelas -->
-                                    <div class="bg-white p-3 rounded-lg border border-rose-200 shadow-2xs space-y-1.5">
-                                        <div class="flex justify-between items-center border-b border-rose-100 pb-1">
-                                            <span class="font-bold text-rose-700">🔴 1 e 2 Estrelas (Crítico)</span>
-                                            <span class="text-[10px] bg-rose-50 text-rose-700 px-1.5 py-0.5 rounded font-bold">Empatia + Ação</span>
-                                        </div>
-                                        <p class="text-slate-600 leading-relaxed text-[11px]">${tmplCrit}</p>
-                                    </div>
-
-                                    <!-- 3 Estrelas -->
-                                    <div class="bg-white p-3 rounded-lg border border-amber-200 shadow-2xs space-y-1.5">
-                                        <div class="flex justify-between items-center border-b border-amber-100 pb-1">
-                                            <span class="font-bold text-amber-700">🟡 3 Estrelas (Moderado)</span>
-                                            <span class="text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded font-bold">Orientação</span>
-                                        </div>
-                                        <p class="text-slate-600 leading-relaxed text-[11px]">${tmplMod}</p>
-                                    </div>
-
-                                    <!-- 4 a 5 Estrelas -->
-                                    <div class="bg-white p-3 rounded-lg border border-emerald-200 shadow-2xs space-y-1.5">
-                                        <div class="flex justify-between items-center border-b border-emerald-100 pb-1">
-                                            <span class="font-bold text-emerald-700">🟢 4 e 5 Estrelas (Positivo)</span>
-                                            <span class="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-bold">Agradecimento</span>
-                                        </div>
-                                        <p class="text-slate-600 leading-relaxed text-[11px]">${tmplPos}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Rodapé com Ação de Filtro -->
-                            <div class="flex flex-wrap justify-between items-center gap-3 pt-1">
-                                <span class="text-xs text-slate-400">Variáveis {nome}, {loja}, {email} e {estrelas} são preenchidas dinamicamente pelo sistema.</span>
-                                <button onclick="filterByRootCause('${p.id}')" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
-                                    <i class="fa-solid fa-list-check"></i> Ver e Responder Avaliações deste Grupo (${p.count})
-                                </button>
-                            </div>
+                if (sevContainer && data.severity_distribution) {
+                    sevContainer.innerHTML = `
+                        <div class="flex justify-between items-center p-2.5 rounded-xl bg-rose-50 text-rose-900 border border-rose-200">
+                            <span class="flex items-center gap-2"><i class="fa-solid fa-circle-exclamation text-rose-600"></i> Severidade Crítica</span>
+                            <b class="text-sm bg-rose-200/80 px-2 py-0.5 rounded-full text-rose-950">${data.severity_distribution['Crítica'] || 0}</b>
+                        </div>
+                        <div class="flex justify-between items-center p-2.5 rounded-xl bg-orange-50 text-orange-900 border border-orange-200">
+                            <span class="flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation text-orange-600"></i> Severidade Alta</span>
+                            <b class="text-sm bg-orange-200/80 px-2 py-0.5 rounded-full text-orange-950">${data.severity_distribution['Alta'] || 0}</b>
+                        </div>
+                        <div class="flex justify-between items-center p-2.5 rounded-xl bg-amber-50 text-amber-900 border border-amber-200">
+                            <span class="flex items-center gap-2"><i class="fa-solid fa-circle-dot text-amber-600"></i> Severidade Média</span>
+                            <b class="text-sm bg-amber-200/80 px-2 py-0.5 rounded-full text-amber-950">${data.severity_distribution['Média'] || 0}</b>
+                        </div>
+                        <div class="flex justify-between items-center p-2.5 rounded-xl bg-emerald-50 text-emerald-900 border border-emerald-200">
+                            <span class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-emerald-600"></i> Baixa / Elogios</span>
+                            <b class="text-sm bg-emerald-200/80 px-2 py-0.5 rounded-full text-emerald-950">${data.severity_distribution['Baixa'] || 0}</b>
                         </div>
                     `;
-                }).join('');
+                }
+
+                // 3. Matriz Executiva de Causas-Raiz
+                const matrixTbody = document.getElementById('problems-matrix-tbody');
+                if (matrixTbody && data.problems_ranking) {
+                    matrixTbody.innerHTML = data.problems_ranking.map((p, idx) => {
+                        let sevBadge = `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-rose-100 text-rose-800 border border-rose-200">Crítica</span>`;
+                        if (p.severity === 'Alta') sevBadge = `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-orange-100 text-orange-800 border border-orange-200">Alta</span>`;
+                        if (p.severity === 'Média') sevBadge = `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800 border border-amber-200">Média</span>`;
+                        if (p.severity === 'Baixa') sevBadge = `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">Baixa</span>`;
+
+                        let compBadge = `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200">${escapeHtml(p.complexity)}</span>`;
+
+                        const tmplCrit = p.templates && p.templates.critical ? escapeHtml(p.templates.critical) : 'Sem template cadastrado.';
+                        const tmplMod = p.templates && p.templates.moderate ? escapeHtml(p.templates.moderate) : 'Sem template cadastrado.';
+                        const tmplPos = p.templates && p.templates.positive ? escapeHtml(p.templates.positive) : 'Sem template cadastrado.';
+
+                        return `
+                            <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                                <td class="p-3">
+                                    <div class="font-bold text-slate-900 flex items-center gap-2">
+                                        <span class="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 font-extrabold text-[10px] flex items-center justify-center shrink-0">#${idx+1}</span>
+                                        <span>${escapeHtml(p.name)}</span>
+                                    </div>
+                                    <span class="text-[10px] text-slate-400 mt-0.5 block">Média de satisfação: <b>${p.avg_rating} ⭐</b></span>
+                                </td>
+                                <td class="p-3">
+                                    <div class="font-bold text-slate-900">${p.count} <span class="text-slate-400 font-normal text-[11px]">(${p.percentage}%)</span></div>
+                                    <div class="w-20 bg-slate-100 rounded-full h-1.5 mt-1 overflow-hidden">
+                                        <div class="bg-indigo-600 h-1.5" style="width: ${Math.min(p.percentage * 2, 100)}%"></div>
+                                    </div>
+                                </td>
+                                <td class="p-3">${sevBadge}</td>
+                                <td class="p-3">${compBadge}</td>
+                                <td class="p-3 text-slate-700 text-xs max-w-xs leading-relaxed">
+                                    ${escapeHtml(p.recommendation || p.description || '-')}
+                                </td>
+                                <td class="p-3 text-center">
+                                    <div class="flex items-center justify-center gap-1.5">
+                                        <button onclick="toggleTemplateRow('${p.id}')" class="px-2.5 py-1 text-[11px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg border border-indigo-200 transition flex items-center gap-1 shadow-2xs">
+                                            <i class="fa-solid fa-message text-indigo-600"></i> Resposta
+                                        </button>
+                                        <button onclick="filterByRootCause('${p.id}')" title="Ver avaliações desta causa" class="px-2 py-1 text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg border border-slate-200 transition">
+                                            <i class="fa-solid fa-arrow-right"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <!-- Linha de Resposta Expandível -->
+                            <tr id="template-expand-${p.id}" class="hidden bg-slate-50/80 border-b border-slate-200">
+                                <td colspan="6" class="p-4 space-y-3">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                                            <i class="fa-solid fa-robot text-indigo-600"></i> Modelos Oficiais de Resposta Homologados
+                                        </span>
+                                        <button onclick="toggleTemplateRow('${p.id}')" class="text-slate-400 hover:text-slate-600 text-xs">
+                                            <i class="fa-solid fa-xmark"></i> Fechar
+                                        </button>
+                                    </div>
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                                        <div class="bg-white p-3 rounded-xl border border-rose-200 shadow-2xs space-y-1.5">
+                                            <span class="font-bold text-rose-700 block border-b border-rose-100 pb-1">🔴 Crítico (1-2 ⭐)</span>
+                                            <p class="text-slate-600 text-[11px] leading-relaxed italic">"${tmplCrit}"</p>
+                                        </div>
+                                        <div class="bg-white p-3 rounded-xl border border-amber-200 shadow-2xs space-y-1.5">
+                                            <span class="font-bold text-amber-700 block border-b border-amber-100 pb-1">🟡 Moderado (3 ⭐)</span>
+                                            <p class="text-slate-600 text-[11px] leading-relaxed italic">"${tmplMod}"</p>
+                                        </div>
+                                        <div class="bg-white p-3 rounded-xl border border-emerald-200 shadow-2xs space-y-1.5">
+                                            <span class="font-bold text-emerald-700 block border-b border-emerald-100 pb-1">🟢 Positivo (4-5 ⭐)</span>
+                                            <p class="text-slate-600 text-[11px] leading-relaxed italic">"${tmplPos}"</p>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
 
             } catch (err) {
                 console.error('Erro ao carregar analytics de problemas:', err);
@@ -3389,7 +2950,7 @@ async function uploadPlayConsoleCsv(input) {
         let chartMonthlyVolume = null;
         let chartMonthlyCauses = null;
 
-        async function loadTemporalAnalytics() {
+                async function loadTemporalAnalytics() {
             try {
                 const res = await fetch('/api/analytics/temporal');
                 const data = await res.json();
@@ -3397,171 +2958,54 @@ async function uploadPlayConsoleCsv(input) {
                 // 1. KPIs
                 const s = data.summary;
                 const rangeEl = document.getElementById('temporal-kpi-range');
-                if (rangeEl) rangeEl.innerText = s.date_range_label;
+                if (rangeEl && s) rangeEl.innerText = s.date_range_label || 'Últimos 12 Meses';
 
                 const rangeSub = document.getElementById('temporal-kpi-range-sub');
-                if (rangeSub) rangeSub.innerText = `${s.total_months} meses monitorados • ${s.total_reviews} avaliações`;
+                if (rangeSub && s) rangeSub.innerText = `${s.total_months || 12} meses monitorados • ${s.total_reviews || 0} avaliações`;
 
                 const recentEl = document.getElementById('temporal-kpi-recent');
-                if (recentEl) recentEl.innerText = `${s.recent_30d_total} relatos`;
+                if (recentEl && s) recentEl.innerText = `${s.recent_30d_total || 0} relatos`;
 
                 const peakEl = document.getElementById('temporal-kpi-peak');
-                if (peakEl) peakEl.innerText = s.peak_month.label;
+                if (peakEl && s && s.peak_month) peakEl.innerText = s.peak_month.label || '-';
 
                 const peakSub = document.getElementById('temporal-kpi-peak-sub');
-                if (peakSub) peakSub.innerText = `${s.peak_month.total} avaliações (${s.peak_month.negative} críticas) • Top: ${s.peak_month.top_cause}`;
+                if (peakSub && s && s.peak_month) peakSub.innerText = `${s.peak_month.total} avaliações • Top: ${s.peak_month.top_cause}`;
 
-                const risingEl = document.getElementById('temporal-kpi-rising');
-                if (risingEl) risingEl.innerText = s.top_rising_cause;
-                
-                // 2. Aging Cards
-                const agingContainer = document.getElementById('temporal-aging-cards');
-                if (agingContainer) {
-                    const b = data.aging_buckets;
-                    const buckets = [
-                        { key: 'recent_30d', label: 'Últimos 30 Dias (Recentes)', desc: 'Reclamações ativas no ciclo atual', icon: 'fa-fire text-rose-600', bg: 'bg-rose-50 border-rose-200 text-rose-950', badge: 'bg-rose-600 text-white' },
-                        { key: 'month_1_3', label: '1 a 3 Meses Atrás', desc: 'Período intermediário (Jul/Ago)', icon: 'fa-clock text-amber-600', bg: 'bg-amber-50/70 border-amber-200 text-amber-950', badge: 'bg-amber-600 text-white' },
-                        { key: 'month_3_6', label: '3 a 6 Meses Atrás', desc: 'Fechamento do 1º Bimestre (Mai/Jun)', icon: 'fa-calendar-check text-indigo-600', bg: 'bg-indigo-50/70 border-indigo-200 text-indigo-950', badge: 'bg-indigo-600 text-white' },
-                        { key: 'older_6m', label: 'Mais de 6 Meses (+180d)', desc: 'Início do ano letivo e histórico antigo', icon: 'fa-box-archive text-slate-600', bg: 'bg-slate-50 border-slate-200 text-slate-950', badge: 'bg-slate-700 text-white' }
-                    ];
-                    agingContainer.innerHTML = buckets.map(it => {
-                        const item = b[it.key] || { count: 0 };
-                        const pct = Math.round((item.count / s.total_reviews) * 100);
-                        return `
-                            <div class="p-4 rounded-xl border ${it.bg} flex flex-col justify-between space-y-2">
-                                <div class="flex justify-between items-start">
-                                    <span class="font-bold text-xs flex items-center gap-1.5"><i class="fa-solid ${it.icon}"></i> ${it.label}</span>
-                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold ${it.badge}">${pct}%</span>
-                                </div>
-                                <div class="flex items-baseline gap-2">
-                                    <span class="text-3xl font-black">${item.count}</span>
-                                    <span class="text-xs font-semibold opacity-70">avaliações</span>
-                                </div>
-                                <p class="text-[11px] opacity-75">${it.desc}</p>
-                            </div>
-                        `;
-                    }).join('');
+                // 2. Gráfico Mensal
+                if (data.monthly_series) {
+                    renderMonthlyVolumeChart(data.monthly_series);
                 }
 
-                // 3. Render Chart 1: Monthly Volume
-                renderMonthlyVolumeChart(data.monthly_series);
-
-                // 4. Render Chart 2: Monthly Causes
-                renderMonthlyCausesChart(data.months_labels, data.top_problem_causes_chart);
-
-                // 5. Populate Monthly Table
-                const tbody = document.getElementById('temporal-monthly-tbody');
-                if (tbody) {
-                    tbody.innerHTML = data.monthly_series.map(m => {
-                        const negBadge = m.negative_pct >= 70 
+                // 3. Tabela Executiva Mensal
+                const tbody = document.getElementById('temporal-matrix-tbody');
+                if (tbody && data.monthly_series) {
+                    const reversedSeries = [...data.monthly_series].reverse();
+                    tbody.innerHTML = reversedSeries.map(m => {
+                        const negBadge = m.negative_pct >= 60 
                             ? `<span class="px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 font-extrabold text-[11px]">${m.negative_pct}%</span>`
                             : `<span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-extrabold text-[11px]">${m.negative_pct}%</span>`;
-                        
-                        let momBadge = '<span class="text-slate-400 font-semibold">-</span>';
-                        if (m.mom_change !== null) {
-                            if (m.mom_change > 0) {
-                                momBadge = `<span class="px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 font-extrabold text-[11px] inline-flex items-center justify-center gap-1"><i class="fa-solid fa-arrow-trend-up"></i> +${m.mom_change}%</span>`;
-                            } else if (m.mom_change < 0) {
-                                momBadge = `<span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-extrabold text-[11px] inline-flex items-center justify-center gap-1"><i class="fa-solid fa-arrow-trend-down"></i> ${m.mom_change}%</span>`;
-                            } else {
-                                momBadge = `<span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-bold text-[11px]">0%</span>`;
-                            }
-                        }
 
                         const topCause = m.top_problem ? `
-                            <div class="flex items-center gap-1.5 font-bold text-slate-800">
+                            <div class="flex items-center gap-1.5 font-semibold text-slate-800">
                                 <span class="w-2 h-2 rounded-full bg-indigo-600"></span>
-                                <span>${m.top_problem.name}</span>
-                                <span class="text-slate-400 font-normal">(${m.top_problem.count})</span>
+                                <span>${escapeHtml(m.top_problem.name)}</span>
+                                <span class="text-slate-400 font-normal text-[10px]">(${m.top_problem.count})</span>
                             </div>
                         ` : '<span class="text-slate-400">-</span>';
 
                         return `
-                            <tr class="hover:bg-slate-50/80 transition">
-                                <td class="p-3.5 font-bold text-slate-900 flex items-center gap-2">
-                                    <i class="fa-regular fa-calendar text-slate-400"></i> ${m.label_full} (${m.label})
+                            <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                                <td class="p-3 font-bold text-slate-900 flex items-center gap-2">
+                                    <i class="fa-regular fa-calendar text-slate-400"></i> ${escapeHtml(m.label_full)}
                                 </td>
-                                <td class="p-3.5 text-center font-extrabold text-slate-900">${m.total}</td>
-                                <td class="p-3.5 text-center font-bold text-rose-600">${m.negative}</td>
-                                <td class="p-3.5 text-center">${negBadge}</td>
-                                <td class="p-3.5 text-center font-bold text-amber-600">${m.avg_rating} ⭐</td>
-                                <td class="p-3.5">${topCause}</td>
-                                <td class="p-3.5 text-center">${momBadge}</td>
-                                <td class="p-3.5 text-center">
-                                    <button onclick="filterByMonthFromTemporal('${m.ym}')" class="px-2.5 py-1 text-[11px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg border border-indigo-200 transition flex items-center gap-1 mx-auto">
-                                        <i class="fa-solid fa-filter"></i> Ver
-                                    </button>
+                                <td class="p-3 text-center font-extrabold text-slate-900">${m.total}</td>
+                                <td class="p-3 text-center">
+                                    <span class="font-bold text-rose-700">${m.negative}</span> ${negBadge}
                                 </td>
+                                <td class="p-3 text-center font-bold text-amber-600">${m.avg_rating} ⭐</td>
+                                <td class="p-3">${topCause}</td>
                             </tr>
-                        `;
-                    }).join('');
-                }
-
-                // 6. Populate Causes Trends
-                const causesContainer = document.getElementById('temporal-causes-container');
-                if (causesContainer) {
-                    causesContainer.innerHTML = data.cause_trends.map(c => {
-                        let trendBadge = '';
-                        if (c.trend_direction === 'increasing') {
-                            trendBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-black bg-rose-100 text-rose-800 border border-rose-200 flex items-center gap-1"><i class="fa-solid fa-arrow-trend-up"></i> Aumentando (+${c.trend_pct}%)</span>`;
-                        } else if (c.trend_direction === 'decreasing') {
-                            trendBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1"><i class="fa-solid fa-arrow-trend-down"></i> Diminuindo (${c.trend_pct}%)</span>`;
-                        } else {
-                            trendBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-1"><i class="fa-solid fa-arrow-right"></i> Estável</span>`;
-                        }
-
-                        return `
-                            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4 flex flex-col justify-between hover:shadow-md transition">
-                                <div class="space-y-2">
-                                    <div class="flex justify-between items-start gap-2">
-                                        <div class="flex items-center gap-2">
-                                            <span class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-sm font-bold">
-                                                <i class="fa-solid ${c.icon}"></i>
-                                            </span>
-                                            <div>
-                                                <h4 class="font-extrabold text-slate-900 text-sm">${c.name}</h4>
-                                                <p class="text-[11px] text-slate-400 font-semibold">${c.total} relatos catalogados (${c.pct_of_all}% da base)</p>
-                                            </div>
-                                        </div>
-                                        ${trendBadge}
-                                    </div>
-
-                                    <!-- Linha do Tempo / Aging -->
-                                    <div class="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-xs">
-                                        <div>
-                                            <span class="text-slate-400 block text-[10px] font-bold uppercase">Primeira Ocorrência</span>
-                                            <span class="font-bold text-slate-700">${c.first_seen_date}</span>
-                                            <span class="text-slate-400 text-[10px] block font-medium">(${c.first_seen_text})</span>
-                                        </div>
-                                        <div>
-                                            <span class="text-slate-400 block text-[10px] font-bold uppercase">Última Ocorrência</span>
-                                            <span class="font-bold text-slate-900">${c.last_seen_date}</span>
-                                            <span class="text-indigo-600 text-[10px] block font-bold">(${c.last_seen_text})</span>
-                                        </div>
-                                    </div>
-
-                                    <!-- Comparativo Numérico Recente -->
-                                    <div class="flex justify-between items-center text-xs px-1">
-                                        <span class="text-slate-500 font-medium">Últimos 30 Dias: <b class="text-slate-900">${c.recent_count_30d} queixas</b></span>
-                                        <span class="text-slate-400 text-[11px]">Mês Anterior: <b>${c.prev_count_30_60d} queixas</b></span>
-                                    </div>
-
-                                    <!-- Análise de Sazonalidade / Engenharia -->
-                                    <div class="text-xs bg-amber-50/60 p-2.5 rounded-xl border border-amber-200/60 space-y-1">
-                                        <p class="text-amber-950 font-bold flex items-center gap-1.5">
-                                            <i class="fa-solid fa-compass-drafting text-amber-600"></i> Padrão Sazonal / Gatilho:
-                                        </p>
-                                        <p class="text-amber-900 text-[11px] leading-relaxed">${c.pattern}</p>
-                                    </div>
-                                </div>
-
-                                <div class="pt-2 border-t border-slate-100 flex justify-between items-center">
-                                    <span class="text-[11px] text-slate-500 italic max-w-xs truncate" title="${c.recommendation}">Recomendação: ${c.recommendation}</span>
-                                    <button onclick="filterByRootCauseFromTemporal('${c.id}')" class="px-2.5 py-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded-lg transition flex items-center gap-1 shrink-0">
-                                        Ver Avaliações <i class="fa-solid fa-arrow-right text-[10px]"></i>
-                                    </button>
-                                </div>
-                            </div>
                         `;
                     }).join('');
                 }

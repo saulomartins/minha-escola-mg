@@ -513,7 +513,10 @@ def get_device_diagnostic() -> Dict[str, Any]:
             "avg_rating": avg,
             "launch_os": life.get("launch_os", "Não catalogado"),
             "max_os": life.get("max_os", "Verificar com fabricante"),
+            "last_official_os": life.get("last_official_os") or life.get("max_os", "Verificar com fabricante"),
+            "is_stuck_android_12": life.get("is_stuck_android_12", False),
             "support_status": life.get("support_status", "Em análise"),
+
             "status_badge": life.get("status_badge", "slate"),
             "google_oem_notes": life.get("google_oem_notes", ""),
             "dev_recommendation": life.get("dev_recommendation", ""),

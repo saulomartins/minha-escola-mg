@@ -778,6 +778,7 @@ def evaluate_stuck_android_12(
             "badge_color": "red",
             "reason": final_reason,
             "max_os": max_os if max_os != "Verificar com fabricante" else (os_ver_str or "Android 12"),
+            "last_official_os": life.get("last_official_os") or (max_os if max_os != "Verificar com fabricante" else (os_ver_str or "Android 12")),
             "support_status": life.get("support_status", "🔴 Descontinuado no Android 12"),
             "google_oem_notes": life.get("google_oem_notes", "Fabricante e Google não fornecem atualizações para Android 13 ou superior."),
             "user_action_possible": False,
@@ -791,6 +792,7 @@ def evaluate_stuck_android_12(
         "badge_color": None,
         "reason": "Dispositivo com suporte ou atualizável para Android 13+.",
         "max_os": max_os,
+        "last_official_os": life.get("last_official_os") or max_os,
         "support_status": life.get("support_status", "Ativo"),
         "user_action_possible": True,
         "recommendation": life.get("dev_recommendation", "")
