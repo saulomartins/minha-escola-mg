@@ -370,6 +370,16 @@ def api_analytics_temporal():
     """Retorna diagnóstico temporal completo: linha do tempo, faixas de envelhecimento, evolução mês a mês e tendências por causa-raiz"""
     return get_temporal_diagnostics()
 
+@app.get("/api/analytics/hardware-root-cause")
+def api_analytics_hardware_root_cause(
+    brand: Optional[str] = None,
+    root_cause_id: Optional[str] = None
+):
+    """Retorna análise cruzada de hardware (fabricantes e modelos) com causas-raiz de problemas."""
+    from analytics.hardware_root_cause import get_hardware_root_cause_analytics
+    return get_hardware_root_cause_analytics(filter_brand=brand, filter_root_cause_id=root_cause_id)
+
+
 @app.post("/api/reviews/backfill-devices")
 def api_backfill_devices():
     """Atualiza e normaliza a detecção de aparelhos e sistemas operacionais em todas as avaliações salvas"""

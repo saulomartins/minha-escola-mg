@@ -5,7 +5,440 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minha Escola MG - Central de Avaliações e Diagnóstico de Problemas</title>
     <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com">
+        // ==============================================================================
+        // DIAGNÓSTICO CRUZADO: HARDWARE X CAUSAS-RAIZ (JS)
+        // ==============================================================================
+        let globalHardwareRcData = null;
+        let chartHardwareStacked = null;
+        let chartHardwareBrands = null;
+
+        async function loadHardwareRootCauseAnalytics() {
+            try {
+                const res = await fetch('/api/analytics/hardware-root-cause');
+                if (!res.ok) throw new Error('Falha ao carregar dados analíticos de hardware.');
+                const data = await res.json();
+                globalHardwareRcData = data;
+
+                renderHardwareKPIs(data.kpis);
+                renderHardwareFilterOptions(data.filter_options);
+                renderHardwareByRootCause(data.by_root_cause);
+                renderHardwareModelsTable(data.by_model);
+                renderHardwareCharts(data.charts);
+            } catch (err) {
+                console.error('Erro ao carregar matriz de hardware x causas-raiz:', err);
+            }
+        }
+
+        function renderHardwareKPIs(kpis) {
+            if (!kpis) return;
+            const elBrand = document.getElementById('hw-kpi-brand');
+            const elBrandSub = document.getElementById('hw-kpi-brand-sub');
+            const elModel = document.getElementById('hw-kpi-model');
+            const elModelSub = document.getElementById('hw-kpi-model-sub');
+            const elCause = document.getElementById('hw-kpi-cause');
+            const elCauseSub = document.getElementById('hw-kpi-cause-sub');
+            const elModelsTotal = document.getElementById('hw-kpi-models-total');
+            const elReviewsTotal = document.getElementById('hw-kpi-reviews-total');
+
+            if (elBrand && kpis.top_brand) {
+                elBrand.innerText = kpis.top_brand.brand || '-';
+                elBrandSub.innerText = `${kpis.top_brand.count || 0} queixas (${kpis.top_brand.percentage || 0}%)`;
+            }
+            if (elModel && kpis.top_model) {
+                elModel.innerText = kpis.top_model.model_name || '-';
+                elModelSub.innerText = `${kpis.top_model.count || 0} queixas • ${kpis.top_model.last_official_os || ''}`;
+            }
+            if (elCause && kpis.top_cause) {
+                elCause.innerText = kpis.top_cause.name || '-';
+                elCauseSub.innerText = `Presente em ${kpis.top_cause.models_count || 0} modelos diferentes`;
+            }
+            if (elModelsTotal) {
+                elModelsTotal.innerText = kpis.total_unique_models || 0;
+            }
+            if (elReviewsTotal) {
+                elReviewsTotal.innerText = `${kpis.total_reviews_analyzed || 0} avaliações analisadas`;
+            }
+        }
+
+        function renderHardwareFilterOptions(filterOptions) {
+            if (!filterOptions) return;
+            const brandSelect = document.getElementById('hw-filter-brand');
+            const causeSelect = document.getElementById('hw-filter-cause');
+
+            if (brandSelect && filterOptions.available_brands) {
+                const curBrand = brandSelect.value;
+                let html = '<option value="todos">Todos os Fabricantes (Xiaomi, Motorola, Samsung, Apple...)</option>';
+                filterOptions.available_brands.forEach(b => {
+                    html += `<option value="${escapeHtml(b)}">${escapeHtml(b)}</option>`;
+                });
+                brandSelect.innerHTML = html;
+                if (curBrand) brandSelect.value = curBrand;
+            }
+
+            if (causeSelect && filterOptions.available_causes) {
+                const curCause = causeSelect.value;
+                let html = '<option value="todos">Todas as Causas-Raiz (Gov.br, Lentidão, Boletim, Senha...)</option>';
+                filterOptions.available_causes.forEach(c => {
+                    html += `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)} (${escapeHtml(c.severity)})</option>`;
+                });
+                causeSelect.innerHTML = html;
+                if (curCause) causeSelect.value = curCause;
+            }
+        }
+
+        function applyHardwareFilters() {
+            if (!globalHardwareRcData) return;
+            const brandFilter = (document.getElementById('hw-filter-brand')?.value || 'todos').toLowerCase();
+            const causeFilter = document.getElementById('hw-filter-cause')?.value || 'todos';
+            const searchQuery = (document.getElementById('hw-search-model')?.value || '').toLowerCase().trim();
+
+            // Filtra Causas-Raiz
+            let filteredCauses = globalHardwareRcData.by_root_cause || [];
+            if (causeFilter !== 'todos') {
+                filteredCauses = filteredCauses.filter(c => c.id === causeFilter);
+            }
+            if (brandFilter !== 'todos') {
+                filteredCauses = filteredCauses.map(c => {
+                    const brandMatch = c.top_brands.find(b => b.brand.toLowerCase() === brandFilter);
+                    const modelsMatch = c.top_models.filter(m => m.brand.toLowerCase() === brandFilter);
+                    return {
+                        ...c,
+                        top_brands: brandMatch ? [brandMatch] : [],
+                        top_models: modelsMatch
+                    };
+                }).filter(c => c.top_models.length > 0 || c.top_brands.length > 0);
+            }
+
+            // Filtra Modelos
+            let filteredModels = globalHardwareRcData.by_model || [];
+            if (brandFilter !== 'todos') {
+                filteredModels = filteredModels.filter(m => m.brand.toLowerCase() === brandFilter);
+            }
+            if (causeFilter !== 'todos') {
+                filteredModels = filteredModels.filter(m => m.root_causes.some(rc => rc.id === causeFilter));
+            }
+            if (searchQuery) {
+                filteredModels = filteredModels.filter(m => 
+                    m.model_name.toLowerCase().includes(searchQuery) ||
+                    m.brand.toLowerCase().includes(searchQuery) ||
+                    m.last_official_os.toLowerCase().includes(searchQuery)
+                );
+            }
+
+            renderHardwareByRootCause(filteredCauses);
+            renderHardwareModelsTable(filteredModels);
+        }
+
+        function resetHardwareFilters() {
+            const b = document.getElementById('hw-filter-brand');
+            const c = document.getElementById('hw-filter-cause');
+            const s = document.getElementById('hw-search-model');
+            if (b) b.value = 'todos';
+            if (c) c.value = 'todos';
+            if (s) s.value = '';
+            applyHardwareFilters();
+        }
+
+        function renderHardwareByRootCause(causes) {
+            const container = document.getElementById('hw-root-causes-container');
+            const badgeCount = document.getElementById('hw-rc-count-badge');
+            if (!container) return;
+
+            if (badgeCount) {
+                badgeCount.innerText = `${causes.length} Causa${causes.length === 1 ? '' : 's'} Exibida${causes.length === 1 ? '' : 's'}`;
+            }
+
+            if (!causes || causes.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-2 p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                        <i class="fa-solid fa-filter-circle-xmark text-slate-400 text-3xl mb-2"></i>
+                        <p class="text-sm font-bold text-slate-700">Nenhuma Causa-Raiz encontrada com os filtros selecionados.</p>
+                        <p class="text-xs text-slate-500 mt-1">Tente remover os filtros de fabricante ou termo de busca.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = causes.map(c => {
+                const sevColor = c.severity_color || '#64748b';
+                const sevBadge = c.severity === 'Crítica' ? 'bg-rose-100 text-rose-800 border-rose-200' :
+                                (c.severity === 'Alta' ? 'bg-orange-100 text-orange-800 border-orange-200' :
+                                (c.severity === 'Média' ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-emerald-100 text-emerald-800 border-emerald-200'));
+
+                // Barras de Fabricante
+                let brandsHtml = '';
+                if (c.top_brands && c.top_brands.length > 0) {
+                    brandsHtml = `
+                        <div class="space-y-1.5 mt-2">
+                            <div class="flex justify-between text-[11px] font-bold text-slate-600">
+                                <span>Divisão por Fabricante:</span>
+                                <span>${c.top_brands.map(b => `${escapeHtml(b.brand)}: ${b.percentage}%`).slice(0, 3).join(' • ')}</span>
+                            </div>
+                            <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden flex">
+                                ${c.top_brands.map((b, idx) => {
+                                    const colors = ['bg-orange-500', 'bg-sky-500', 'bg-indigo-500', 'bg-slate-600', 'bg-purple-500'];
+                                    return `<div class="${colors[idx % colors.length]}" style="width: ${b.percentage}%;" title="${escapeHtml(b.brand)}: ${b.count} (${b.percentage}%)"></div>`;
+                                }).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Top Modelos Atingidos
+                let modelsHtml = '';
+                if (c.top_models && c.top_models.length > 0) {
+                    modelsHtml = `
+                        <div class="mt-3 pt-3 border-t border-slate-100">
+                            <p class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Top Modelos mais Atingidos por esta Causa:</p>
+                            <div class="flex flex-wrap gap-1.5">
+                                ${c.top_models.slice(0, 4).map(m => {
+                                    const stuckTag = m.is_stuck_android_12 ? '<span class="text-rose-600 font-extrabold">🛑 Preso no SO</span>' : '';
+                                    return `
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 transition">
+                                            <span>${escapeHtml(m.model_name)}</span>
+                                            <span class="px-1.5 py-0.2 bg-slate-200 text-slate-700 rounded text-[10px] font-bold">${m.count}</span>
+                                            ${stuckTag}
+                                        </span>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                return `
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:border-slate-300 transition flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="space-y-1">
+                                    <div class="flex items-center gap-2">
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase border ${sevBadge}">
+                                            ${escapeHtml(c.severity)}
+                                        </span>
+                                        <span class="text-xs text-slate-400 font-bold">
+                                            ${c.unique_models_count} modelo${c.unique_models_count === 1 ? '' : 's'} de celular afetado${c.unique_models_count === 1 ? '' : 's'}
+                                        </span>
+                                    </div>
+                                    <h4 class="text-sm font-black text-slate-900 leading-snug">${escapeHtml(c.name)}</h4>
+                                </div>
+                                <div class="text-right flex-shrink-0">
+                                    <span class="text-lg font-black text-slate-900">${c.total_occurrences}</span>
+                                    <span class="text-[11px] text-slate-400 block">${c.percentage_of_all}% do total</span>
+                                </div>
+                            </div>
+                            ${brandsHtml}
+                            ${modelsHtml}
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center text-xs no-print">
+                            <span class="text-slate-400 font-medium">Nota média: <b>${c.avg_rating} ⭐</b></span>
+                            <button onclick="filterFeedByRootCause('${escapeHtml(c.id)}')" class="text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1 hover:underline">
+                                Ver avaliações <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderHardwareModelsTable(models) {
+            const tbody = document.getElementById('hw-models-tbody');
+            const badgeCount = document.getElementById('hw-models-count-badge');
+            if (!tbody) return;
+
+            if (badgeCount) {
+                badgeCount.innerText = `${models.length} Modelo${models.length === 1 ? '' : 's'}`;
+            }
+
+            if (!models || models.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="p-8 text-center text-slate-500 font-medium">
+                            Nenhum modelo de celular encontrado com os filtros ativos.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = models.map(m => {
+                // Fabricante Badge
+                let brandColor = 'bg-slate-100 text-slate-800 border-slate-200';
+                if (m.brand.toLowerCase() === 'xiaomi') brandColor = 'bg-orange-50 text-orange-800 border-orange-200';
+                else if (m.brand.toLowerCase() === 'motorola') brandColor = 'bg-sky-50 text-sky-800 border-sky-200';
+                else if (m.brand.toLowerCase() === 'samsung') brandColor = 'bg-indigo-50 text-indigo-800 border-indigo-200';
+                else if (m.brand.toLowerCase() === 'apple') brandColor = 'bg-slate-100 text-slate-900 border-slate-300';
+
+                // Status de SO e Fabricante
+                let osBadge = '';
+                if (m.is_stuck_android_12) {
+                    osBadge = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-rose-50 text-rose-800 border border-rose-200" title="${escapeHtml(m.support_status)}">
+                        <span>🛑 ${escapeHtml(m.last_official_os)}</span>
+                        <span class="text-[9px] bg-rose-600 text-white px-1 rounded uppercase font-black">Preso no SO</span>
+                    </span>`;
+                } else {
+                    osBadge = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                        <i class="fa-solid fa-circle-check text-emerald-600 text-[10px]"></i> ${escapeHtml(m.last_official_os)}
+                    </span>`;
+                }
+
+                // Principais Causas-Raiz do Modelo
+                let causesBadges = '';
+                if (m.root_causes && m.root_causes.length > 0) {
+                    causesBadges = m.root_causes.slice(0, 3).map(rc => {
+                        const bgCol = rc.severity === 'Crítica' ? 'bg-rose-50 text-rose-800 border-rose-200' :
+                                     (rc.severity === 'Alta' ? 'bg-orange-50 text-orange-800 border-orange-200' : 'bg-slate-50 text-slate-700 border-slate-200');
+                        return `
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold border ${bgCol}">
+                                <span>${escapeHtml(rc.name)}</span>
+                                <span class="font-black bg-white px-1 rounded shadow-xs text-[10px]">${rc.count}</span>
+                            </span>
+                        `;
+                    }).join(' ');
+                } else {
+                    causesBadges = '<span class="text-slate-400 italic">Sem falhas específicas</span>';
+                }
+
+                return `
+                    <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                        <td class="p-3">
+                            <span class="px-2.5 py-1 rounded-lg text-xs font-bold border ${brandColor}">
+                                ${escapeHtml(m.brand)}
+                            </span>
+                        </td>
+                        <td class="p-3">
+                            <div class="font-extrabold text-slate-900">${escapeHtml(m.model_name)}</div>
+                            <div class="text-[10px] text-slate-400">Lançamento: ${escapeHtml(m.launch_os)}</div>
+                        </td>
+                        <td class="p-3">
+                            ${osBadge}
+                        </td>
+                        <td class="p-3 text-center">
+                            <span class="font-black text-slate-900 text-sm">${m.total_reviews}</span>
+                        </td>
+                        <td class="p-3 text-center font-bold text-amber-600">
+                            ${m.avg_rating} ⭐
+                        </td>
+                        <td class="p-3">
+                            <div class="flex flex-wrap gap-1.5 items-center">
+                                ${causesBadges}
+                            </div>
+                        </td>
+                        <td class="p-3 text-center no-print">
+                            <button onclick="filterFeedByHardware('${escapeHtml(m.brand)}', '${escapeHtml(m.raw_model)}', '${m.primary_cause ? escapeHtml(m.primary_cause.id) : ''}')" class="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-lg border border-indigo-200 transition flex items-center gap-1 mx-auto" title="Ver comentários deste celular">
+                                <i class="fa-solid fa-magnifying-glass text-[10px]"></i> Ver Avaliações
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderHardwareCharts(charts) {
+            if (!charts) return;
+
+            // Gráfico de Barras Empilhadas
+            const ctxStacked = document.getElementById('chart-hw-stacked');
+            if (ctxStacked && charts.stacked_models) {
+                if (chartHardwareStacked) chartHardwareStacked.destroy();
+
+                chartHardwareStacked = new Chart(ctxStacked, {
+                    type: 'bar',
+                    data: {
+                        labels: charts.stacked_models.labels,
+                        datasets: charts.stacked_models.datasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        indexAxis: 'y',
+                        scales: {
+                            x: {
+                                stacked: true,
+                                beginAtZero: true,
+                                title: { display: true, text: 'Volume de Reclamações' }
+                            },
+                            y: {
+                                stacked: true,
+                                ticks: { font: { size: 11, weight: 'bold' } }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: { boxWidth: 12, font: { size: 10 } }
+                            },
+                            tooltip: { mode: 'index', intersect: false }
+                        }
+                    }
+                });
+            }
+
+            // Gráfico de Donut por Fabricante
+            const ctxBrands = document.getElementById('chart-hw-brands');
+            if (ctxBrands && charts.brand_shares) {
+                if (chartHardwareBrands) chartHardwareBrands.destroy();
+
+                chartHardwareBrands = new Chart(ctxBrands, {
+                    type: 'doughnut',
+                    data: {
+                        labels: charts.brand_shares.labels,
+                        datasets: [{
+                            data: charts.brand_shares.data,
+                            backgroundColor: charts.brand_shares.colors,
+                            borderWidth: 2,
+                            borderColor: '#ffffff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { boxWidth: 12, font: { size: 11, weight: 'bold' } }
+                            }
+                        },
+                        cutout: '65%'
+                    }
+                });
+            }
+        }
+
+        function filterFeedByHardware(brand, model, causeId) {
+            // Muda para a visão de avaliações
+            switchMainView('reviews');
+
+            // Aplica os filtros na tela de comentários
+            const brandSelect = document.getElementById('filter-device-brand');
+            const causeSelect = document.getElementById('filter-root-cause');
+            const searchInput = document.getElementById('search-input');
+
+            if (brandSelect && brand && brand !== 'Geral' && brand !== 'Não especificado') {
+                brandSelect.value = brand;
+            }
+            if (causeSelect && causeId && causeId !== 'todos') {
+                causeSelect.value = causeId;
+            }
+            if (searchInput && model && model !== 'Não especificado') {
+                searchInput.value = model;
+            }
+
+            applyFilters();
+            showAlert(`🔍 Filtros aplicados no feed: <b>${escapeHtml(brand)} ${escapeHtml(model)}</b>`, 'info');
+        }
+
+        function filterFeedByRootCause(causeId) {
+            switchMainView('reviews');
+            const causeSelect = document.getElementById('filter-root-cause');
+            if (causeSelect && causeId) {
+                causeSelect.value = causeId;
+            }
+            applyFilters();
+            showAlert(`🔍 Filtrando comentários pela Causa-Raiz selecionada.`, 'info');
+        }
+
+</script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -260,9 +693,12 @@
             <button onclick="switchMainView('temporal')" id="nav-btn-temporal" class="nav-view-btn flex-1 min-w-[200px] py-2.5 px-4 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2 text-slate-600 hover:bg-slate-50">
                 <i class="fa-solid fa-calendar-days text-amber-500"></i> 4. Diagnóstico Temporal & Tendências
             </button>
+            <button onclick="switchMainView('hardware-rc')" id="nav-btn-hardware-rc" class="nav-view-btn flex-1 min-w-[200px] py-2.5 px-4 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2 text-slate-600 hover:bg-slate-50">
+                <i class="fa-solid fa-microchip text-rose-500"></i> 5. Matriz Hardware x Causas-Raiz
+            </button>
             {% if current_user and current_user.role == 'admin' %}
             <button onclick="switchMainView('users')" id="nav-btn-users" class="nav-view-btn flex-1 min-w-[200px] py-2.5 px-4 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2 text-slate-600 hover:bg-slate-50">
-                <i class="fa-solid fa-users-gear text-emerald-600"></i> 5. Gestão de Acessos
+                <i class="fa-solid fa-users-gear text-emerald-600"></i> 6. Gestão de Acessos
                 <span id="badge-pending-count" class="hidden ml-1 px-2 py-0.5 text-[10px] font-extrabold bg-amber-500 text-white rounded-full animate-pulse">0</span>
             </button>
             {% endif %}
@@ -699,7 +1135,200 @@
             </div>
         </div>
 
-        <!-- ================= VISÃO 5: GESTÃO DE ACESSOS & PERMISSÕES (ADMIN) ================= -->
+        <!-- ================= VISÃO 5: MATRIZ HARDWARE X CAUSAS-RAIZ ================= -->
+        <div id="view-hardware-rc" class="hidden space-y-6">
+            <!-- Header da Matriz Hardware x Causas-Raiz -->
+            <div class="bg-gradient-to-r from-rose-950 via-slate-900 to-indigo-950 p-6 rounded-2xl text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-black bg-rose-500/30 text-rose-300 border border-rose-400/40 uppercase tracking-wide">
+                            Correlação Hardware & Engenharia
+                        </span>
+                        <span class="text-xs text-rose-200 font-semibold">Fabricantes • Modelos • Causas-Raiz</span>
+                    </div>
+                    <h2 class="text-xl font-black tracking-tight text-white flex items-center gap-2">
+                        <i class="fa-solid fa-microchip text-rose-400"></i> Matriz de Hardware x Causas-Raiz de Problemas
+                    </h2>
+                    <p class="text-xs text-slate-300 max-w-2xl leading-relaxed">
+                        Analise de acordo com a Causa-Raiz quais fabricantes (Xiaomi, Motorola, Samsung, Apple) e modelos específicos (Redmi 9A, Moto G22, Moto G8, etc.) concentram mais falhas técnicas no aplicativo.
+                    </p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2.5 no-print">
+                    <button onclick="printSpecificSection('hardware-rc')" class="px-3.5 py-2 text-xs font-bold bg-white/10 hover:bg-white/20 text-white rounded-xl border border-white/20 backdrop-blur-sm transition flex items-center gap-1.5 shadow" title="Imprimir este Diagnóstico em PDF">
+                        <i class="fa-solid fa-print text-rose-300"></i> Imprimir Diagnóstico
+                    </button>
+                    <button onclick="loadHardwareRootCauseAnalytics()" class="px-3.5 py-2 text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white rounded-xl transition flex items-center gap-1.5 shadow">
+                        <i class="fa-solid fa-arrows-rotate"></i> Atualizar
+                    </button>
+                </div>
+            </div>
+
+            <!-- 4 KPIs Executivos de Hardware x Causas -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Fabricante c/ Mais Queixas</p>
+                        <h4 class="text-2xl font-black text-slate-900 mt-1" id="hw-kpi-brand">-</h4>
+                        <p class="text-[11px] text-slate-400 mt-0.5" id="hw-kpi-brand-sub">-</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center text-xl font-bold">
+                        <i class="fa-solid fa-industry"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Modelo Mais Reclamado</p>
+                        <h4 class="text-xl font-black text-rose-700 mt-1" id="hw-kpi-model">-</h4>
+                        <p class="text-[11px] text-slate-400 mt-0.5" id="hw-kpi-model-sub">-</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-xl font-bold">
+                        <i class="fa-solid fa-mobile-screen-button"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Causa c/ Maior Dispersão</p>
+                        <h4 class="text-base font-black text-indigo-700 mt-1 line-clamp-1" id="hw-kpi-cause">-</h4>
+                        <p class="text-[11px] text-slate-400 mt-0.5" id="hw-kpi-cause-sub">-</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl font-bold">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Modelos Mapeados</p>
+                        <h4 class="text-2xl font-black text-emerald-700 mt-1" id="hw-kpi-models-total">-</h4>
+                        <p class="text-[11px] text-slate-400 mt-0.5" id="hw-kpi-reviews-total">-</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl font-bold">
+                        <i class="fa-solid fa-microchip"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Barra de Filtros Interativos Rápidos -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap items-center gap-3 no-print">
+                <div class="flex-1 min-w-[200px]">
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Filtrar por Fabricante:</label>
+                    <select id="hw-filter-brand" onchange="applyHardwareFilters()" class="w-full text-xs font-semibold px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500">
+                        <option value="todos">Todos os Fabricantes (Xiaomi, Motorola, Samsung, Apple...)</option>
+                    </select>
+                </div>
+
+                <div class="flex-1 min-w-[220px]">
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Filtrar por Causa-Raiz:</label>
+                    <select id="hw-filter-cause" onchange="applyHardwareFilters()" class="w-full text-xs font-semibold px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500">
+                        <option value="todos">Todas as Causas-Raiz (Gov.br, Lentidão, Boletim, Senha...)</option>
+                    </select>
+                </div>
+
+                <div class="flex-1 min-w-[220px]">
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Buscar Modelo do Aparelho:</label>
+                    <div class="relative">
+                        <input type="text" id="hw-search-model" oninput="applyHardwareFilters()" placeholder="Ex: Redmi 9A, Moto G22, Galaxy A10..." class="w-full text-xs px-3 py-2 pl-8 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500">
+                        <i class="fa-solid fa-magnifying-glass text-slate-400 absolute left-2.5 top-2.5 text-xs"></i>
+                    </div>
+                </div>
+
+                <div class="pt-5">
+                    <button onclick="resetHardwareFilters()" class="px-3.5 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition flex items-center gap-1.5" title="Limpar todos os filtros">
+                        <i class="fa-solid fa-filter-circle-xmark"></i> Limpar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Gráficos Analíticos -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Gráfico de Barras Empilhadas: Top 8 Modelos x Causas -->
+                <div class="lg:col-span-2 bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h3 class="text-sm font-black text-slate-900 flex items-center gap-2">
+                                <i class="fa-solid fa-chart-column text-rose-600"></i> Top Modelos de Celular e suas Causas-Raiz Predominantes
+                            </h3>
+                            <p class="text-xs text-slate-500 mt-0.5">Distribuição empilhada das falhas técnicas mais frequentes nos 8 modelos de maior volume.</p>
+                        </div>
+                    </div>
+                    <div class="h-64 relative">
+                        <canvas id="chart-hw-stacked"></canvas>
+                    </div>
+                </div>
+
+                <!-- Gráfico de Donut: Participação por Fabricante -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h3 class="text-sm font-black text-slate-900 flex items-center gap-2">
+                                <i class="fa-solid fa-chart-pie text-orange-600"></i> Volume por Fabricante
+                            </h3>
+                            <p class="text-xs text-slate-500 mt-0.5">Proporção de reclamações por marca no aplicativo.</p>
+                        </div>
+                    </div>
+                    <div class="h-64 relative">
+                        <canvas id="chart-hw-brands"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seção 1: De acordo com a Causa-Raiz (Causa -> Fabricantes & Modelos) -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                    <div>
+                        <h3 class="text-base font-black text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-layer-group text-indigo-600"></i> 1. De acordo com a Causa-Raiz: Concentração de Fabricantes e Modelos
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Veja para cada Causa-Raiz quantos modelos de celular são afetados, a divisão por fabricante e os aparelhos mais críticos.</p>
+                    </div>
+                    <span id="hw-rc-count-badge" class="px-2.5 py-1 text-xs font-bold bg-indigo-50 text-indigo-700 rounded-full border border-indigo-200">
+                        10 Causas Mapeadas
+                    </span>
+                </div>
+                <div class="p-5">
+                    <div id="hw-root-causes-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Preenchido via JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seção 2: Tabela Executiva de Modelos & Fabricantes x Causas-Raiz -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                    <div>
+                        <h3 class="text-base font-black text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-table-list text-rose-600"></i> 2. Matriz de Celulares: Modelo x Fabricante x Causas-Raiz Predominantes
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Detalhamento individual de cada modelo (Xiaomi Redmi 9A, Motorola Moto G8, Motorola Moto G22, etc.), sua última versão de SO oficial e falhas predominantes.</p>
+                    </div>
+                    <span id="hw-models-count-badge" class="px-2.5 py-1 text-xs font-bold bg-rose-50 text-rose-700 rounded-full border border-rose-200">
+                        32 Modelos
+                    </span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-600 font-extrabold border-b border-slate-200">
+                                <th class="p-3">Fabricante</th>
+                                <th class="p-3">Modelo do Aparelho</th>
+                                <th class="p-3">Última Versão SO Fabricante</th>
+                                <th class="p-3 text-center">Total Queixas</th>
+                                <th class="p-3 text-center">Nota Média</th>
+                                <th class="p-3">Causas-Raiz Predominantes do Modelo</th>
+                                <th class="p-3 text-center no-print">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="hw-models-tbody" class="divide-y divide-slate-100 font-medium">
+                            <!-- Preenchido via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= VISÃO 6: GESTÃO DE ACESSOS & PERMISSÕES (ADMIN) ================= -->
         <div id="view-users" class="hidden space-y-6">
             <!-- Header da Gestão de Acessos -->
             <div class="bg-gradient-to-r from-emerald-950 via-slate-900 to-indigo-950 p-6 rounded-2xl text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -1104,6 +1733,19 @@
                     </div>
                 </label>
 
+                <!-- Opção 3.5: Matriz Hardware x Causas-Raiz -->
+                <label class="flex items-start gap-3 p-3.5 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition">
+                    <input type="radio" name="print-report-type" value="hardware-rc" class="mt-1 text-rose-600 focus:ring-rose-500">
+                    <div class="space-y-0.5">
+                        <p class="font-bold text-slate-900 flex items-center gap-1.5">
+                            <i class="fa-solid fa-microchip text-rose-600"></i> Matriz Hardware x Causas-Raiz
+                        </p>
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                            Correlação direta entre fabricantes (Xiaomi, Motorola, Samsung, Apple), modelos de celular e volume de falhas por causa-raiz técnica.
+                        </p>
+                    </div>
+                </label>
+
                 <!-- Opção 4: Comentários e Respostas Filtradas -->
                 <label class="flex items-start gap-3 p-3.5 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition">
                     <input type="radio" name="print-report-type" value="reviews" class="mt-1 text-indigo-600 focus:ring-indigo-500">
@@ -1196,6 +1838,7 @@
             const isDevices = view === 'devices';
             const isAnalytics = view === 'analytics';
             const isTemporal = view === 'temporal';
+            const isHardwareRc = view === 'hardware-rc';
             const isUsers = view === 'users';
 
             document.getElementById('view-reviews').classList.toggle('hidden', !isReviews);
@@ -1203,6 +1846,8 @@
             document.getElementById('view-analytics').classList.toggle('hidden', !isAnalytics);
             const viewTemporal = document.getElementById('view-temporal');
             if (viewTemporal) viewTemporal.classList.toggle('hidden', !isTemporal);
+            const viewHardwareRc = document.getElementById('view-hardware-rc');
+            if (viewHardwareRc) viewHardwareRc.classList.toggle('hidden', !isHardwareRc);
             const viewUsers = document.getElementById('view-users');
             if (viewUsers) viewUsers.classList.toggle('hidden', !isUsers);
 
@@ -1210,6 +1855,7 @@
             const btnDevices = document.getElementById('nav-btn-devices');
             const btnAnalytics = document.getElementById('nav-btn-analytics');
             const btnTemporal = document.getElementById('nav-btn-temporal');
+            const btnHardwareRc = document.getElementById('nav-btn-hardware-rc');
             const btnUsers = document.getElementById('nav-btn-users');
 
             const activeCls = 'nav-view-btn active flex-1 min-w-[200px] py-2.5 px-4 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2';
@@ -1219,6 +1865,7 @@
             if (btnDevices) btnDevices.className = isDevices ? activeCls : inactiveCls;
             if (btnAnalytics) btnAnalytics.className = isAnalytics ? activeCls : inactiveCls;
             if (btnTemporal) btnTemporal.className = isTemporal ? activeCls : inactiveCls;
+            if (btnHardwareRc) btnHardwareRc.className = isHardwareRc ? activeCls : inactiveCls;
             if (btnUsers) btnUsers.className = isUsers ? activeCls : inactiveCls;
 
             if (isDevices) {
@@ -1227,6 +1874,8 @@
                 loadProblemAnalytics();
             } else if (isTemporal) {
                 loadTemporalAnalytics();
+            } else if (isHardwareRc) {
+                loadHardwareRootCauseAnalytics();
             } else if (isUsers) {
                 loadAdminUsers();
             } else {
@@ -2774,6 +3423,16 @@
                 viewAnalytics.classList.add('hidden');
                 const vt = document.getElementById('view-temporal');
                 if (vt) vt.classList.add('hidden');
+            } else if (type === 'hardware-rc') {
+                if (titleEl) titleEl.innerText = "Relatório Executivo: Matriz de Hardware x Causas-Raiz de Problemas";
+                if (subEl) subEl.innerText = "Concentração de Falhas Técnicas por Fabricante (Xiaomi, Motorola, Samsung, Apple) e Modelos Específicos";
+                viewReviews.classList.add('hidden');
+                viewDevices.classList.add('hidden');
+                viewAnalytics.classList.add('hidden');
+                const vt = document.getElementById('view-temporal');
+                if (vt) vt.classList.add('hidden');
+                const vhrc = document.getElementById('view-hardware-rc');
+                if (vhrc) vhrc.classList.remove('hidden');
             } else if (type === 'temporal') {
                 if (titleEl) titleEl.innerText = "Relatório Executivo: Diagnóstico Temporal & Tendências Mensais";
                 if (subEl) subEl.innerText = "Evolução Histórica Mês a Mês, Tempo Decorrido até Hoje (Aging) e Análise de Crescimento/Queda de Problemas";
