@@ -1437,14 +1437,28 @@
             document.getElementById('modal-add-user').classList.add('hidden');
         }
 
+        function showNotification(msg, type = 'success') {
+            showAlert(msg, type);
+        }
+
         async function submitAddUser() {
-            const email = document.getElementById('new-user-email').value.trim();
-            const name = document.getElementById('new-user-name').value.trim();
-            const role = document.getElementById('new-user-role').value;
+            const emailInput = document.getElementById('new-user-email');
+            const nameInput = document.getElementById('new-user-name');
+            const roleInput = document.getElementById('new-user-role');
+            const submitBtn = document.getElementById('btn-submit-add-user');
+
+            const email = emailInput ? emailInput.value.trim().toLowerCase() : '';
+            const name = nameInput ? nameInput.value.trim() : '';
+            const role = roleInput ? roleInput.value : 'viewer';
 
             if (!email || !email.includes('@')) {
                 alert('Por favor, informe um endereço de e-mail Gmail válido.');
                 return;
+            }
+
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Autorizando...';
             }
 
             try {
@@ -1456,42 +1470,45 @@
 
                 if (res.ok) {
                     closeAddUserModal();
-                    showNotification(`✅ Acesso concedido para ${email}!`, 'success');
-                    loadAdminUsers();
+                    showAlert(`✅ Acesso concedido com sucesso para <b>${escapeHtml(email)}</b> (${role === 'admin' ? 'Administrador' : 'Leitor'})!`, 'success');
+                    await loadAdminUsers();
                 } else {
-                    const err = await res.json();
-                    alert(`Erro: ${err.detail || 'Falha ao conceder acesso'}`);
+                    const err = await res.json().catch(() => ({}));
+                    alert(`Erro: ${err.detail || err.message || 'Falha ao conceder acesso'}`);
                 }
             } catch (err) {
-                alert(`Erro: ${err.message}`);
+                alert(`Erro ao conectar com o servidor: ${err.message}`);
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fa-solid fa-check"></i> Autorizar Acesso';
+                }
             }
         }
 
         async function setUserStatus(userId, newStatus, optionalRole) {
             try {
+                const payload = { status: newStatus };
                 if (optionalRole) {
-                    await fetch(`/api/admin/users/${userId}/role`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ role: optionalRole })
-                    });
+                    payload.role = optionalRole;
                 }
 
                 const res = await fetch(`/api/admin/users/${userId}/status`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status: newStatus })
+                    body: JSON.stringify(payload)
                 });
 
                 if (res.ok) {
-                    showNotification(`Status do usuário atualizado para "${newStatus}"!`, 'success');
-                    loadAdminUsers();
+                    const statusLabel = newStatus === 'approved' ? 'Aprovado / Ativo' : (newStatus === 'blocked' ? 'Bloqueado' : 'Aguardando');
+                    showAlert(`✅ Status do usuário atualizado para <b>${statusLabel}</b> com sucesso!`, 'success');
+                    await loadAdminUsers();
                 } else {
-                    const err = await res.json();
-                    alert(`Erro: ${err.detail || 'Não foi possível alterar o status'}`);
+                    const err = await res.json().catch(() => ({}));
+                    alert(`Erro: ${err.detail || err.message || 'Não foi possível alterar o status'}`);
                 }
             } catch (err) {
-                alert(`Erro: ${err.message}`);
+                alert(`Erro de conexão: ${err.message}`);
             }
         }
 
@@ -1508,14 +1525,14 @@
                 });
 
                 if (res.ok) {
-                    showNotification(`Perfil atualizado para "${roleName}"!`, 'success');
-                    loadAdminUsers();
+                    showAlert(`✅ Perfil atualizado para <b>${roleName}</b> com sucesso!`, 'success');
+                    await loadAdminUsers();
                 } else {
-                    const err = await res.json();
-                    alert(`Erro: ${err.detail || 'Falha ao alterar papel'}`);
+                    const err = await res.json().catch(() => ({}));
+                    alert(`Erro: ${err.detail || err.message || 'Falha ao alterar papel'}`);
                 }
             } catch (err) {
-                alert(`Erro: ${err.message}`);
+                alert(`Erro de conexão: ${err.message}`);
             }
         }
 
@@ -1528,14 +1545,14 @@
                 });
 
                 if (res.ok) {
-                    showNotification(`Usuário ${email} removido com sucesso.`, 'success');
-                    loadAdminUsers();
+                    showAlert(`✅ Usuário <b>${escapeHtml(email)}</b> removido com sucesso.`, 'info');
+                    await loadAdminUsers();
                 } else {
-                    const err = await res.json();
-                    alert(`Erro: ${err.detail || 'Falha ao excluir usuário'}`);
+                    const err = await res.json().catch(() => ({}));
+                    alert(`Erro: ${err.detail || err.message || 'Falha ao excluir usuário'}`);
                 }
             } catch (err) {
-                alert(`Erro: ${err.message}`);
+                alert(`Erro de conexão: ${err.message}`);
             }
         }
 

@@ -124,6 +124,7 @@ class AddUserRequest(BaseModel):
 
 class UserStatusRequest(BaseModel):
     status: str
+    role: Optional[str] = None
 
 class UserRoleRequest(BaseModel):
     role: str
@@ -136,7 +137,24 @@ def get_current_user_from_request(request: Request) -> Optional[Dict[str, Any]]:
     payload = decode_session_token(token)
     if not payload:
         return None
-    user_db = get_user_by_id(int(payload.get("sub", 0)))
+    user_id = payload.get("sub")
+    user_db = None
+    if user_id:
+        try:
+            user_db = get_user_by_id(int(user_id))
+        except (ValueError, TypeError):
+            pass
+    if not user_db and payload.get("email"):
+        user_db = get_user_by_email(payload["email"])
+
+    # Se for o super admin, sempre garante acesso admin ativo
+    if payload.get("email", "").lower() == SUPER_ADMIN_EMAIL.lower():
+        if not user_db:
+            user_db = upsert_user(SUPER_ADMIN_EMAIL, name="Saulo Martins Costa", role="admin", status="approved", added_by="system")
+        else:
+            user_db["role"] = "admin"
+            user_db["status"] = "approved"
+
     if not user_db or user_db.get("status") != "approved":
         return None
     return user_db
@@ -287,6 +305,8 @@ async def api_admin_set_status(user_id: int, req: UserStatusRequest, request: Re
     require_admin(request)
     if req.status not in ["approved", "pending", "blocked"]:
         raise HTTPException(status_code=400, detail="Status inválido.")
+    if req.role and req.role in ["admin", "viewer"]:
+        update_user_role(user_id, req.role)
     success = update_user_status(user_id, req.status)
     if not success:
         raise HTTPException(status_code=400, detail="Não é possível alterar o status deste usuário (Super Admin protegido).")

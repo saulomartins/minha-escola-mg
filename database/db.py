@@ -764,7 +764,7 @@ def get_all_settings() -> Dict[str, str]:
 # GESTÃO DE USUÁRIOS E PERMISSÕES (RBAC)
 # ==============================================================================
 
-SUPER_ADMIN_EMAIL = "saulomartins.costa@gmail.com"
+SUPER_ADMIN_EMAIL = os.environ.get("SUPER_ADMIN_EMAIL", "saulomartins.costa@gmail.com").strip().lower()
 
 def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
     """Busca usuário pelo e-mail (case-insensitive)."""
