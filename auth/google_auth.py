@@ -3,9 +3,20 @@ import time
 import logging
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
-import jwt
-from google.oauth2 import id_token
-from google.auth.transport import requests as google_requests
+try:
+    import jwt
+    ExpiredSignatureError = jwt.ExpiredSignatureError
+    InvalidTokenError = getattr(jwt, "InvalidTokenError", Exception)
+except ImportError:
+    from jose import jwt
+    from jose.exceptions import ExpiredSignatureError, JWTError as InvalidTokenError
+
+try:
+    from google.oauth2 import id_token
+    from google.auth.transport import requests as google_requests
+except ImportError:
+    id_token = None
+    google_requests = None
 
 from database.db import (
     get_user_by_email, get_user_by_id, handle_user_login, 
@@ -50,10 +61,10 @@ def decode_session_token(token: str) -> Optional[Dict[str, Any]]:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM], leeway=60)
         return payload
-    except jwt.ExpiredSignatureError:
+    except ExpiredSignatureError:
         logger.warning("Token de sessão expirado")
         return None
-    except jwt.InvalidTokenError as e:
+    except InvalidTokenError as e:
         logger.warning(f"Token de sessão inválido: {e}")
         return None
 
@@ -62,6 +73,9 @@ def verify_google_credential(credential: str) -> Dict[str, Any]:
     Valida a credencial JWT retornada pelo Google Identity Services (GIS).
     Retorna o dicionário com os dados do usuário autenticado no Google.
     """
+    if not id_token or not google_requests:
+        raise RuntimeError("google-auth não está instalado no ambiente.")
+
     client_id = get_google_client_id()
     if not client_id:
         raise ValueError("GOOGLE_CLIENT_ID não está configurado no servidor.")

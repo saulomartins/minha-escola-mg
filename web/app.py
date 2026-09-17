@@ -3,7 +3,9 @@ import sys
 import json
 import asyncio
 import logging
+from datetime import datetime
 from typing import Optional, List, Dict, Any
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, BackgroundTasks, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse, JSONResponse, Response, RedirectResponse
@@ -22,7 +24,8 @@ from database.db import (
     update_review_analysis, update_review_status, 
     get_setting, set_setting, get_all_settings, get_connection,
     list_users, get_user_by_id, get_user_by_email, upsert_user,
-    update_user_status, update_user_role, delete_user, SUPER_ADMIN_EMAIL
+    update_user_status, update_user_role, delete_user, SUPER_ADMIN_EMAIL,
+    bulk_import_users, get_users_env_string
 )
 from auth.google_auth import (
     get_google_client_id, create_session_token, decode_session_token,
@@ -282,6 +285,44 @@ async def api_admin_list_users(request: Request):
         "admins": sum(1 for u in all_users if u["role"] == "admin" and u["status"] == "approved")
     }
     return {"stats": stats, "users": all_users, "super_admin": SUPER_ADMIN_EMAIL}
+
+@app.get("/api/admin/users/env-string")
+async def api_admin_users_env_string(request: Request):
+    """Retorna a string formatada para configurar ALLOWED_USERS no Render."""
+    require_admin(request)
+    all_users = list_users()
+    return {
+        "env_key": "ALLOWED_USERS",
+        "env_variable": "ALLOWED_USERS",
+        "env_value": get_users_env_string(),
+        "count": len(all_users)
+    }
+
+@app.get("/api/admin/users/export")
+async def api_admin_users_export(request: Request):
+    """Exporta a lista completa de usuários cadastrados para backup JSON."""
+    require_admin(request)
+    users = list_users()
+    return {"users": users, "exported_at": datetime.utcnow().isoformat(), "count": len(users)}
+
+@app.post("/api/admin/users/import")
+async def api_admin_users_import(request: Request):
+    """Importa usuários a partir de um backup JSON (suporta lista ou objeto com 'users')."""
+    require_admin(request)
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="JSON inválido.")
+        
+    if isinstance(body, dict) and "users" in body:
+        users = body["users"]
+    elif isinstance(body, list):
+        users = body
+    else:
+        raise HTTPException(status_code=400, detail="Formato inválido. O arquivo deve conter uma lista de usuários.")
+        
+    imported = bulk_import_users(users)
+    return {"status": "ok", "imported_count": imported}
 
 @app.post("/api/admin/users")
 async def api_admin_add_user(req: AddUserRequest, request: Request):

@@ -1,9 +1,12 @@
 import sqlite3
 import os
+import json
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "reviews.db")
+SEED_USERS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "seed_users.json")
+
 
 def get_connection():
     conn = sqlite3.connect(DB_PATH)
@@ -87,6 +90,9 @@ def init_db():
         INSERT INTO allowed_users (email, name, role, status, added_by, created_at)
         VALUES (?, ?, 'admin', 'approved', 'system', ?)
         """, (admin_email.lower(), "Saulo Martins Costa", now_iso))
+
+    # Carrega e sincroniza usuários permanentes de seed_users.json e da variável ALLOWED_USERS
+    load_seed_users_into_cursor(cursor, now_iso)
 
     # Tabela de configurações
     cursor.execute("""
@@ -766,6 +772,116 @@ def get_all_settings() -> Dict[str, str]:
 
 SUPER_ADMIN_EMAIL = os.environ.get("SUPER_ADMIN_EMAIL", "saulomartins.costa@gmail.com").strip().lower()
 
+def load_seed_users_into_cursor(cursor, now_iso: str):
+    """Carrega usuários persistentes do seed_users.json e da variável ALLOWED_USERS."""
+    # 1. Carrega do seed_users.json
+    if os.path.exists(SEED_USERS_PATH):
+        try:
+            with open(SEED_USERS_PATH, "r", encoding="utf-8") as f:
+                saved = json.load(f)
+                for u in saved:
+                    email_c = u.get("email", "").strip().lower()
+                    if not email_c or "@" not in email_c:
+                        continue
+                    role_c = u.get("role", "viewer")
+                    status_c = u.get("status", "approved")
+                    name_c = u.get("name", "")
+                    cursor.execute("SELECT id, status, role FROM allowed_users WHERE LOWER(email) = ?", (email_c,))
+                    row = cursor.fetchone()
+                    if not row:
+                        cursor.execute("""
+                        INSERT INTO allowed_users (email, name, role, status, added_by, created_at)
+                        VALUES (?, ?, ?, ?, 'seed_file', ?)
+                        """, (email_c, name_c, role_c, status_c, now_iso))
+                    elif row["status"] != status_c or row["role"] != role_c:
+                        cursor.execute("UPDATE allowed_users SET status = ?, role = ? WHERE id = ?", (status_c, role_c, row["id"]))
+        except Exception as e:
+            print(f"Aviso ao carregar seed_users.json: {e}")
+
+    # 2. Carrega da variável de ambiente ALLOWED_USERS (ex: email1@gmail.com:admin,email2@gmail.com:viewer ou JSON)
+    env_users_str = os.environ.get("ALLOWED_USERS", "").strip()
+    if env_users_str:
+        try:
+            if env_users_str.startswith("["):
+                env_users = json.loads(env_users_str)
+                for u in env_users:
+                    email_c = u.get("email", "").strip().lower()
+                    if "@" in email_c:
+                        role_c = u.get("role", "viewer")
+                        cursor.execute("SELECT id FROM allowed_users WHERE LOWER(email) = ?", (email_c,))
+                        row = cursor.fetchone()
+                        if not row:
+                            cursor.execute("""
+                            INSERT INTO allowed_users (email, name, role, status, added_by, created_at)
+                            VALUES (?, ?, ?, 'approved', 'env_var', ?)
+                            """, (email_c, u.get("name", ""), role_c, now_iso))
+                        else:
+                            cursor.execute("UPDATE allowed_users SET status = 'approved', role = ? WHERE id = ?", (role_c, row["id"]))
+            else:
+                for item in env_users_str.split(","):
+                    item = item.strip()
+                    if not item:
+                        continue
+                    parts = item.split(":")
+                    email_c = parts[0].strip().lower()
+                    role_c = parts[1].strip() if len(parts) > 1 and parts[1].strip() in ["admin", "viewer"] else "viewer"
+                    if "@" in email_c:
+                        cursor.execute("SELECT id FROM allowed_users WHERE LOWER(email) = ?", (email_c,))
+                        row = cursor.fetchone()
+                        if not row:
+                            cursor.execute("""
+                            INSERT INTO allowed_users (email, name, role, status, added_by, created_at)
+                            VALUES (?, ?, ?, 'approved', 'env_var', ?)
+                            """, (email_c, "", role_c, now_iso))
+                        else:
+                            cursor.execute("UPDATE allowed_users SET status = 'approved', role = ? WHERE id = ?", (role_c, row["id"]))
+        except Exception as e:
+            print(f"Aviso ao processar ALLOWED_USERS env: {e}")
+
+def sync_seed_users():
+    """Salva os usuários no arquivo seed_users.json para garantir que nunca se percam."""
+    try:
+        users = list_users()
+        safe_users = [
+            {
+                "email": u["email"],
+                "name": u.get("name", ""),
+                "role": u.get("role", "viewer"),
+                "status": u.get("status", "approved"),
+                "added_by": u.get("added_by", "admin")
+            }
+            for u in users
+        ]
+        with open(SEED_USERS_PATH, "w", encoding="utf-8") as f:
+            json.dump(safe_users, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        print(f"Aviso ao sincronizar seed_users.json: {e}")
+
+def get_users_env_string() -> str:
+    """Gera a string pronta para colar no Render Dashboard (variável ALLOWED_USERS)."""
+    users = list_users()
+    approved = [u for u in users if u.get("status") == "approved"]
+    items = [f"{u['email']}:{u['role']}" for u in approved]
+    return ",".join(items)
+
+def bulk_import_users(users_list: List[Dict[str, Any]]) -> int:
+    """Importa uma lista de usuários e sincroniza o seed."""
+    count = 0
+    for u in users_list:
+        email = u.get("email", "").strip().lower()
+        if not email or "@" not in email:
+            continue
+        upsert_user(
+            email=email,
+            name=u.get("name", ""),
+            role=u.get("role", "viewer"),
+            status=u.get("status", "approved"),
+            added_by=u.get("added_by", "import")
+        )
+        count += 1
+    sync_seed_users()
+    return count
+
 def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
     """Busca usuário pelo e-mail (case-insensitive)."""
     if not email:
@@ -829,6 +945,7 @@ def upsert_user(email: str, name: str = "", role: str = "viewer", status: str = 
     cursor.execute("SELECT * FROM allowed_users WHERE LOWER(email) = ?", (email_clean,))
     user = dict(cursor.fetchone())
     conn.close()
+    sync_seed_users()
     return user
 
 def handle_user_login(email: str, name: str = "", picture: str = "") -> Dict[str, Any]:
@@ -892,6 +1009,7 @@ def update_user_status(user_id: int, status: str) -> bool:
     cursor.execute("UPDATE allowed_users SET status = ? WHERE id = ?", (status, user_id))
     conn.commit()
     conn.close()
+    sync_seed_users()
     return True
 
 def update_user_role(user_id: int, role: str) -> bool:
@@ -909,6 +1027,7 @@ def update_user_role(user_id: int, role: str) -> bool:
     cursor.execute("UPDATE allowed_users SET role = ? WHERE id = ?", (role, user_id))
     conn.commit()
     conn.close()
+    sync_seed_users()
     return True
 
 def delete_user(user_id: int) -> bool:
@@ -926,4 +1045,5 @@ def delete_user(user_id: int) -> bool:
     cursor.execute("DELETE FROM allowed_users WHERE id = ?", (user_id,))
     conn.commit()
     conn.close()
+    sync_seed_users()
     return True
