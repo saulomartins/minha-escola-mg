@@ -180,6 +180,7 @@ def upsert_review(review: Dict[str, Any]) -> bool:
             now
         ))
     else:
+        dev_resp = review.get('developer_response')
         cursor.execute("""
         UPDATE reviews SET
             user_name = COALESCE(?, user_name),
@@ -187,6 +188,8 @@ def upsert_review(review: Dict[str, Any]) -> bool:
             content = ?,
             developer_response = COALESCE(?, developer_response),
             developer_response_date = COALESCE(?, developer_response_date),
+            status = CASE WHEN (? IS NOT NULL AND ? != '') THEN 'respondida' ELSE status END,
+            published_to_store = CASE WHEN (? IS NOT NULL AND ? != '') THEN 1 ELSE published_to_store END,
             device_brand = COALESCE(?, device_brand),
             device_model = COALESCE(?, device_model),
             os_name = COALESCE(?, os_name),
@@ -199,8 +202,10 @@ def upsert_review(review: Dict[str, Any]) -> bool:
             review.get('user_name'),
             review['rating'],
             review.get('content', ''),
-            review.get('developer_response'),
+            dev_resp,
             review.get('developer_response_date'),
+            dev_resp, dev_resp,
+            dev_resp, dev_resp,
             review.get('device_brand'),
             review.get('device_model'),
             review.get('os_name'),
