@@ -10,6 +10,8 @@ from datetime import datetime
 from collections import defaultdict
 from typing import Dict, Any, List
 
+from analytics.complexity import ROOT_CAUSES_CONFIG, classify_text_issue
+
 ROOT_CAUSE_NAMES = {
     "gov_br_cpf": "Falha no Gov.br e Vínculo de CPF",
     "senha_recuperacao": "Recuperação de Senha e Redefinição",
@@ -65,15 +67,17 @@ def format_relative_time(days: int) -> str:
     if days == 0:
         return "Hoje"
     elif days == 1:
-        return "Ontem"
+        return "Ontem (há 1 dia)"
     elif days < 7:
         return f"Há {days} dias"
     elif days < 30:
         weeks = max(1, days // 7)
-        return f"Há {weeks} {'semana' if weeks == 1 else 'semanas'}"
+        return f"Há {days} dias ({weeks} sem)"
+    elif days < 60:
+        return f"Há {days} dias (~1 mês)"
     elif days < 365:
         months = max(1, round(days / 30.4))
-        return f"Há {months} {'mês' if months == 1 else 'meses'}"
+        return f"Há {days} dias (~{months} m)"
     else:
         years = round(days / 365.25, 1)
         return f"Há {years} anos"
@@ -84,14 +88,15 @@ def get_temporal_diagnostics() -> Dict[str, Any]:
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT id, store, user_name, rating, content, review_date, root_cause_id, sentiment, device_brand, device_model
+        SELECT id, store, user_name, rating, title, content, review_date, root_cause_id, sentiment, 
+               device_brand, device_model, status, developer_response, developer_response_date
         FROM reviews
         ORDER BY review_date ASC
     """)
-    reviews = [dict(r) for r in cursor.fetchall()]
+    raw_reviews = [dict(r) for r in cursor.fetchall()]
     conn.close()
 
-    now = datetime(2026, 9, 14, 15, 30, 0)
+    now = datetime.now()
 
     monthly_map = defaultdict(lambda: {
         "total": 0,
@@ -112,7 +117,8 @@ def get_temporal_diagnostics() -> Dict[str, Any]:
         "older_6m": {"label": "Mais de 6 Meses (+180 dias)", "count": 0, "color": "slate"}
     }
 
-    for r in reviews:
+    reviews = []
+    for r in raw_reviews:
         raw_d = r.get("review_date") or "2026-09-01"
         try:
             dt = datetime.fromisoformat(raw_d.replace("Z", "+00:00")).replace(tzinfo=None)
@@ -121,9 +127,17 @@ def get_temporal_diagnostics() -> Dict[str, Any]:
 
         ym = dt.strftime("%Y-%m")
         rating = int(r.get("rating") or 3)
-        rc = r.get("root_cause_id") or "outros_problemas"
-        
         days_ago = max(0, (now - dt).days)
+
+        rc = r.get("root_cause_id")
+        if not rc or rc == "outros_problemas":
+            classified = classify_text_issue(r.get("content", ""), r.get("title", ""), rating)
+            rc = classified.get("id") or "outros_problemas"
+
+        r["dt"] = dt
+        r["days_ago"] = days_ago
+        r["rc"] = rc
+        reviews.append(r)
 
         if days_ago <= 30:
             aging_buckets["recent_30d"]["count"] += 1
@@ -163,8 +177,45 @@ def get_temporal_diagnostics() -> Dict[str, Any]:
             "rating": rating,
             "content": r.get("content") or "",
             "user_name": r.get("user_name") or "Usuário",
-            "model": r.get("device_model") or "Desconhecido"
+            "model": r.get("device_model") or "Desconhecido",
+            "brand": r.get("device_brand") or "",
+            "store": r.get("store", "google"),
+            "status": r.get("status") or "pendente",
+            "developer_response": r.get("developer_response")
         })
+
+    # Último caso registrado em todo o sistema
+    latest_review = max(reviews, key=lambda x: x["dt"]) if reviews else None
+    latest_case = None
+    if latest_review:
+        dt_lat = latest_review["dt"]
+        d_ago = latest_review["days_ago"]
+        rc_id = latest_review["rc"]
+        latest_case = {
+            "id": latest_review["id"],
+            "store": latest_review.get("store", "google"),
+            "store_label": "Google Play" if latest_review.get("store") == "google" else "Apple App Store",
+            "store_icon": "fa-google-play text-emerald-600" if latest_review.get("store") == "google" else "fa-apple text-slate-800",
+            "user_name": latest_review.get("user_name") or "Usuário",
+            "rating": latest_review["rating"],
+            "title": latest_review.get("title") or "",
+            "date": dt_lat.strftime("%d/%m/%Y às %H:%M") if dt_lat.hour != 0 else dt_lat.strftime("%d/%m/%Y"),
+            "date_full": dt_lat.strftime("%d/%m/%Y às %H:%M") if dt_lat.hour != 0 else dt_lat.strftime("%d/%m/%Y"),
+            "date_short": dt_lat.strftime("%d/%m/%Y"),
+            "days_ago": d_ago,
+            "days_ago_text": format_relative_time(d_ago),
+            "root_cause_id": rc_id,
+            "root_cause_name": ROOT_CAUSE_NAMES.get(rc_id, "Outros Problemas"),
+            "root_cause_color": ROOT_CAUSE_COLORS.get(rc_id, "#6366f1"),
+            "root_cause_icon": ROOT_CAUSE_ICONS.get(rc_id, "fa-circle-exclamation"),
+            "device_brand": latest_review.get("device_brand") or "",
+            "device_model": latest_review.get("device_model") or "Aparelho não informado",
+            "model": latest_review.get("device_model") or "Desconhecido",
+            "brand": latest_review.get("device_brand") or "",
+            "status": latest_review.get("status") or "pendente",
+            "has_response": bool(latest_review.get("developer_response")),
+            "developer_response": latest_review.get("developer_response")
+        }
 
     months_sorted = sorted(monthly_map.keys())
     monthly_series = []
@@ -277,6 +328,38 @@ def get_temporal_diagnostics() -> Dict[str, Any]:
             pattern = "Recorrente: Dúvidas operacionais e suporte contínuo"
             recommendation = "Manter links de ajuda claros e FAQ dentro do aplicativo."
 
+        recency_badge = "cold"
+        if last_days <= 7:
+            recency_badge = "critical"
+        elif last_days <= 30:
+            recency_badge = "warning"
+        elif last_days <= 90:
+            recency_badge = "moderate"
+        else:
+            recency_badge = "cold"
+
+        last_dt = last_record["date"]
+
+        last_case_info = {
+            "id": last_record["id"],
+            "user_name": last_record["user_name"],
+            "rating": last_record["rating"],
+            "store": last_record.get("store", "google"),
+            "store_label": "Google Play" if last_record.get("store") == "google" else "Apple App Store",
+            "store_icon": "fa-google-play text-emerald-600" if last_record.get("store") == "google" else "fa-apple text-slate-800",
+            "model": last_record.get("model") or "Desconhecido",
+            "brand": last_record.get("brand") or "",
+            "content": last_record["content"],
+            "content_snippet": last_record["content"][:130] + ("..." if len(last_record["content"]) > 130 else ""),
+            "date": last_dt.strftime("%d/%m/%Y"),
+            "date_full": last_dt.strftime("%d/%m/%Y às %H:%M") if last_dt.hour != 0 else last_dt.strftime("%d/%m/%Y"),
+            "days_ago": last_days,
+            "days_ago_text": format_relative_time(last_days),
+            "status": last_record.get("status") or "pendente",
+            "has_response": bool(last_record.get("developer_response")),
+            "recency_badge": recency_badge
+        }
+
         trend_entry = {
             "id": rc,
             "name": name,
@@ -297,6 +380,7 @@ def get_temporal_diagnostics() -> Dict[str, Any]:
             "pattern": pattern,
             "recommendation": recommendation,
             "monthly_history": monthly_counts,
+            "last_case": last_case_info,
             "sample_recent": [
                 {
                     "id": x["id"],
@@ -317,6 +401,7 @@ def get_temporal_diagnostics() -> Dict[str, Any]:
             elif trend_dir == "decreasing":
                 falling_causes.append(trend_entry)
 
+    cause_trends_by_recency = sorted(cause_trends, key=lambda x: x["last_case"]["days_ago"])
     cause_trends.sort(key=lambda x: x["recent_count_30d"], reverse=True)
     peak_month = max(monthly_series, key=lambda x: x["total"]) if monthly_series else None
 
@@ -334,12 +419,18 @@ def get_temporal_diagnostics() -> Dict[str, Any]:
                 "negative": peak_month["negative"] if peak_month else 0,
                 "top_cause": peak_month["top_problem"]["name"] if peak_month and peak_month["top_problem"] else "-"
             },
+            "latest_case": latest_case,
+            "latest_case_days_ago": latest_case["days_ago"] if latest_case else None,
+            "latest_case_days_text": latest_case["days_ago_text"] if latest_case else "-",
+            "latest_case_cause": latest_case["root_cause_name"] if latest_case else "-",
             "recent_30d_total": aging_buckets["recent_30d"]["count"],
             "rising_causes_count": len(rising_causes),
             "falling_causes_count": len(falling_causes),
             "top_rising_cause": rising_causes[0]["name"] if rising_causes else "Nenhuma em alta crítica",
             "top_falling_cause": falling_causes[0]["name"] if falling_causes else "Estável"
         },
+        "latest_case": latest_case,
+        "cause_trends_by_recency": cause_trends_by_recency,
         "aging_buckets": aging_buckets,
         "months_labels": [m["label"] for m in monthly_series],
         "monthly_series": monthly_series,

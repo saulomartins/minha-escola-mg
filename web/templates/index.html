@@ -631,30 +631,133 @@
                 </div>
             </div>
 
-            <!-- 3 KPIs Minimalistas -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <!-- Período -->
+            <!-- Cartão Destaque: Ocorrência Mais Recente Registrada no Sistema -->
+            <div id="temporal-latest-card" class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-5 sm:p-6 text-white shadow-md border border-indigo-900/60 relative overflow-hidden">
+                <div class="absolute top-0 right-0 translate-x-4 -translate-y-4 w-44 h-44 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10">
+                    <div class="space-y-2 flex-1">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-rose-500/20 text-rose-300 border border-rose-500/30 uppercase tracking-wider animate-pulse">
+                                <span class="w-2 h-2 rounded-full bg-rose-400"></span> Última Avaliação Registrada
+                            </span>
+                            <span id="temporal-latest-badge-days" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                                Calculando...
+                            </span>
+                            <span id="temporal-latest-store-badge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+                                -
+                            </span>
+                        </div>
+                        
+                        <div class="space-y-1">
+                            <h3 class="text-lg sm:text-xl font-black text-white flex items-center gap-2">
+                                <span id="temporal-latest-user">Carregando...</span>
+                                <span id="temporal-latest-stars" class="text-amber-400 text-sm font-normal"></span>
+                            </h3>
+                            <p class="text-xs text-slate-300 flex flex-wrap items-center gap-x-3 gap-y-1">
+                                <span><i class="fa-regular fa-calendar text-slate-400"></i> <strong id="temporal-latest-date" class="text-white">-</strong></span>
+                                <span><i class="fa-solid fa-mobile-screen text-slate-400"></i> <strong id="temporal-latest-device" class="text-slate-200">-</strong></span>
+                                <span><i class="fa-solid fa-triangle-exclamation text-amber-400"></i> Causa-Raiz: <strong id="temporal-latest-cause" class="text-amber-300">-</strong></span>
+                                <span id="temporal-latest-status-badge"></span>
+                            </p>
+                        </div>
+
+                        <div class="bg-slate-900/80 border border-slate-800 p-3 rounded-xl">
+                            <p id="temporal-latest-content" class="text-xs text-slate-300 italic line-clamp-2 leading-relaxed">
+                                "-"
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-3 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-800">
+                        <div class="text-left sm:text-right">
+                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Tempo Decorrido</span>
+                            <span id="temporal-latest-days-big" class="text-2xl sm:text-3xl font-black text-rose-400">-</span>
+                        </div>
+                        <button id="temporal-latest-btn-view" onclick="" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow transition flex items-center gap-2">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i> Ver no Feed
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4 KPIs Minimalistas -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Último Caso Recebido -->
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-1">
-                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Período Monitorado</span>
-                    <h3 id="temporal-kpi-range" class="text-2xl font-black text-slate-900">Últimos 12 Meses</h3>
-                    <p class="text-xs text-slate-500" id="temporal-kpi-range-sub">Base Completa de Avaliações</p>
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Último Caso Recebido</span>
+                    <h3 id="temporal-kpi-latest" class="text-2xl font-black text-rose-700">-</h3>
+                    <p class="text-xs text-slate-500 truncate" id="temporal-kpi-latest-sub">-</p>
                 </div>
 
                 <!-- Recência 30d -->
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-1">
                     <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Recência (Últimos 30 Dias)</span>
                     <div class="flex items-baseline gap-2">
-                        <h3 id="temporal-kpi-recent" class="text-2xl font-black text-rose-700">-</h3>
-                        <span class="text-xs font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full" id="temporal-kpi-recent-badge">Novas</span>
+                        <h3 id="temporal-kpi-recent" class="text-2xl font-black text-indigo-900">-</h3>
+                        <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full" id="temporal-kpi-recent-badge">Novas</span>
                     </div>
                     <p class="text-xs text-slate-500">Volume recente de manifestações</p>
+                </div>
+
+                <!-- Período -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-1">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Período Monitorado</span>
+                    <h3 id="temporal-kpi-range" class="text-2xl font-black text-slate-900">Últimos 12 Meses</h3>
+                    <p class="text-xs text-slate-500 truncate" id="temporal-kpi-range-sub">Base Completa de Avaliações</p>
                 </div>
 
                 <!-- Pico Histórico -->
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-1">
                     <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Mês de Maior Pico</span>
                     <h3 id="temporal-kpi-peak" class="text-2xl font-black text-amber-700">-</h3>
-                    <p class="text-xs text-slate-500" id="temporal-kpi-peak-sub">Período com maior concentração</p>
+                    <p class="text-xs text-slate-500 truncate" id="temporal-kpi-peak-sub">Período com maior concentração</p>
+                </div>
+            </div>
+
+            <!-- Painel de Recência por Causa-Raiz -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden space-y-0">
+                <div class="p-5 sm:p-6 border-b border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 uppercase tracking-wide">
+                                Diagnóstico de Recência
+                            </span>
+                            <span class="text-xs text-slate-500">Monitoramento de casos ativos e tempo decorrido</span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                            <i class="fa-solid fa-clock-rotate-left text-indigo-600"></i> Painel de Recência: Quando e Qual Foi o Último Caso por Causa-Raiz
+                        </h3>
+                        <p class="text-xs text-slate-500">
+                            Acompanhe quando ocorreu o caso mais recente de cada problema e veja o relato detalhado para priorizar atendimento e correções.
+                        </p>
+                    </div>
+
+                    <div class="flex items-center gap-2 no-print self-end md:self-auto">
+                        <label class="text-xs font-bold text-slate-500">Ordenar por:</label>
+                        <select id="temporal-recency-sort" onchange="renderTemporalRecencyTable()" class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="recency">Mais Recentes Primeiro (Menor tempo decorrido)</option>
+                            <option value="volume">Maior Volume nos Últimos 30 Dias</option>
+                            <option value="total">Maior Volume Histórico Total</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 uppercase text-[10px] tracking-wider">
+                            <tr>
+                                <th class="p-3.5 min-w-[200px]">Causa-Raiz</th>
+                                <th class="p-3.5 text-center min-w-[150px]">Último Caso Chegou Há</th>
+                                <th class="p-3.5 text-center min-w-[110px]">Data do Caso</th>
+                                <th class="p-3.5 min-w-[320px]">Detalhes do Último Relato (Usuário & Aparelho)</th>
+                                <th class="p-3.5 text-center min-w-[120px]">Status</th>
+                                <th class="p-3.5 text-center min-w-[110px]">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="temporal-recency-tbody" class="divide-y divide-slate-100 font-medium">
+                            <!-- Gerado dinamicamente -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -3260,14 +3363,84 @@
         // ================= FUNÇÕES DE DIAGNÓSTICO TEMPORAL & TENDÊNCIAS =================
         let chartMonthlyVolume = null;
         let chartMonthlyCauses = null;
+        let currentTemporalData = null;
 
-                async function loadTemporalAnalytics() {
+        async function loadTemporalAnalytics() {
             try {
                 const res = await fetch('/api/analytics/temporal');
                 const data = await res.json();
+                currentTemporalData = data;
                 
-                // 1. KPIs
                 const s = data.summary;
+
+                // 1. Cartão Destaque do Último Caso
+                const latest = data.latest_case;
+                if (latest) {
+                    const daysBadge = document.getElementById('temporal-latest-badge-days');
+                    if (daysBadge) {
+                        daysBadge.innerText = latest.days_ago_text;
+                        if (latest.days_ago <= 7) {
+                            daysBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-black bg-rose-500/20 text-rose-300 border border-rose-500/40';
+                        } else if (latest.days_ago <= 30) {
+                            daysBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30';
+                        } else {
+                            daysBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-700 text-slate-300 border border-slate-600';
+                        }
+                    }
+
+                    const storeBadge = document.getElementById('temporal-latest-store-badge');
+                    if (storeBadge) {
+                        const icon = latest.store === 'google' ? '<i class="fa-brands fa-google-play text-emerald-400"></i>' : '<i class="fa-brands fa-apple text-slate-300"></i>';
+                        storeBadge.innerHTML = `${icon} ${escapeHtml(latest.store_label)}`;
+                    }
+
+                    const userEl = document.getElementById('temporal-latest-user');
+                    if (userEl) userEl.innerText = latest.user_name || 'Usuário Anônimo';
+
+                    const starsEl = document.getElementById('temporal-latest-stars');
+                    if (starsEl) {
+                        starsEl.innerHTML = Array.from({length: 5}, (_, i) => 
+                            i < latest.rating ? '<i class="fa-solid fa-star text-amber-400"></i>' : '<i class="fa-regular fa-star text-slate-600"></i>'
+                        ).join('');
+                    }
+
+                    const dateEl = document.getElementById('temporal-latest-date');
+                    if (dateEl) dateEl.innerText = latest.date_full || latest.date || '-';
+
+                    const deviceEl = document.getElementById('temporal-latest-device');
+                    if (deviceEl) deviceEl.innerText = latest.model !== 'Desconhecido' ? latest.model : (latest.brand || 'Aparelho não identificado');
+
+                    const causeEl = document.getElementById('temporal-latest-cause');
+                    if (causeEl) causeEl.innerText = latest.root_cause_name || '-';
+
+                    const statusBadge = document.getElementById('temporal-latest-status-badge');
+                    if (statusBadge) {
+                        statusBadge.innerHTML = latest.has_response 
+                            ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"><i class="fa-solid fa-check"></i> Respondida</span>`
+                            : `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30"><i class="fa-regular fa-clock"></i> Pendente</span>`;
+                    }
+
+                    const contentEl = document.getElementById('temporal-latest-content');
+                    if (contentEl) contentEl.innerText = `"${latest.content}"`;
+
+                    const daysBig = document.getElementById('temporal-latest-days-big');
+                    if (daysBig) daysBig.innerText = latest.days_ago_text;
+
+                    const btnView = document.getElementById('temporal-latest-btn-view');
+                    if (btnView) {
+                        btnView.onclick = () => filterReviewBySearch(latest.user_name);
+                    }
+                }
+
+                // 2. KPIs
+                const latestKpi = document.getElementById('temporal-kpi-latest');
+                if (latestKpi && s) latestKpi.innerText = s.latest_case_days_text || '-';
+
+                const latestKpiSub = document.getElementById('temporal-kpi-latest-sub');
+                if (latestKpiSub && s && s.latest_case) {
+                    latestKpiSub.innerText = `${s.latest_case.date} • ${s.latest_case.root_cause_name}`;
+                }
+
                 const rangeEl = document.getElementById('temporal-kpi-range');
                 if (rangeEl && s) rangeEl.innerText = s.date_range_label || 'Últimos 12 Meses';
 
@@ -3283,12 +3456,15 @@
                 const peakSub = document.getElementById('temporal-kpi-peak-sub');
                 if (peakSub && s && s.peak_month) peakSub.innerText = `${s.peak_month.total} avaliações • Top: ${s.peak_month.top_cause}`;
 
-                // 2. Gráfico Mensal
+                // 3. Renderizar Tabela de Recência por Causa-Raiz
+                renderTemporalRecencyTable();
+
+                // 4. Gráfico Mensal
                 if (data.monthly_series) {
                     renderMonthlyVolumeChart(data.monthly_series);
                 }
 
-                // 3. Tabela Executiva Mensal
+                // 5. Tabela Executiva Mensal
                 const tbody = document.getElementById('temporal-matrix-tbody');
                 if (tbody && data.monthly_series) {
                     const reversedSeries = [...data.monthly_series].reverse();
@@ -3323,6 +3499,145 @@
 
             } catch (e) {
                 console.error("Erro ao carregar diagnóstico temporal:", e);
+            }
+        }
+
+        function renderTemporalRecencyTable() {
+            if (!currentTemporalData || !currentTemporalData.cause_trends) return;
+            const tbody = document.getElementById('temporal-recency-tbody');
+            if (!tbody) return;
+
+            const sortMode = document.getElementById('temporal-recency-sort')?.value || 'recency';
+            let list = [...(currentTemporalData.cause_trends || [])];
+
+            if (sortMode === 'recency') {
+                list.sort((a, b) => {
+                    const da = a.last_case ? a.last_case.days_ago : 99999;
+                    const db = b.last_case ? b.last_case.days_ago : 99999;
+                    return da - db;
+                });
+            } else if (sortMode === 'volume') {
+                list.sort((a, b) => (b.recent_count_30d || 0) - (a.recent_count_30d || 0));
+            } else if (sortMode === 'total') {
+                list.sort((a, b) => (b.total || 0) - (a.total || 0));
+            }
+
+            tbody.innerHTML = list.map(c => {
+                const lc = c.last_case;
+                if (!lc) return '';
+
+                let recencyBadgeHtml = '';
+                if (lc.days_ago <= 7) {
+                    recencyBadgeHtml = `
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-100 text-rose-800 font-black border border-rose-200 text-xs shadow-xs">
+                            <span class="w-2 h-2 rounded-full bg-rose-600 animate-pulse"></span>
+                            ${escapeHtml(lc.days_ago_text)}
+                        </span>
+                    `;
+                } else if (lc.days_ago <= 30) {
+                    recencyBadgeHtml = `
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-900 font-bold border border-amber-200 text-xs">
+                            <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                            ${escapeHtml(lc.days_ago_text)}
+                        </span>
+                    `;
+                } else if (lc.days_ago <= 90) {
+                    recencyBadgeHtml = `
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-800 font-semibold border border-blue-200 text-xs">
+                            ${escapeHtml(lc.days_ago_text)}
+                        </span>
+                    `;
+                } else {
+                    recencyBadgeHtml = `
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-600 font-medium border border-slate-200 text-xs">
+                            ${escapeHtml(lc.days_ago_text)}
+                        </span>
+                    `;
+                }
+
+                const storeIcon = lc.store === 'google' 
+                    ? '<i class="fa-brands fa-google-play text-emerald-600" title="Google Play"></i>' 
+                    : '<i class="fa-brands fa-apple text-slate-800" title="Apple App Store"></i>';
+
+                const deviceBadge = lc.model && lc.model !== 'Desconhecido'
+                    ? `<span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-mono text-[10px] font-bold border border-slate-200"><i class="fa-solid fa-mobile-screen text-slate-400"></i> ${escapeHtml(lc.model)}</span>`
+                    : `<span class="px-2 py-0.5 rounded-md bg-slate-50 text-slate-400 text-[10px] italic">Aparelho n/d</span>`;
+
+                const statusBadge = lc.has_response
+                    ? `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[10px]"><i class="fa-solid fa-check"></i> Respondida</span>`
+                    : `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-bold text-[10px]"><i class="fa-regular fa-clock"></i> Pendente</span>`;
+
+                const starsHtml = '⭐'.repeat(lc.rating || 1);
+
+                return `
+                    <tr class="hover:bg-slate-50 transition border-b border-slate-100 group">
+                        <!-- Coluna 1: Causa-Raiz -->
+                        <td class="p-3.5 align-top">
+                            <div class="flex items-start gap-2.5">
+                                <div class="w-7 h-7 rounded-lg flex items-center justify-center text-white shrink-0 mt-0.5" style="background-color: ${c.color}">
+                                    <i class="fa-solid ${c.icon} text-xs"></i>
+                                </div>
+                                <div class="space-y-0.5">
+                                    <span class="font-bold text-slate-900 text-xs block leading-snug">${escapeHtml(c.name)}</span>
+                                    <div class="flex items-center gap-2 text-[10px] text-slate-400">
+                                        <span>Total: <strong class="text-slate-600">${c.total}</strong></span>
+                                        <span>•</span>
+                                        <span>Últimos 30d: <strong class="text-indigo-600 font-bold">${c.recent_count_30d || 0}</strong></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- Coluna 2: Recência (Dias Decorridos) -->
+                        <td class="p-3.5 text-center align-middle">
+                            ${recencyBadgeHtml}
+                        </td>
+
+                        <!-- Coluna 3: Data do Caso -->
+                        <td class="p-3.5 text-center align-middle font-bold text-slate-700 text-xs">
+                            <div class="flex items-center justify-center gap-1 text-slate-600">
+                                <i class="fa-regular fa-calendar text-slate-400"></i>
+                                <span>${escapeHtml(lc.date)}</span>
+                            </div>
+                        </td>
+
+                        <!-- Coluna 4: Detalhes do Último Relato -->
+                        <td class="p-3.5 align-top">
+                            <div class="space-y-1.5 max-w-xl">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="text-xs">${storeIcon}</span>
+                                    <strong class="text-xs text-slate-800 font-bold">${escapeHtml(lc.user_name || 'Usuário')}</strong>
+                                    <span class="text-amber-500 text-xs font-semibold">${starsHtml}</span>
+                                    ${deviceBadge}
+                                </div>
+                                <p class="text-xs text-slate-600 italic bg-slate-50 p-2 rounded-lg border border-slate-200/60 leading-relaxed">
+                                    "${escapeHtml(lc.content_snippet)}"
+                                </p>
+                            </div>
+                        </td>
+
+                        <!-- Coluna 5: Status -->
+                        <td class="p-3.5 text-center align-middle">
+                            ${statusBadge}
+                        </td>
+
+                        <!-- Coluna 6: Ação -->
+                        <td class="p-3.5 text-center align-middle">
+                            <button onclick="filterByRootCauseFromTemporal('${c.id}')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-700 font-bold text-[11px] rounded-lg border border-slate-200 hover:border-indigo-600 transition flex items-center gap-1 mx-auto shadow-xs" title="Filtrar todas as avaliações desta causa no feed">
+                                <i class="fa-solid fa-filter"></i> Ver Casos
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function filterReviewBySearch(term) {
+            switchMainView('reviews');
+            const s = document.getElementById('filter-search');
+            if (s) {
+                s.value = term;
+                loadReviews();
             }
         }
 
