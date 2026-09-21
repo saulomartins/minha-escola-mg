@@ -191,6 +191,7 @@ def get_temporal_diagnostics() -> Dict[str, Any]:
         dt_lat = latest_review["dt"]
         d_ago = latest_review["days_ago"]
         rc_id = latest_review["rc"]
+        content_val = (latest_review.get("content") or latest_review.get("title") or "").strip()
         latest_case = {
             "id": latest_review["id"],
             "store": latest_review.get("store", "google"),
@@ -199,6 +200,8 @@ def get_temporal_diagnostics() -> Dict[str, Any]:
             "user_name": latest_review.get("user_name") or "Usuário",
             "rating": latest_review["rating"],
             "title": latest_review.get("title") or "",
+            "content": content_val,
+            "content_snippet": (content_val[:160] + ("..." if len(content_val) > 160 else "")) if content_val else "",
             "date": dt_lat.strftime("%d/%m/%Y às %H:%M") if dt_lat.hour != 0 else dt_lat.strftime("%d/%m/%Y"),
             "date_full": dt_lat.strftime("%d/%m/%Y às %H:%M") if dt_lat.hour != 0 else dt_lat.strftime("%d/%m/%Y"),
             "date_short": dt_lat.strftime("%d/%m/%Y"),
@@ -339,6 +342,7 @@ def get_temporal_diagnostics() -> Dict[str, Any]:
             recency_badge = "cold"
 
         last_dt = last_record["date"]
+        rec_content = (last_record.get("content") or last_record.get("title") or "").strip()
 
         last_case_info = {
             "id": last_record["id"],
@@ -349,8 +353,8 @@ def get_temporal_diagnostics() -> Dict[str, Any]:
             "store_icon": "fa-google-play text-emerald-600" if last_record.get("store") == "google" else "fa-apple text-slate-800",
             "model": last_record.get("model") or "Desconhecido",
             "brand": last_record.get("brand") or "",
-            "content": last_record["content"],
-            "content_snippet": last_record["content"][:130] + ("..." if len(last_record["content"]) > 130 else ""),
+            "content": rec_content,
+            "content_snippet": (rec_content[:130] + ("..." if len(rec_content) > 130 else "")) if rec_content else "",
             "date": last_dt.strftime("%d/%m/%Y"),
             "date_full": last_dt.strftime("%d/%m/%Y às %H:%M") if last_dt.hour != 0 else last_dt.strftime("%d/%m/%Y"),
             "days_ago": last_days,

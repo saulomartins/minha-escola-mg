@@ -3421,7 +3421,10 @@
                     }
 
                     const contentEl = document.getElementById('temporal-latest-content');
-                    if (contentEl) contentEl.innerText = `"${latest.content}"`;
+                    if (contentEl) {
+                        const rawContent = (latest.content || latest.title || '').trim();
+                        contentEl.innerText = rawContent ? `"${rawContent}"` : "(Avaliação enviada com nota sem comentário por escrito)";
+                    }
 
                     const daysBig = document.getElementById('temporal-latest-days-big');
                     if (daysBig) daysBig.innerText = latest.days_ago_text;
@@ -3611,7 +3614,7 @@
                                     ${deviceBadge}
                                 </div>
                                 <p class="text-xs text-slate-600 italic bg-slate-50 p-2 rounded-lg border border-slate-200/60 leading-relaxed">
-                                    "${escapeHtml(lc.content_snippet)}"
+                                    ${(lc.content_snippet || lc.content || '').trim() ? `"${escapeHtml((lc.content_snippet || lc.content).trim())}"` : '<span class="text-slate-400 not-italic">(Avaliação sem comentário em texto)</span>'}
                                 </p>
                             </div>
                         </td>
