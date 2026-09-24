@@ -263,9 +263,12 @@
             <button onclick="switchMainView('hardware-rc')" id="nav-btn-hardware-rc" class="nav-view-btn flex-1 min-w-[200px] py-2.5 px-4 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2 text-slate-600 hover:bg-slate-50">
                 <i class="fa-solid fa-microchip text-rose-500"></i> 5. Matriz Hardware x Causas-Raiz
             </button>
+            <button onclick="switchMainView('scanner')" id="nav-btn-scanner" class="nav-view-btn flex-1 min-w-[200px] py-2.5 px-4 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2 text-slate-600 hover:bg-slate-50">
+                <i class="fa-solid fa-magnifying-glass-chart text-cyan-600"></i> 6. Varredura de Palavras & Termos
+            </button>
             {% if current_user and current_user.role == 'admin' %}
             <button onclick="switchMainView('users')" id="nav-btn-users" class="nav-view-btn flex-1 min-w-[200px] py-2.5 px-4 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2 text-slate-600 hover:bg-slate-50">
-                <i class="fa-solid fa-users-gear text-emerald-600"></i> 6. Gestão de Acessos
+                <i class="fa-solid fa-users-gear text-emerald-600"></i> 7. Gestão de Acessos
                 <span id="badge-pending-count" class="hidden ml-1 px-2 py-0.5 text-[10px] font-extrabold bg-amber-500 text-white rounded-full animate-pulse">0</span>
             </button>
             {% endif %}
@@ -999,7 +1002,232 @@
             </div>
         </div>
 
-        <!-- ================= VISÃO 6: GESTÃO DE ACESSOS & PERMISSÕES (ADMIN) ================= -->
+        <!-- ================= VISÃO 6: VARREDURA DINÂMICA DE PALAVRAS & TERMOS ================= -->
+        <div id="view-scanner" class="hidden space-y-6">
+            <!-- Header do Scanner Dinâmico -->
+            <div class="bg-gradient-to-r from-cyan-950 via-slate-900 to-indigo-950 p-6 rounded-2xl text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-black bg-cyan-500/30 text-cyan-300 border border-cyan-400/40 uppercase tracking-wide">
+                            Mineração Textual Dinâmica
+                        </span>
+                        <span class="text-xs text-cyan-200 font-semibold">Busca Profunda & Destaque Visual</span>
+                    </div>
+                    <h2 class="text-xl font-black tracking-tight text-white flex items-center gap-2">
+                        <i class="fa-solid fa-magnifying-glass-chart text-cyan-400"></i> Varredura Dinâmica de Palavras & Termos
+                    </h2>
+                    <p class="text-xs text-slate-300 max-w-2xl leading-relaxed">
+                        Cole ou digite qualquer palavra (ex: <b>boletim</b>, <b>pdf</b>, <b>baixar</b>, <b>livro</b>, <b>tela preta</b>) para fazer uma varredura completa em todos os 500+ comentários, quantificando ocorrências, impacto nas notas e destacando exatamente onde a palavra surgiu.
+                    </p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2.5 no-print">
+                    <button onclick="clearScanner()" class="px-3.5 py-2 text-xs font-bold bg-white/10 hover:bg-white/20 text-white rounded-xl border border-white/20 backdrop-blur-sm transition flex items-center gap-1.5 shadow">
+                        <i class="fa-solid fa-eraser text-cyan-300"></i> Limpar Varredura
+                    </button>
+                    <button onclick="runScannerManual()" class="px-3.5 py-2 text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl transition flex items-center gap-1.5 shadow">
+                        <i class="fa-solid fa-arrows-rotate"></i> Atualizar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Caixa de Busca & Chips de Atalho -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                <div class="flex flex-col sm:flex-row gap-3 items-stretch">
+                    <div class="relative flex-1">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 text-base">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </div>
+                        <input type="text" id="scanner-search-input" oninput="onScannerInputDebounced()" onkeydown="if(event.key==='Enter') runScannerManual()" placeholder="Digite ou cole qualquer palavra ou frase (ex: boletim, pdf, baixar, tela preta, livro, diário)..." class="w-full pl-11 pr-24 py-3 bg-slate-50 hover:bg-slate-100/50 focus:bg-white border-2 border-slate-200 focus:border-cyan-500 rounded-xl text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-cyan-500/20 transition shadow-inner">
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center gap-1.5">
+                            <button type="button" id="scanner-btn-clear" onclick="clearScanner()" class="hidden px-2 py-1 text-slate-400 hover:text-slate-600 rounded text-xs" title="Limpar campo">
+                                <i class="fa-solid fa-xmark text-sm"></i>
+                            </button>
+                            <button type="button" onclick="pasteIntoScanner()" class="px-2.5 py-1.5 bg-slate-200/70 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-lg transition flex items-center gap-1" title="Colar texto da área de transferência">
+                                <i class="fa-regular fa-clipboard"></i> Colar
+                            </button>
+                        </div>
+                    </div>
+                    <button type="button" onclick="runScannerManual()" class="px-6 py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-black text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2 shrink-0">
+                        <i class="fa-solid fa-bolt"></i> Varrer Comentários
+                    </button>
+                </div>
+
+                <!-- Pílulas / Chips de Atalhos de Termos Frequentes -->
+                <div class="space-y-2 pt-1 border-t border-slate-100">
+                    <div class="flex items-center justify-between text-xs text-slate-500">
+                        <span class="font-bold flex items-center gap-1.5 text-slate-700">
+                            <i class="fa-solid fa-fire-flame-curved text-amber-500"></i> Termos e Tópicos Sugeridos:
+                        </span>
+                        <span class="text-[11px] text-slate-400">Clique em qualquer chip para varrer na hora</span>
+                    </div>
+                    <div class="flex flex-wrap gap-2" id="scanner-chips-container">
+                        <!-- Gerado dinamicamente via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading Spinner do Scanner -->
+            <div id="scanner-loading" class="hidden py-12 text-center space-y-3">
+                <i class="fa-solid fa-spinner fa-spin text-4xl text-cyan-600"></i>
+                <p class="text-sm font-bold text-slate-600">Varrendo todos os comentários na base de dados...</p>
+            </div>
+
+            <!-- Estado Inicial (Antes de Pesquisar) -->
+            <div id="scanner-initial-state" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-center space-y-4">
+                <div class="w-16 h-16 bg-cyan-50 text-cyan-600 rounded-2xl flex items-center justify-center text-3xl mx-auto shadow-inner">
+                    <i class="fa-solid fa-magnifying-glass-chart"></i>
+                </div>
+                <div class="max-w-xl mx-auto space-y-2">
+                    <h3 class="text-lg font-black text-slate-900">Nenhum termo pesquisado no momento</h3>
+                    <p class="text-xs text-slate-500 leading-relaxed">
+                        Cole ou digite um termo na caixa acima, ou clique em uma das pílulas sugeridas como <strong class="text-cyan-700">"pdf"</strong>, <strong class="text-amber-700">"boletim"</strong> ou <strong class="text-indigo-700">"baixar"</strong>.
+                        O scanner irá quantificar quantas vezes o termo foi citado em toda a história do aplicativo, a nota média atribuída pelos usuários e destacará o texto exato de cada comentário.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Estado Vazio (Nenhum resultado encontrado) -->
+            <div id="scanner-empty-state" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-center space-y-4">
+                <div class="w-16 h-16 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center text-3xl mx-auto shadow-inner">
+                    <i class="fa-solid fa-circle-question"></i>
+                </div>
+                <div class="max-w-xl mx-auto space-y-2">
+                    <h3 class="text-lg font-black text-slate-900">Nenhuma ocorrência encontrada para "<span id="scanner-empty-query"></span>"</h3>
+                    <p class="text-xs text-slate-500 leading-relaxed">
+                        Não encontramos comentários com este termo exato. Verifique se digitou corretamente ou teste palavras correlatas (por exemplo: se procurou "arquivo", tente pesquisar "pdf" ou "baixar").
+                    </p>
+                </div>
+            </div>
+
+            <!-- Painel de Resultados (Aparece quando encontra resultados) -->
+            <div id="scanner-results-container" class="hidden space-y-6">
+                <!-- Banner de Resumo da Varredura -->
+                <div class="bg-gradient-to-r from-slate-900 via-cyan-950 to-slate-900 rounded-2xl p-5 sm:p-6 text-white shadow-md border border-cyan-900/60 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-black bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 uppercase tracking-wider">
+                                Varredura Concluída
+                            </span>
+                            <span id="scanner-summary-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                                -
+                            </span>
+                        </div>
+                        <h3 class="text-lg sm:text-xl font-black text-white flex items-center gap-2">
+                            <span>Termo analisado:</span>
+                            <span id="scanner-summary-term" class="px-3 py-1 bg-cyan-500/30 text-cyan-300 border border-cyan-400/40 rounded-xl font-mono text-base">"..."</span>
+                        </h3>
+                        <p class="text-xs text-slate-300" id="scanner-summary-details">
+                            -
+                        </p>
+                    </div>
+                    <div class="text-left md:text-right shrink-0">
+                        <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Nota Média com este Termo</span>
+                        <div class="flex items-baseline gap-1.5 md:justify-end">
+                            <span id="scanner-summary-rating-big" class="text-3xl font-black text-amber-400">-</span>
+                            <span class="text-amber-400 text-sm">⭐</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4 KPIs do Termo -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Total Citações -->
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-1">
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Total de Citações no Texto</span>
+                        <div class="flex items-baseline gap-2">
+                            <h3 id="scanner-kpi-occurrences" class="text-2xl font-black text-cyan-700">-</h3>
+                            <span class="text-xs font-bold text-cyan-600 bg-cyan-50 px-2 py-0.5 rounded-full">Ocorrências</span>
+                        </div>
+                        <p class="text-xs text-slate-500" id="scanner-kpi-occurrences-sub">Total de vezes escrita</p>
+                    </div>
+
+                    <!-- Avaliações Distintas -->
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-1">
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Comentários com a Palavra</span>
+                        <div class="flex items-baseline gap-2">
+                            <h3 id="scanner-kpi-reviews" class="text-2xl font-black text-indigo-700">-</h3>
+                            <span id="scanner-kpi-reviews-pct" class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">0%</span>
+                        </div>
+                        <p class="text-xs text-slate-500" id="scanner-kpi-reviews-sub">Da base total analisada</p>
+                    </div>
+
+                    <!-- Sentimento Predominante -->
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-1">
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Sentimento Predominante</span>
+                        <h3 id="scanner-kpi-sentiment" class="text-2xl font-black text-rose-700">-</h3>
+                        <p class="text-xs text-slate-500" id="scanner-kpi-sentiment-sub">-</p>
+                    </div>
+
+                    <!-- Lojas & Aparelhos -->
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-1">
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Distribuição nas Lojas</span>
+                        <h3 id="scanner-kpi-stores" class="text-lg font-black text-slate-900 mt-1">-</h3>
+                        <p class="text-xs text-slate-500 truncate" id="scanner-kpi-model-sub">-</p>
+                    </div>
+                </div>
+
+                <!-- Barra de Distribuição de Estrelas & Causas -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-3">
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-chart-column text-cyan-600"></i> Distribuição de Avaliações e Causas-Raiz deste Termo
+                            </h4>
+                            <p class="text-xs text-slate-500">Veja como os usuários que citaram essa palavra avaliaram o aplicativo</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Distribuição de Notas -->
+                        <div class="space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-200/60">
+                            <span class="text-xs font-bold text-slate-700 block">Distribuição por Estrelas</span>
+                            <div class="grid grid-cols-5 gap-2 text-center text-xs" id="scanner-ratings-bar">
+                                <!-- Preenchido dinamicamente -->
+                            </div>
+                        </div>
+
+                        <!-- Principais Causas Associadas -->
+                        <div class="space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-200/60">
+                            <span class="text-xs font-bold text-slate-700 block">Causas-Raiz Mais Associadas a este Termo</span>
+                            <div class="flex flex-wrap gap-1.5" id="scanner-causes-tags">
+                                <!-- Preenchido dinamicamente -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feed de Comentários com Destaque Visual -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden space-y-0">
+                    <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                                <i class="fa-solid fa-list text-cyan-600"></i> Comentários Onde o Termo Aparece (<span id="scanner-reviews-count-badge">0</span>)
+                            </h3>
+                            <p class="text-xs text-slate-500">
+                                As palavras encontradas estão destacadas em amarelo fluorescente para rápida identificação visual.
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-2 text-xs no-print">
+                            <label class="font-bold text-slate-500">Filtrar:</label>
+                            <select id="scanner-filter-rating" onchange="filterScannerDisplayedReviews()" class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                                <option value="all">Todas as notas</option>
+                                <option value="critical">Apenas Críticas (1-2 ⭐)</option>
+                                <option value="neutral">Apenas Neutras (3 ⭐)</option>
+                                <option value="positive">Apenas Elogios (4-5 ⭐)</option>
+                                <option value="google">Apenas Google Play</option>
+                                <option value="apple">Apenas Apple Store</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Lista de Cards -->
+                    <div id="scanner-reviews-list" class="divide-y divide-slate-100">
+                        <!-- Gerado dinamicamente -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= VISÃO 7: GESTÃO DE ACESSOS & PERMISSÕES (ADMIN) ================= -->
         <div id="view-users" class="hidden space-y-6">
             <!-- Header da Gestão de Acessos -->
             <div class="bg-gradient-to-r from-emerald-950 via-slate-900 to-indigo-950 p-6 rounded-2xl text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -1540,6 +1768,7 @@
             const isAnalytics = view === 'analytics';
             const isTemporal = view === 'temporal';
             const isHardwareRc = view === 'hardware-rc';
+            const isScanner = view === 'scanner';
             const isUsers = view === 'users';
 
             document.getElementById('view-reviews').classList.toggle('hidden', !isReviews);
@@ -1549,6 +1778,8 @@
             if (viewTemporal) viewTemporal.classList.toggle('hidden', !isTemporal);
             const viewHardwareRc = document.getElementById('view-hardware-rc');
             if (viewHardwareRc) viewHardwareRc.classList.toggle('hidden', !isHardwareRc);
+            const viewScanner = document.getElementById('view-scanner');
+            if (viewScanner) viewScanner.classList.toggle('hidden', !isScanner);
             const viewUsers = document.getElementById('view-users');
             if (viewUsers) viewUsers.classList.toggle('hidden', !isUsers);
 
@@ -1557,6 +1788,7 @@
             const btnAnalytics = document.getElementById('nav-btn-analytics');
             const btnTemporal = document.getElementById('nav-btn-temporal');
             const btnHardwareRc = document.getElementById('nav-btn-hardware-rc');
+            const btnScanner = document.getElementById('nav-btn-scanner');
             const btnUsers = document.getElementById('nav-btn-users');
 
             const activeCls = 'nav-view-btn active flex-1 min-w-[200px] py-2.5 px-4 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2';
@@ -1567,6 +1799,7 @@
             if (btnAnalytics) btnAnalytics.className = isAnalytics ? activeCls : inactiveCls;
             if (btnTemporal) btnTemporal.className = isTemporal ? activeCls : inactiveCls;
             if (btnHardwareRc) btnHardwareRc.className = isHardwareRc ? activeCls : inactiveCls;
+            if (btnScanner) btnScanner.className = isScanner ? activeCls : inactiveCls;
             if (btnUsers) btnUsers.className = isUsers ? activeCls : inactiveCls;
 
             if (isDevices) {
@@ -1577,6 +1810,8 @@
                 loadTemporalAnalytics();
             } else if (isHardwareRc) {
                 loadHardwareRootCauseAnalytics();
+            } else if (isScanner) {
+                initScannerView();
             } else if (isUsers) {
                 loadAdminUsers();
             } else {
@@ -4264,6 +4499,351 @@ async function uploadPlayConsoleCsv(input) {
             }
             applyFilters();
             showAlert(`🔍 Filtrando comentários pela Causa-Raiz selecionada.`, 'info');
+        }
+
+        // ==============================================================================
+        // 🔎 VARREDURA DINÂMICA DE PALAVRAS & TERMOS (SCANNER)
+        // ==============================================================================
+        let scannerDebounceTimer = null;
+        let currentScannerData = null;
+        let scannerInitialized = false;
+
+        async function initScannerView() {
+            if (!scannerInitialized) {
+                try {
+                    const res = await fetch('/api/analytics/keyword-scan?q=');
+                    const data = await res.json();
+                    if (data && data.suggested_terms) {
+                        renderScannerChips(data.suggested_terms);
+                    }
+                    scannerInitialized = true;
+                } catch (e) {
+                    console.error("Erro ao inicializar chips do scanner:", e);
+                }
+            }
+            const input = document.getElementById('scanner-search-input');
+            if (input && input.value.trim() && !currentScannerData) {
+                runScannerManual();
+            }
+        }
+
+        function renderScannerChips(chips) {
+            const container = document.getElementById('scanner-chips-container');
+            if (!container) return;
+            container.innerHTML = chips.map(c => `
+                <button type="button" onclick="quickScanTerm('${escapeHtml(c.term)}')" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-cyan-50 hover:text-cyan-800 hover:border-cyan-300 border border-slate-200 transition text-slate-700 shadow-xs cursor-pointer group">
+                    <i class="fa-solid ${c.icon}" style="color: ${c.color}"></i>
+                    <span>${escapeHtml(c.label)}</span>
+                    <span class="px-1.5 py-0.2 rounded-full bg-slate-200 group-hover:bg-cyan-200 text-slate-700 text-[10px] font-extrabold ml-0.5">${c.reviews_count}</span>
+                </button>
+            `).join('');
+        }
+
+        function quickScanTerm(term) {
+            const input = document.getElementById('scanner-search-input');
+            if (input) {
+                input.value = term;
+                runScannerManual();
+            }
+        }
+
+        function onScannerInputDebounced() {
+            const input = document.getElementById('scanner-search-input');
+            const clearBtn = document.getElementById('scanner-btn-clear');
+            if (clearBtn) {
+                clearBtn.classList.toggle('hidden', !input || !input.value.trim());
+            }
+
+            clearTimeout(scannerDebounceTimer);
+            scannerDebounceTimer = setTimeout(() => {
+                runScannerManual();
+            }, 350);
+        }
+
+        function clearScanner() {
+            const input = document.getElementById('scanner-search-input');
+            if (input) input.value = '';
+            const clearBtn = document.getElementById('scanner-btn-clear');
+            if (clearBtn) clearBtn.classList.add('hidden');
+
+            document.getElementById('scanner-loading')?.classList.add('hidden');
+            document.getElementById('scanner-results-container')?.classList.add('hidden');
+            document.getElementById('scanner-empty-state')?.classList.add('hidden');
+            document.getElementById('scanner-initial-state')?.classList.remove('hidden');
+            currentScannerData = null;
+        }
+
+        async function pasteIntoScanner() {
+            try {
+                const text = await navigator.clipboard.readText();
+                if (text) {
+                    const input = document.getElementById('scanner-search-input');
+                    if (input) {
+                        input.value = text.trim();
+                        runScannerManual();
+                    }
+                }
+            } catch (err) {
+                const input = document.getElementById('scanner-search-input');
+                if (input) {
+                    input.focus();
+                    showAlert("Pressione Ctrl+V para colar o texto no campo de busca.", "info");
+                }
+            }
+        }
+
+        async function runScannerManual() {
+            const input = document.getElementById('scanner-search-input');
+            const term = input ? input.value.trim() : '';
+
+            const clearBtn = document.getElementById('scanner-btn-clear');
+            if (clearBtn) {
+                clearBtn.classList.toggle('hidden', !term);
+            }
+
+            if (!term) {
+                clearScanner();
+                return;
+            }
+
+            const loading = document.getElementById('scanner-loading');
+            const resultsBox = document.getElementById('scanner-results-container');
+            const initialBox = document.getElementById('scanner-initial-state');
+            const emptyBox = document.getElementById('scanner-empty-state');
+
+            if (loading) loading.classList.remove('hidden');
+            if (resultsBox) resultsBox.classList.add('hidden');
+            if (initialBox) initialBox.classList.add('hidden');
+            if (emptyBox) emptyBox.classList.add('hidden');
+
+            try {
+                const res = await fetch(`/api/analytics/keyword-scan?q=${encodeURIComponent(term)}`);
+                const data = await res.json();
+                currentScannerData = data;
+
+                if (loading) loading.classList.add('hidden');
+
+                if (data.total_reviews_matched === 0) {
+                    const qSpan = document.getElementById('scanner-empty-query');
+                    if (qSpan) qSpan.innerText = term;
+                    if (emptyBox) emptyBox.classList.remove('hidden');
+                    return;
+                }
+
+                renderScannerResults(data);
+                if (resultsBox) resultsBox.classList.remove('hidden');
+
+            } catch (e) {
+                if (loading) loading.classList.add('hidden');
+                console.error("Erro na varredura:", e);
+                showAlert("Erro ao processar varredura de termos.", "error");
+            }
+        }
+
+        function renderScannerResults(data) {
+            // 1. Resumo do topo
+            const termEl = document.getElementById('scanner-summary-term');
+            if (termEl) termEl.innerText = `"${data.query}"`;
+
+            const badgeEl = document.getElementById('scanner-summary-badge');
+            if (badgeEl) badgeEl.innerText = `${data.total_occurrences} ocorrências em ${data.total_reviews_matched} comentários`;
+
+            const detailsEl = document.getElementById('scanner-summary-details');
+            if (detailsEl) {
+                detailsEl.innerText = `Apareceu em ${data.pct_of_all_reviews}% de toda a base analisada (${data.total_reviews_in_db} relatos). Encontradas ${data.recent_count_30d} menções nos últimos 30 dias.`;
+            }
+
+            const ratingBig = document.getElementById('scanner-summary-rating-big');
+            if (ratingBig) ratingBig.innerText = data.avg_rating || '-';
+
+            // 2. KPIs
+            const kpiOcc = document.getElementById('scanner-kpi-occurrences');
+            if (kpiOcc) kpiOcc.innerText = data.total_occurrences;
+
+            const kpiRev = document.getElementById('scanner-kpi-reviews');
+            if (kpiRev) kpiRev.innerText = `${data.total_reviews_matched} relatos`;
+
+            const kpiRevPct = document.getElementById('scanner-kpi-reviews-pct');
+            if (kpiRevPct) kpiRevPct.innerText = `${data.pct_of_all_reviews}% da base`;
+
+            const kpiSent = document.getElementById('scanner-kpi-sentiment');
+            const kpiSentSub = document.getElementById('scanner-kpi-sentiment-sub');
+            if (kpiSent) {
+                const s = data.sentiment;
+                if (s.negative >= s.positive && s.negative >= s.neutral) {
+                    kpiSent.className = "text-2xl font-black text-rose-700";
+                    kpiSent.innerText = "Crítico / Negativo";
+                } else if (s.positive > s.negative) {
+                    kpiSent.className = "text-2xl font-black text-emerald-700";
+                    kpiSent.innerText = "Elogio / Positivo";
+                } else {
+                    kpiSent.className = "text-2xl font-black text-amber-700";
+                    kpiSent.innerText = "Neutro / Moderado";
+                }
+                if (kpiSentSub) {
+                    kpiSentSub.innerText = `${s.negative} críticas • ${s.neutral} neutras • ${s.positive} positivas`;
+                }
+            }
+
+            const kpiStores = document.getElementById('scanner-kpi-stores');
+            const kpiModelSub = document.getElementById('scanner-kpi-model-sub');
+            if (kpiStores) {
+                kpiStores.innerHTML = `
+                    <span class="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
+                        <i class="fa-brands fa-google-play"></i> ${data.stores.google || 0}
+                    </span>
+                    <span class="inline-flex items-center gap-1 text-xs font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded-lg border border-slate-200 ml-1">
+                        <i class="fa-brands fa-apple"></i> ${data.stores.apple || 0}
+                    </span>
+                `;
+            }
+            if (kpiModelSub) {
+                if (data.top_models && data.top_models.length > 0) {
+                    kpiModelSub.innerText = `Top modelo: ${data.top_models[0].model} (${data.top_models[0].count}x)`;
+                } else {
+                    kpiModelSub.innerText = `Dispositivos variados`;
+                }
+            }
+
+            // 3. Distribuição de Estrelas
+            const ratingsBar = document.getElementById('scanner-ratings-bar');
+            if (ratingsBar && data.rating_distribution) {
+                const dist = data.rating_distribution;
+                const tot = data.total_reviews_matched || 1;
+                ratingsBar.innerHTML = [1, 2, 3, 4, 5].map(star => {
+                    const count = dist[star] || 0;
+                    const pct = Math.round((count / tot) * 100);
+                    const color = star <= 2 ? 'text-rose-600 bg-rose-50 border-rose-200' : (star === 3 ? 'text-amber-600 bg-amber-50 border-amber-200' : 'text-emerald-600 bg-emerald-50 border-emerald-200');
+                    return `
+                        <div class="p-2 rounded-xl border ${color}">
+                            <div class="font-extrabold">${star} ⭐</div>
+                            <div class="text-sm font-black">${count}</div>
+                            <div class="text-[10px] text-slate-500 font-semibold">${pct}%</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // 4. Causas-Raiz associadas
+            const causesTags = document.getElementById('scanner-causes-tags');
+            if (causesTags && data.top_root_causes) {
+                if (data.top_root_causes.length === 0) {
+                    causesTags.innerHTML = '<span class="text-xs text-slate-400">Sem classificação associada</span>';
+                } else {
+                    causesTags.innerHTML = data.top_root_causes.map(c => `
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-800 text-xs font-bold border border-indigo-200">
+                            <span class="w-1.5 h-1.5 rounded-full bg-indigo-600"></span>
+                            <span>${escapeHtml(c.name)}</span>
+                            <span class="text-[10px] bg-indigo-200/60 px-1.5 py-0.2 rounded-full font-extrabold text-indigo-900">${c.count}</span>
+                        </span>
+                    `).join('');
+                }
+            }
+
+            // 5. Lista de Avaliações
+            filterScannerDisplayedReviews();
+        }
+
+        function filterScannerDisplayedReviews() {
+            if (!currentScannerData || !currentScannerData.reviews) return;
+
+            const listEl = document.getElementById('scanner-reviews-list');
+            const countBadge = document.getElementById('scanner-reviews-count-badge');
+            const filterType = document.getElementById('scanner-filter-rating')?.value || 'all';
+
+            let filtered = currentScannerData.reviews;
+            if (filterType === 'critical') {
+                filtered = filtered.filter(r => r.rating <= 2);
+            } else if (filterType === 'neutral') {
+                filtered = filtered.filter(r => r.rating === 3);
+            } else if (filterType === 'positive') {
+                filtered = filtered.filter(r => r.rating >= 4);
+            } else if (filterType === 'google') {
+                filtered = filtered.filter(r => r.store === 'google');
+            } else if (filterType === 'apple') {
+                filtered = filtered.filter(r => r.store === 'apple');
+            }
+
+            if (countBadge) countBadge.innerText = `${filtered.length} de ${currentScannerData.reviews.length}`;
+
+            if (!listEl) return;
+
+            if (filtered.length === 0) {
+                listEl.innerHTML = `
+                    <div class="p-8 text-center text-slate-400 text-xs font-semibold">
+                        Nenhum comentário corresponde ao filtro de nota/loja selecionado.
+                    </div>
+                `;
+                return;
+            }
+
+            listEl.innerHTML = filtered.map(r => {
+                const starsHtml = Array.from({length: 5}, (_, i) => 
+                    i < r.rating ? '<i class="fa-solid fa-star text-amber-400"></i>' : '<i class="fa-regular fa-star text-slate-300"></i>'
+                ).join('');
+
+                const modelBadge = r.model && r.model !== 'Não Informado' && r.model !== 'Desconhecido'
+                    ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-mono font-bold border border-slate-200"><i class="fa-solid fa-mobile-screen text-slate-400"></i> ${escapeHtml(r.model)}</span>`
+                    : '';
+
+                const statusBadge = r.has_response
+                    ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200"><i class="fa-solid fa-check"></i> Respondida</span>`
+                    : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-bold border border-amber-200"><i class="fa-regular fa-clock"></i> Pendente</span>`;
+
+                const occBadge = r.occurrences_in_review > 1
+                    ? `<span class="px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-800 text-[10px] font-black border border-cyan-200">${r.occurrences_in_review}x citado</span>`
+                    : '';
+
+                return `
+                    <div class="p-5 hover:bg-slate-50/80 transition space-y-3">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="text-sm" title="${r.store_label}"><i class="${r.store_icon}"></i></span>
+                                <strong class="text-slate-900 text-sm font-bold">${escapeHtml(r.user_name)}</strong>
+                                <span class="text-xs">${starsHtml}</span>
+                                ${modelBadge}
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold text-white shadow-xs" style="background-color: ${r.root_cause_color}">
+                                    ${escapeHtml(r.root_cause_name)}
+                                </span>
+                                ${statusBadge}
+                                ${occBadge}
+                            </div>
+                            <div class="flex items-center gap-2 text-xs text-slate-400 shrink-0">
+                                <span><i class="fa-regular fa-calendar text-slate-300"></i> ${escapeHtml(r.date)}</span>
+                                <span class="font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full text-[10px]">${escapeHtml(r.days_ago_text)}</span>
+                            </div>
+                        </div>
+
+                        ${r.title_highlighted ? `
+                            <h5 class="text-xs font-bold text-slate-800">
+                                ${r.title_highlighted}
+                            </h5>
+                        ` : ''}
+
+                        <div class="bg-slate-50/90 border border-slate-200/70 p-3.5 rounded-xl text-xs text-slate-700 leading-relaxed font-medium">
+                            "${r.content_highlighted || escapeHtml(r.content) || '<span class=\"text-slate-400 italic\">Avaliação sem texto</span>'}"
+                        </div>
+
+                        ${r.developer_response ? `
+                            <div class="bg-blue-50/80 border border-blue-200/60 p-3 rounded-xl text-xs space-y-1">
+                                <div class="flex items-center gap-1.5 font-bold text-blue-900 text-[11px]">
+                                    <i class="fa-solid fa-reply text-blue-600"></i>
+                                    <span>Resposta Oficial da Prodemge:</span>
+                                </div>
+                                <p class="text-blue-800 text-[11px] leading-relaxed italic">
+                                    "${escapeHtml(r.developer_response)}"
+                                </p>
+                            </div>
+                        ` : ''}
+
+                        <div class="flex justify-end gap-2 pt-1 no-print">
+                            <button onclick="filterReviewBySearch('${escapeHtml(r.user_name)}')" class="px-3 py-1.5 bg-slate-100 hover:bg-cyan-50 hover:text-cyan-800 text-slate-700 text-xs font-bold rounded-lg border border-slate-200 hover:border-cyan-300 transition flex items-center gap-1.5 shadow-xs">
+                                <i class="fa-solid fa-arrow-up-right-from-square text-cyan-600"></i> Abrir no Feed Principal
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
 </script>

@@ -420,6 +420,12 @@ def api_analytics_hardware_root_cause(
     from analytics.hardware_root_cause import get_hardware_root_cause_analytics
     return get_hardware_root_cause_analytics(filter_brand=brand, filter_root_cause_id=root_cause_id)
 
+@app.get("/api/analytics/keyword-scan")
+def api_analytics_keyword_scan(q: str = ""):
+    """Realiza varredura dinâmica e profunda em tempo real por termos ou palavras-chave em todos os comentários."""
+    from analytics.keyword_scanner import scan_keywords
+    return scan_keywords(q)
+
 
 @app.post("/api/reviews/backfill-devices")
 def api_backfill_devices():
