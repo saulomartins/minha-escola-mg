@@ -386,6 +386,28 @@ DEVICE_LIFECYCLE_DB = {
         "google_oem_notes": "Atualizado para Android 14.",
         "dev_recommendation": "Hardware intermediário equilibrado."
     },
+    "poco x3 pro": {
+        "brand": "POCO / Xiaomi",
+        "model_name": "POCO X3 Pro",
+        "launch_os": "Android 11 (MIUI 12 for POCO)",
+        "max_os": "Android 13 (MIUI 14)",
+        "is_stuck_android_12": False,
+        "support_status": "✅ Atualizado para Android 13 (MIUI 14)",
+        "status_badge": "green",
+        "google_oem_notes": "Aparelho de alto desempenho com chipset Snapdragon 860 e 6GB/8GB RAM. Recebeu oficialmente upgrade para o Android 13 (MIUI 14). Suporte plenamente compatível.",
+        "dev_recommendation": "Hardware robusto. Falhas relatadas (ex: erro ao acessar notas/boletim) não são limitações do celular; decorrem de sincronização com o Diário Escolar Digital ou autenticação gov.br."
+    },
+    "poco x3": {
+        "brand": "POCO / Xiaomi",
+        "model_name": "POCO X3 / X3 NFC",
+        "launch_os": "Android 10",
+        "max_os": "Android 12",
+        "is_stuck_android_12": True,
+        "support_status": "⚠️ Encerrado no Android 12",
+        "status_badge": "amber",
+        "google_oem_notes": "A Xiaomi encerrou atualizações no Android 12 (MIUI 13.5).",
+        "dev_recommendation": "Garantir compatibilidade com Android 12."
+    },
 
     # LG - Todos os Modelos Presos no Android <= 12 (Divisão Encerrada)
     "lg k52": {
@@ -641,6 +663,10 @@ def get_device_lifecycle(brand: Optional[str], model: Optional[str]) -> Dict[str
         return DEVICE_LIFECYCLE_DB["redmi note 9"]
     if "10a" in m_clean:
         return DEVICE_LIFECYCLE_DB["redmi 10a"]
+    if "poco x3 pro" in m_clean or "x3 pro" in m_clean:
+        return DEVICE_LIFECYCLE_DB["poco x3 pro"]
+    if "poco x3" in m_clean or "x3 nfc" in m_clean:
+        return DEVICE_LIFECYCLE_DB["poco x3"]
     if "redmi 9" in m_clean or "9a" in m_clean or "9c" in m_clean:
         return DEVICE_LIFECYCLE_DB["redmi 9"]
         

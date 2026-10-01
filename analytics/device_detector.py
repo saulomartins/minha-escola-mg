@@ -45,7 +45,8 @@ PHONE_MODELS_CONFIG = [
     ("Xiaomi", [
         (r'(?i)(?<![a-z0-9])(redmi\s*note\s*\d{1,2}[a-z]?)(?![a-z0-9])', "Redmi {}"),
         (r'(?i)(?<![a-z0-9])(redmi\s*\d{1,2}[a-z]?)(?![a-z0-9])', "Redmi {}"),
-        (r'(?i)(?<![a-z0-9])(poco\s*[a-z0-9]+)(?![a-z0-9])', "Poco {}"),
+        (r'(?i)(?<![a-z0-9])(poco\s*(?:x\d+|f\d+|m\d+|c\d+)[a-z0-9]*(?:\s*(?:pro|gt|nfc))?)(?![a-z0-9])', "POCO {}"),
+        (r'(?i)(?<![a-z0-9])(poco\s*[a-z0-9]+)(?![a-z0-9])', "POCO {}"),
         (r'(?i)(?<![a-z0-9])(xiaomi|redmi|poco|xiaome)(?![a-z0-9])', "Xiaomi Geral")
     ]),
     ("Apple", [
@@ -169,38 +170,34 @@ def detect_device_and_os(review: Dict[str, Any]) -> Dict[str, Any]:
     text_brand, text_model = detect_device_from_text(combined_text)
     text_os_name, text_os_ver = detect_os_from_text(combined_text)
     
-    # 3. Consolidação com os dados da loja ou telemetria automática inteligente
-    seed_str = f"{review.get('review_id') or review.get('id') or ''}_{review.get('user_name') or ''}"
-    
+    # 3. Consolidação com os dados da loja
     if store == "apple":
         os_name = "iOS"
-        brand = text_brand or "Apple"
         if text_brand or text_os_ver:
+            brand = text_brand or "Apple"
             model = text_model or ("Apple iPad" if "ipad" in combined_text.lower() else "Apple iPhone")
             os_version = text_os_ver or "iOS 17"
             source = "text_detected"
         else:
-            from collector.play_console_importer import get_auto_profile
-            prof = get_auto_profile(seed_str, "apple")
-            model = prof["model"]
-            os_version = prof["os_version"]
-            source = "automatic_telemetry"
+            # Apple não divulga modelo nas avaliações públicas da App Store
+            brand = "Apple"
+            model = None
+            os_version = None
+            source = "not_specified"
     else:
         # Loja Google Play
         os_name = "Android"
         if text_brand:
             brand = text_brand
             model = text_model or f"{brand} Geral"
-            os_version = text_os_ver or (parse_android_sdk(api_sdk) if api_sdk else "Android 12 (SDK 31)")
+            os_version = text_os_ver or (parse_android_sdk(api_sdk) if api_sdk else None)
             source = "text_detected"
         else:
-            from collector.play_console_importer import get_auto_profile
-            prof = get_auto_profile(seed_str, "google")
-            brand = prof["brand"]
-            model = prof["model"]
-            os_version = prof["os_version"]
-            app_version = app_version or prof["app_version"]
-            source = "automatic_telemetry"
+            # A página pública do Google Play não informa o modelo do aparelho (disponível via Play Console)
+            brand = None
+            model = None
+            os_version = parse_android_sdk(api_sdk) if api_sdk else None
+            source = "not_specified"
         
     return {
         "device_brand": brand,

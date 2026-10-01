@@ -2022,6 +2022,86 @@
             document.getElementById('modal-add-user').classList.add('hidden');
         }
 
+        function openEditDeviceModal(reviewId) {
+            let r = null;
+            if (window.currentLoadedReviews && Array.isArray(window.currentLoadedReviews)) {
+                r = window.currentLoadedReviews.find(item => item.id === reviewId || item.review_id === reviewId);
+            }
+            document.getElementById('edit-device-review-id').value = reviewId;
+            document.getElementById('edit-device-username').innerText = r ? (r.user_name || 'Usuário') : 'Avaliação';
+            document.getElementById('edit-device-date').innerText = r && r.review_date ? new Date(r.review_date).toLocaleDateString('pt-BR') : '';
+            document.getElementById('edit-device-content').innerText = r && r.content ? r.content : 'Sem texto';
+
+            document.getElementById('edit-device-brand').value = r ? (r.device_brand || '') : '';
+            document.getElementById('edit-device-model').value = r ? (r.device_model || '') : '';
+            document.getElementById('edit-device-os-name').value = r && r.os_name ? r.os_name : 'Android';
+            document.getElementById('edit-device-os-version').value = r ? (r.os_version || '') : '';
+            document.getElementById('edit-device-app-version').value = r ? (r.app_version || '4.2.2') : '4.2.2';
+            document.getElementById('edit-device-app-code').value = r ? (r.app_version_code || '59') : '59';
+
+            document.getElementById('modal-edit-device').classList.remove('hidden');
+        }
+
+        function closeEditDeviceModal() {
+            document.getElementById('modal-edit-device').classList.add('hidden');
+        }
+
+        async function submitEditDevice() {
+            const reviewId = document.getElementById('edit-device-review-id').value;
+            const brand = document.getElementById('edit-device-brand').value.trim();
+            const model = document.getElementById('edit-device-model').value.trim();
+            const os_name = document.getElementById('edit-device-os-name').value;
+            const os_version = document.getElementById('edit-device-os-version').value.trim();
+            const app_version = document.getElementById('edit-device-app-version').value.trim();
+            const app_version_code = document.getElementById('edit-device-app-code').value.trim();
+
+            if (!model) {
+                alert('Por favor, informe o modelo do aparelho (ex: POCO X3 Pro).');
+                return;
+            }
+
+            const btn = document.getElementById('btn-save-edit-device');
+            const origHtml = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Salvando...';
+            }
+
+            try {
+                const res = await fetch(`/api/reviews/${encodeURIComponent(reviewId)}/device`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        device_brand: brand || null,
+                        device_model: model,
+                        os_name: os_name,
+                        os_version: os_version || null,
+                        app_version: app_version || null,
+                        app_version_code: app_version_code || null,
+                        reviewer_language: 'Português'
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    closeEditDeviceModal();
+                    showAlert('✅ Dados do aparelho e versão atualizados com sucesso!', 'success');
+                    await loadReviews();
+                    if (typeof loadStats === 'function') {
+                        loadStats();
+                    }
+                } else {
+                    alert(data.message || 'Erro ao atualizar dados do aparelho.');
+                }
+            } catch (err) {
+                alert('Erro ao comunicar com o servidor: ' + err.message);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = origHtml;
+                }
+            }
+        }
+
         function showNotification(msg, type = 'success') {
             showAlert(msg, type);
         }
@@ -2478,6 +2558,7 @@
                 const res = await fetch(`/api/reviews?${params.toString()}`);
                 const data = await res.json();
                 const reviews = data.reviews;
+                window.currentLoadedReviews = reviews;
 
                 document.getElementById('reviews-count-badge').innerText = reviews.length;
 
@@ -2561,49 +2642,75 @@
                         : '<i class="fa-brands fa-android text-emerald-600 text-sm"></i>';
 
                     let deviceSourceBadge = '';
-                    if (r.device_source === 'text_detected') {
+                    if (r.device_source === 'play_console_official') {
+                        deviceSourceBadge = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-200" title="Telemetria oficial extraída ou confirmada com o Google Play Console"><i class="fa-solid fa-circle-check text-emerald-600"></i> Play Console Oficial</span>';
+                    } else if (r.device_source === 'text_detected') {
                         deviceSourceBadge = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-900 border border-purple-200" title="Modelo ou versão explicitamente citado pelo usuário no relato"><i class="fa-solid fa-magnifying-glass text-purple-600"></i> Aparelho citado</span>';
-                    } else if (r.device_source === 'store_api') {
-                        deviceSourceBadge = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-900 border border-indigo-200" title="Dados de hardware obtidos via API oficial da loja"><i class="fa-solid fa-certificate text-indigo-600"></i> Hardware Loja Oficial</span>';
+                    } else if (r.device_source === 'manual_edit') {
+                        deviceSourceBadge = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-900 border border-blue-200" title="Dados de hardware preenchidos manualmente pela equipe"><i class="fa-solid fa-pen text-blue-600"></i> Informado Manualmente</span>';
                     }
 
                     const maxOsDisplay = r.stuck_info && (r.stuck_info.last_official_os || r.stuck_info.max_os) ? (r.stuck_info.last_official_os || r.stuck_info.max_os) : 'Em análise';
-                    const isStuck = !!r.is_stuck_android_12;
+                    const hasValidDevice = !!r.device_model && r.device_model !== 'Não especificado';
+                    const isStuck = hasValidDevice && !!r.is_stuck_android_12;
 
-                    const deviceIndicatorBar = `
-                        <div class="flex flex-wrap items-center gap-2.5 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs">
-                            <div class="flex items-center gap-1.5 font-semibold text-slate-800" title="Modelo do Aparelho">
-                                <i class="fa-solid fa-mobile-screen-button text-purple-600"></i>
-                                <span>${escapeHtml(r.device_brand || 'Aparelho')}: <b class="text-slate-900">${escapeHtml(r.device_model || 'Não especificado')}</b></span>
-                            </div>
-                            <span class="text-slate-300">•</span>
-                            <div class="flex items-center gap-1.5 font-medium text-slate-700" title="Sistema Operacional Atual do Usuário">
-                                ${osIcon}
-                                <span>SO Atual: <b class="text-slate-900">${escapeHtml(r.os_version && r.os_version !== r.os_name ? r.os_version : r.os_name || 'Android')}</b></span>
-                            </div>
-                            <span class="text-slate-300">•</span>
-                            <div class="flex items-center gap-1.5 font-medium text-slate-700" title="Última Versão Oficial Disponibilizada pelo Fabricante">
-                                <i class="fa-solid fa-flag-checkered text-slate-500"></i>
-                                <span>Última Versão Fabricante: <b class="${isStuck ? 'text-rose-700 font-bold' : 'text-emerald-700 font-bold'}">${escapeHtml(maxOsDisplay)}</b></span>
-                            </div>
-                            ${r.app_version ? `
+                    let deviceIndicatorBar = '';
+                    if (hasValidDevice) {
+                        deviceIndicatorBar = `
+                            <div class="flex flex-wrap items-center gap-2.5 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs">
+                                <div class="flex items-center gap-1.5 font-semibold text-slate-800" title="Modelo do Aparelho">
+                                    <i class="fa-solid fa-mobile-screen-button text-purple-600"></i>
+                                    <span>${escapeHtml(r.device_brand ? (r.device_brand + ': ') : '')}<b class="text-slate-900">${escapeHtml(r.device_model)}</b></span>
+                                </div>
                                 <span class="text-slate-300">•</span>
-                                <div class="flex items-center gap-1 text-slate-500 font-mono text-[11px]" title="Versão do Minha Escola MG">
-                                    <i class="fa-solid fa-code-branch text-slate-400"></i>
-                                    <span>v${escapeHtml(r.app_version)} ${r.app_version_code ? `(Build ${escapeHtml(r.app_version_code)})` : ''}</span>
+                                <div class="flex items-center gap-1.5 font-medium text-slate-700" title="Sistema Operacional Atual do Usuário">
+                                    ${osIcon}
+                                    <span>SO Atual: <b class="text-slate-900">${escapeHtml(r.os_version && r.os_version !== r.os_name ? r.os_version : r.os_name || 'Android')}</b></span>
                                 </div>
-                            ` : ''}
-                            ${isStuck ? `
-                                <div class="ml-auto">
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-200" title="Suporte do fabricante encerrado para este aparelho.">
-                                        <i class="fa-solid fa-ban text-rose-600"></i> Preso no Android ≤ 12
-                                    </span>
+                                <span class="text-slate-300">•</span>
+                                <div class="flex items-center gap-1.5 font-medium text-slate-700" title="Última Versão Oficial Disponibilizada pelo Fabricante">
+                                    <i class="fa-solid fa-flag-checkered text-slate-500"></i>
+                                    <span>Última Versão Fabricante: <b class="${isStuck ? 'text-rose-700 font-bold' : 'text-emerald-700 font-bold'}">${escapeHtml(maxOsDisplay)}</b></span>
                                 </div>
-                            ` : ''}
-                        </div>
-                    `;
+                                ${r.app_version ? `
+                                    <span class="text-slate-300">•</span>
+                                    <div class="flex items-center gap-1 text-slate-500 font-mono text-[11px]" title="Versão do Minha Escola MG">
+                                        <i class="fa-solid fa-code-branch text-slate-400"></i>
+                                        <span>v${escapeHtml(r.app_version)} ${r.app_version_code ? `(Build ${escapeHtml(r.app_version_code)})` : ''}</span>
+                                    </div>
+                                ` : ''}
+                                ${deviceSourceBadge}
+                                ${isStuck ? `
+                                    <div class="ml-auto">
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-200" title="Suporte do fabricante encerrado para este aparelho.">
+                                            <i class="fa-solid fa-ban text-rose-600"></i> Preso no Android ≤ 12
+                                        </span>
+                                    </div>
+                                ` : ''}
+                                <button onclick="openEditDeviceModal('${escapeHtml(r.id)}')" class="ml-auto inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold text-slate-600 hover:text-purple-700 bg-white hover:bg-purple-50 border border-slate-200 hover:border-purple-300 rounded transition shadow-xs" title="Editar aparelho ou versão desta avaliação">
+                                    <i class="fa-solid fa-pen-to-square text-purple-600"></i> Editar Aparelho
+                                </button>
+                            </div>
+                        `;
+                    } else {
+                        deviceIndicatorBar = `
+                            <div class="flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-slate-50/80 border border-dashed border-slate-300 rounded-lg text-xs text-slate-600">
+                                <div class="flex items-center gap-2">
+                                    <i class="fa-solid fa-mobile-screen text-slate-400"></i>
+                                    <span>Aparelho: <span class="italic text-slate-500">Não informado na página pública da loja</span></span>
+                                    ${r.app_version ? `
+                                        <span class="text-slate-300">•</span>
+                                        <span class="text-slate-500 font-mono text-[11px]"><i class="fa-solid fa-code-branch text-slate-400"></i> v${escapeHtml(r.app_version)} ${r.app_version_code ? `(Build ${escapeHtml(r.app_version_code)})` : ''}</span>
+                                    ` : ''}
+                                </div>
+                                <button onclick="openEditDeviceModal('${escapeHtml(r.id)}')" class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-md transition shadow-xs" title="Informar modelo exato e versão do Android obtidos do Google Play Console">
+                                    <i class="fa-solid fa-pen-to-square text-purple-600"></i> Informar Aparelho (Play Console)
+                                </button>
+                            </div>
+                        `;
+                    }
 
-                    // Alerta conciso e sem poluição
+                    // Alerta conciso e sem poluição (somente quando modelo é conhecido e confirmado como preso)
                     const stuckAlertBox = isStuck ? `
                         <div class="flex items-center justify-between px-3 py-1.5 bg-rose-50/90 border border-rose-200 rounded-lg text-xs text-rose-900">
                             <span class="flex items-center gap-1.5 font-bold">
@@ -4889,6 +4996,78 @@ async function uploadPlayConsoleCsv(input) {
                 <button onclick="closeAddUserModal()" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition">Cancelar</button>
                 <button onclick="submitAddUser()" class="px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow transition flex items-center gap-1.5">
                     <i class="fa-solid fa-check"></i> Autorizar Acesso
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Editar Dados do Aparelho / Telemetria -->
+    <div id="modal-edit-device" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-mobile-screen-button text-purple-600"></i> Informar / Editar Aparelho (Play Console)
+                </h3>
+                <button onclick="closeEditDeviceModal()" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+            </div>
+
+            <!-- Resumo da Avaliação -->
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
+                <div class="flex items-center justify-between">
+                    <span class="font-bold text-slate-800" id="edit-device-username">Usuário</span>
+                    <span class="text-slate-400" id="edit-device-date">Data</span>
+                </div>
+                <p class="text-slate-600 italic line-clamp-2" id="edit-device-content">Conteúdo da avaliação...</p>
+            </div>
+
+            <input type="hidden" id="edit-device-review-id">
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Marca do Aparelho:</label>
+                    <input type="text" id="edit-device-brand" placeholder="Ex: POCO / Xiaomi, Samsung, Motorola" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-purple-500 focus:bg-white focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Modelo Exato (Play Console): *</label>
+                    <input type="text" id="edit-device-model" placeholder="Ex: POCO X3 Pro, Galaxy A14, Moto G54" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-purple-500 focus:bg-white focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Sistema Operacional:</label>
+                    <select id="edit-device-os-name" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                        <option value="Android">Android</option>
+                        <option value="iOS">iOS</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Versão do SO (SDK):</label>
+                    <input type="text" id="edit-device-os-version" placeholder="Ex: Android 13 (SDK 33), Android 14" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-purple-500 focus:bg-white focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Nome da Versão do App:</label>
+                    <input type="text" id="edit-device-app-version" placeholder="Ex: 4.2.2" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-purple-500 focus:bg-white focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Código da Versão (Build):</label>
+                    <input type="text" id="edit-device-app-code" placeholder="Ex: 59" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-purple-500 focus:bg-white focus:outline-none">
+                </div>
+            </div>
+
+            <div class="p-3 bg-purple-50 rounded-xl border border-purple-200 text-[11px] text-purple-900 flex items-start gap-2">
+                <i class="fa-solid fa-circle-info text-purple-600 mt-0.5"></i>
+                <div>
+                    <b>Telemetria Oficial:</b> Ao salvar, os dados serão salvos no banco de dados com selo <b>Play Console Oficial</b>, reclassificando o diagnóstico de ciclo de vida e eliminando falsos alertas.
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button onclick="closeEditDeviceModal()" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition">Cancelar</button>
+                <button onclick="submitEditDevice()" id="btn-save-edit-device" class="px-4 py-2 text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white rounded-xl shadow transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-floppy-disk"></i> Salvar Dados do Aparelho
                 </button>
             </div>
         </div>

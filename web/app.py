@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from database.db import (
     init_db, upsert_review, get_reviews, get_stats, get_device_diagnostic,
-    update_review_analysis, update_review_status, 
+    update_review_analysis, update_review_status, update_review_device_info,
     get_setting, set_setting, get_all_settings, get_connection,
     list_users, get_user_by_id, get_user_by_email, upsert_user,
     update_user_status, update_user_role, delete_user, SUPER_ADMIN_EMAIL,
@@ -131,6 +131,15 @@ class UserStatusRequest(BaseModel):
 
 class UserRoleRequest(BaseModel):
     role: str
+
+class UpdateReviewDeviceRequest(BaseModel):
+    device_brand: Optional[str] = None
+    device_model: Optional[str] = None
+    os_name: Optional[str] = "Android"
+    os_version: Optional[str] = None
+    app_version: Optional[str] = None
+    app_version_code: Optional[str] = None
+    reviewer_language: Optional[str] = None
 
 # Helpers de Sessão e Permissão
 def get_current_user_from_request(request: Request) -> Optional[Dict[str, Any]]:
@@ -429,10 +438,10 @@ def api_analytics_keyword_scan(q: str = ""):
 
 @app.post("/api/reviews/backfill-devices")
 def api_backfill_devices():
-    """Atualiza e normaliza a detecção de aparelhos e sistemas operacionais em todas as avaliações salvas"""
+    """Atualiza e normaliza a detecção de aparelhos e sistemas operacionais em todas as avaliações salvas (sem sobrescrever dados manuais ou oficiais do Play Console)"""
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, store, title, content, app_version, device_brand FROM reviews")
+    cursor.execute("SELECT id, store, title, content, app_version, device_brand FROM reviews WHERE device_source NOT IN ('play_console_official', 'manual_edit')")
     rows = [dict(r) for r in cursor.fetchall()]
     count = 0
     for r in rows:
@@ -464,6 +473,41 @@ def api_backfill_devices():
     conn.commit()
     conn.close()
     return {"success": True, "updated_count": count, "message": f"Detecção de dispositivos atualizada em {count} avaliações!"}
+
+@app.post("/api/reviews/{review_id}/device")
+def api_update_review_device(review_id: str, payload: UpdateReviewDeviceRequest):
+    """Atualiza manualmente dados de hardware e versão obtidos do Google Play Console para uma avaliação"""
+    success = update_review_device_info(
+        review_id=review_id,
+        device_brand=payload.device_brand,
+        device_model=payload.device_model,
+        os_name=payload.os_name,
+        os_version=payload.os_version,
+        app_version=payload.app_version,
+        app_version_code=payload.app_version_code,
+        reviewer_language=payload.reviewer_language,
+        device_source="play_console_official" if payload.device_brand or payload.device_model else "manual_edit"
+    )
+    if not success:
+        raise HTTPException(status_code=404, detail="Avaliação não encontrada")
+
+    # Retorna o registro atualizado
+    revs = get_reviews(search=review_id, limit=1)
+    if not revs:
+        # Tenta buscar pelo id ou review_id
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute("SELECT id FROM reviews WHERE id = ? OR review_id = ?", (review_id, review_id))
+        row = c.fetchone()
+        conn.close()
+        if row:
+            revs = get_reviews(search=row['id'], limit=1)
+
+    return {
+        "success": True,
+        "message": "Dados do dispositivo atualizados com sucesso!",
+        "review": revs[0] if revs else None
+    }
 
 @app.get("/api/reviews")
 def api_reviews(

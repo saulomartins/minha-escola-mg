@@ -84,7 +84,10 @@ def normalize_device_model(device_raw: str) -> Tuple[str, str]:
     device_raw = device_raw.strip()
     lower = device_raw.lower()
     
-    if "redmi" in lower or "xiaomi" in lower or "poco" in lower:
+    if "poco" in lower:
+        brand = "POCO / Xiaomi"
+        model = device_raw
+    elif "redmi" in lower or "xiaomi" in lower:
         brand = "Xiaomi"
         model = device_raw
     elif "moto" in lower or "motorola" in lower:
