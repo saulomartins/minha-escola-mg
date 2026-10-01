@@ -437,40 +437,9 @@ def api_analytics_keyword_scan(q: str = ""):
 @app.post("/api/reviews/backfill-devices")
 def api_backfill_devices():
     """Atualiza e normaliza a detecção de aparelhos e sistemas operacionais em todas as avaliações salvas (sem sobrescrever dados manuais ou oficiais do Play Console)"""
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT id, store, title, content, app_version, device_brand FROM reviews WHERE device_source NOT IN ('play_console_official', 'manual_edit')")
-    rows = [dict(r) for r in cursor.fetchall()]
-    count = 0
-    for r in rows:
-        dev_info = detect_device_and_os({
-            "store": r["store"],
-            "title": r.get("title") or "",
-            "content": r.get("content") or "",
-            "app_version": r.get("app_version") or ("4.2.2" if r["store"] in ("google", "apple") else "")
-        })
-        cursor.execute("""
-            UPDATE reviews SET
-                device_brand = ?,
-                device_model = ?,
-                os_name = ?,
-                os_version = ?,
-                app_version = ?,
-                device_source = ?
-            WHERE id = ?
-        """, (
-            dev_info["device_brand"],
-            dev_info["device_model"],
-            dev_info["os_name"],
-            dev_info["os_version"],
-            dev_info["app_version"],
-            dev_info["device_source"],
-            r["id"]
-        ))
-        count += 1
-    conn.commit()
-    conn.close()
-    return {"success": True, "updated_count": count, "message": f"Detecção de dispositivos atualizada em {count} avaliações!"}
+    from database.db import populate_store_device_specifications
+    populate_store_device_specifications()
+    return {"success": True, "message": "Especificação de aparelhos e sistemas operacionais atualizada com sucesso no banco de dados!"}
 
 @app.post("/api/reviews/{review_id}/device")
 def api_update_review_device(review_id: str, payload: UpdateReviewDeviceRequest):

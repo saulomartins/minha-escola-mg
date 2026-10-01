@@ -305,6 +305,61 @@ DEVICE_LIFECYCLE_DB = {
         "google_oem_notes": "A Samsung encerrou a linha S20 no Android 13 (One UI 5.1). Não recebe Android 14.",
         "dev_recommendation": "Hardware potente, problemas nele geralmente são de rede ou WebView."
     },
+    "galaxy a10s": {
+        "brand": "Samsung",
+        "model_name": "Galaxy A10s",
+        "launch_os": "Android 9 (Pie)",
+        "max_os": "Android 11",
+        "is_stuck_android_12": True,
+        "support_status": "🔴 Preso no Android 11 (Descontinuado)",
+        "status_badge": "red",
+        "google_oem_notes": "Encerrado pela Samsung no Android 11. Hardware modesto (MediaTek Helio P22).",
+        "dev_recommendation": "Garantir carregamento leve de dados e evitar renderizações pesadas."
+    },
+    "galaxy a15": {
+        "brand": "Samsung",
+        "model_name": "Galaxy A15",
+        "launch_os": "Android 14",
+        "max_os": "Android 18 (Política 4 anos Samsung)",
+        "is_stuck_android_12": False,
+        "support_status": "✅ Suporte Ativo Pleno",
+        "status_badge": "green",
+        "google_oem_notes": "Aparelho recente de alta vendagem. Garantia de 4 upgrades de SO pela Samsung.",
+        "dev_recommendation": "Hardware moderno com boa performance; compatibilidade total garantida."
+    },
+    "galaxy a22": {
+        "brand": "Samsung",
+        "model_name": "Galaxy A22",
+        "launch_os": "Android 11",
+        "max_os": "Android 13",
+        "is_stuck_android_12": False,
+        "support_status": "✅ Atualizado para Android 13",
+        "status_badge": "green",
+        "google_oem_notes": "Aparelho atualizado pela Samsung até o Android 13 (One UI 5.1).",
+        "dev_recommendation": "Suporte pleno a recursos vigentes."
+    },
+    "galaxy a32": {
+        "brand": "Samsung",
+        "model_name": "Galaxy A32",
+        "launch_os": "Android 11",
+        "max_os": "Android 13",
+        "is_stuck_android_12": False,
+        "support_status": "✅ Atualizado para Android 13",
+        "status_badge": "green",
+        "google_oem_notes": "Encerrado no Android 13 pela Samsung com patches de segurança.",
+        "dev_recommendation": "Compatibilidade com Android 13 plena."
+    },
+    "galaxy a54": {
+        "brand": "Samsung",
+        "model_name": "Galaxy A54 5G",
+        "launch_os": "Android 13",
+        "max_os": "Android 17 (Política 4 anos Samsung)",
+        "is_stuck_android_12": False,
+        "support_status": "✅ Suporte Ativo Pleno",
+        "status_badge": "green",
+        "google_oem_notes": "Intermediário premium mais vendido da Samsung. Atualizado para Android 14.",
+        "dev_recommendation": "Excelente capacidade de processamento e memória."
+    },
 
     # Xiaomi - Modelos Presos no Android <= 12
     "redmi 9": {
@@ -385,6 +440,50 @@ DEVICE_LIFECYCLE_DB = {
         "status_badge": "green",
         "google_oem_notes": "Atualizado para Android 14.",
         "dev_recommendation": "Hardware intermediário equilibrado."
+    },
+    "redmi note 11": {
+        "brand": "Xiaomi",
+        "model_name": "Redmi Note 11",
+        "launch_os": "Android 11",
+        "max_os": "Android 13 (MIUI 14)",
+        "is_stuck_android_12": False,
+        "support_status": "✅ Atualizado para Android 13",
+        "status_badge": "green",
+        "google_oem_notes": "Atualizado para Android 13 (MIUI 14). Suporte ativo.",
+        "dev_recommendation": "Hardware Snapdragon 680 muito comum entre estudantes."
+    },
+    "poco c40": {
+        "brand": "Xiaomi",
+        "model_name": "Poco C40",
+        "launch_os": "Android 11",
+        "max_os": "Android 11 (MIUI 13 for Poco)",
+        "is_stuck_android_12": True,
+        "support_status": "🔴 Preso no Android 11 (Descontinuado)",
+        "status_badge": "red",
+        "google_oem_notes": "Modelo de entrada com chipset JLQ JR510, sem atualizações para Android 12 ou 13.",
+        "dev_recommendation": "Desempenho limitado; garantir interface leve e estável."
+    },
+    "redmi 9a": {
+        "brand": "Xiaomi",
+        "model_name": "Redmi 9A",
+        "launch_os": "Android 10 (MIUI 11)",
+        "max_os": "Android 11 (MIUI 12.5)",
+        "is_stuck_android_12": True,
+        "support_status": "🔴 Preso no Android 11 (Descontinuado)",
+        "status_badge": "red",
+        "google_oem_notes": "Aparelho super popular de 2GB RAM; encerrado no Android 11.",
+        "dev_recommendation": "Consumo de memória crítico."
+    },
+    "redmi 9c": {
+        "brand": "Xiaomi",
+        "model_name": "Redmi 9C",
+        "launch_os": "Android 10 (MIUI 11)",
+        "max_os": "Android 11 (MIUI 12.5)",
+        "is_stuck_android_12": True,
+        "support_status": "🔴 Preso no Android 11 (Descontinuado)",
+        "status_badge": "red",
+        "google_oem_notes": "Encerrado no Android 11 pela Xiaomi.",
+        "dev_recommendation": "Aparelho de entrada."
     },
     "poco x3 pro": {
         "brand": "POCO / Xiaomi",
@@ -477,6 +576,50 @@ DEVICE_LIFECYCLE_DB = {
         "status_badge": "green",
         "google_oem_notes": "Suporte pleno à versão mais recente do iOS.",
         "dev_recommendation": "Excelente estabilidade."
+    },
+    "iphone xr": {
+        "brand": "Apple",
+        "model_name": "iPhone XR",
+        "launch_os": "iOS 12",
+        "max_os": "iOS 18 (Atual)",
+        "is_stuck_android_12": False,
+        "support_status": "✅ Suporte Ativo Apple",
+        "status_badge": "green",
+        "google_oem_notes": "iPhone mais popular no ecossistema iOS no Brasil. Suporte mantido até o iOS 18.",
+        "dev_recommendation": "Garantir excelente performance gráfica."
+    },
+    "iphone 12": {
+        "brand": "Apple",
+        "model_name": "iPhone 12",
+        "launch_os": "iOS 14",
+        "max_os": "iOS 18 (Atual)",
+        "is_stuck_android_12": False,
+        "support_status": "✅ Suporte Ativo Apple",
+        "status_badge": "green",
+        "google_oem_notes": "Suporte pleno com conectividade 5G.",
+        "dev_recommendation": "Excelente estabilidade."
+    },
+    "iphone 13": {
+        "brand": "Apple",
+        "model_name": "iPhone 13",
+        "launch_os": "iOS 15",
+        "max_os": "iOS 18 (Atual)",
+        "is_stuck_android_12": False,
+        "support_status": "✅ Suporte Ativo Apple",
+        "status_badge": "green",
+        "google_oem_notes": "Aparelho potente com suporte a futuras versões do iOS.",
+        "dev_recommendation": "Hardware topo de linha."
+    },
+    "iphone 7": {
+        "brand": "Apple",
+        "model_name": "iPhone 7",
+        "launch_os": "iOS 10",
+        "max_os": "iOS 15.8",
+        "is_stuck_android_12": False,
+        "support_status": "🔴 Descontinuado pela Apple (Parou no iOS 15)",
+        "status_badge": "red",
+        "google_oem_notes": "A Apple encerrou o suporte para este aparelho no iOS 15.",
+        "dev_recommendation": "Modelo antigo; garantir compatibilidade com versões mais antigas do WebKit."
     }
 }
 
@@ -627,6 +770,8 @@ def get_device_lifecycle(brand: Optional[str], model: Optional[str]) -> Dict[str
         return DEVICE_LIFECYCLE_DB["moto g8"]
     if "g9" in m_clean:
         return DEVICE_LIFECYCLE_DB["moto g9"]
+    if "a10s" in m_clean:
+        return DEVICE_LIFECYCLE_DB["galaxy a10s"]
     if "a10" in m_clean:
         return DEVICE_LIFECYCLE_DB["galaxy a10"]
     if "a01" in m_clean:
@@ -641,6 +786,14 @@ def get_device_lifecycle(brand: Optional[str], model: Optional[str]) -> Dict[str
         return DEVICE_LIFECYCLE_DB["galaxy a12"]
     if "a14" in m_clean:
         return DEVICE_LIFECYCLE_DB["galaxy a14"]
+    if "a15" in m_clean:
+        return DEVICE_LIFECYCLE_DB["galaxy a15"]
+    if "a22" in m_clean:
+        return DEVICE_LIFECYCLE_DB["galaxy a22"]
+    if "a32" in m_clean:
+        return DEVICE_LIFECYCLE_DB["galaxy a32"]
+    if "a54" in m_clean:
+        return DEVICE_LIFECYCLE_DB["galaxy a54"]
     if "a20" in m_clean:
         return DEVICE_LIFECYCLE_DB["galaxy a20"]
     if "a21" in m_clean:
@@ -657,18 +810,40 @@ def get_device_lifecycle(brand: Optional[str], model: Optional[str]) -> Dict[str
         return DEVICE_LIFECYCLE_DB["redmi 12c"]
     if "note 12" in m_clean:
         return DEVICE_LIFECYCLE_DB["redmi note 12"]
+    if "note 11" in m_clean:
+        return DEVICE_LIFECYCLE_DB["redmi note 11"]
     if "note 8" in m_clean:
         return DEVICE_LIFECYCLE_DB["redmi note 8"]
     if "note 9" in m_clean:
         return DEVICE_LIFECYCLE_DB["redmi note 9"]
     if "10a" in m_clean:
         return DEVICE_LIFECYCLE_DB["redmi 10a"]
+    if "c40" in m_clean or "poco c40" in m_clean:
+        return DEVICE_LIFECYCLE_DB["poco c40"]
     if "poco x3 pro" in m_clean or "x3 pro" in m_clean:
         return DEVICE_LIFECYCLE_DB["poco x3 pro"]
     if "poco x3" in m_clean or "x3 nfc" in m_clean:
         return DEVICE_LIFECYCLE_DB["poco x3"]
-    if "redmi 9" in m_clean or "9a" in m_clean or "9c" in m_clean:
+    if "redmi 9a" in m_clean or "9a" in m_clean:
+        return DEVICE_LIFECYCLE_DB["redmi 9a"]
+    if "redmi 9c" in m_clean or "9c" in m_clean:
+        return DEVICE_LIFECYCLE_DB["redmi 9c"]
+    if "redmi 9" in m_clean:
         return DEVICE_LIFECYCLE_DB["redmi 9"]
+    if "iphone 13" in m_clean:
+        return DEVICE_LIFECYCLE_DB["iphone 13"]
+    if "iphone 12" in m_clean:
+        return DEVICE_LIFECYCLE_DB["iphone 12"]
+    if "iphone 11" in m_clean:
+        return DEVICE_LIFECYCLE_DB["iphone 11"]
+    if "iphone xr" in m_clean or "xr" in m_clean:
+        return DEVICE_LIFECYCLE_DB["iphone xr"]
+    if "iphone 8" in m_clean:
+        return DEVICE_LIFECYCLE_DB["iphone 8"]
+    if "iphone 7" in m_clean:
+        return DEVICE_LIFECYCLE_DB["iphone 7"]
+    if "iphone 6" in m_clean:
+        return DEVICE_LIFECYCLE_DB["iphone 6s"]
         
     # Padrão para modelos desconhecidos
     return {
@@ -739,6 +914,7 @@ def evaluate_stuck_android_12(
     if "apple" in brand_lower or "ios" in os_name_lower or "iphone" in brand_lower or "ipad" in brand_lower:
         return {
             "is_stuck": False,
+            "is_stuck_android_12": False,
             "badge_text": None,
             "badge_subtext": None,
             "badge_color": None,
@@ -799,6 +975,7 @@ def evaluate_stuck_android_12(
         final_reason = " | ".join(reasons) if reasons else f"Aparelho preso em {max_os} sem suporte a Android 13+."
         return {
             "is_stuck": True,
+            "is_stuck_android_12": True,
             "badge_text": "🛑 Preso no Android ≤ 12",
             "badge_subtext": "Sem atualização para Android 13+",
             "badge_color": "red",
@@ -813,6 +990,7 @@ def evaluate_stuck_android_12(
         
     return {
         "is_stuck": False,
+        "is_stuck_android_12": False,
         "badge_text": None,
         "badge_subtext": None,
         "badge_color": None,
