@@ -185,16 +185,8 @@ def require_admin(request: Request) -> Dict[str, Any]:
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
-    """Página de Login com Google Identity Services"""
-    user = get_current_user_from_request(request)
-    if user and user.get("status") == "approved":
-        return RedirectResponse(url="/", status_code=302)
-    client_id = get_google_client_id()
-    return templates.TemplateResponse(
-        request=request,
-        name="login.html",
-        context={"google_client_id": client_id}
-    )
+    """Acesso livre sem login: redireciona direto para a página principal"""
+    return RedirectResponse(url="/", status_code=302)
 
 @app.post("/api/auth/google")
 async def api_auth_google(req: GoogleAuthRequest):
@@ -264,17 +256,20 @@ async def api_auth_dev_login():
 
 @app.get("/logout")
 async def logout():
-    """Encerra a sessão e remove cookie"""
-    res = RedirectResponse(url="/login", status_code=302)
+    """Acesso livre: redireciona para a página inicial"""
+    res = RedirectResponse(url="/", status_code=302)
     res.delete_cookie(SESSION_COOKIE_NAME)
     return res
 
 @app.get("/api/auth/me")
 async def api_auth_me(request: Request):
-    """Retorna o usuário autenticado atual"""
-    user = get_current_user_from_request(request)
-    if not user:
-        raise HTTPException(status_code=401, detail="Não autenticado")
+    """Retorna os dados do usuário atual ou visitante de acesso livre"""
+    user = get_current_user_from_request(request) or {
+        "email": "acesso.livre@prodemge.gov.br",
+        "name": "Acesso Livre",
+        "role": "viewer",
+        "picture": ""
+    }
     return user
 
 # ==============================================================================
@@ -388,9 +383,12 @@ async def api_admin_delete_user(user_id: int, request: Request):
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    user = get_current_user_from_request(request)
-    if not user:
-        return RedirectResponse(url="/login", status_code=302)
+    user = get_current_user_from_request(request) or {
+        "email": "acesso.livre@prodemge.gov.br",
+        "name": "Acesso Livre",
+        "role": "viewer",
+        "picture": ""
+    }
     return templates.TemplateResponse(
         request=request,
         name="index.html",

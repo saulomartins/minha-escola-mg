@@ -121,27 +121,17 @@
                     <i class="fa-solid fa-gear"></i> Configurações & Conexões
                 </button>
 
-                <!-- Perfil do Usuário Logado -->
+                <!-- Status de Acesso Livre (Sem Autenticação) -->
                 <div class="flex items-center gap-2 pl-2 border-l border-indigo-700 ml-1">
-                    <div class="flex items-center gap-2 bg-indigo-950/70 px-3 py-1.5 rounded-lg border border-indigo-700/60 text-xs">
-                        <div class="w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center font-bold text-white uppercase text-[10px] shadow-sm">
-                            {{ ((current_user.name or current_user.email)|default("U"))[0] }}
+                    <div class="flex items-center gap-2 bg-emerald-950/70 px-3 py-1.5 rounded-lg border border-emerald-500/50 text-xs">
+                        <div class="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center font-bold text-white text-[10px] shadow-sm">
+                            <i class="fa-solid fa-lock-open text-[10px]"></i>
                         </div>
                         <div class="text-left hidden sm:block">
-                            <p class="font-bold leading-tight text-slate-100 max-w-[140px] truncate">{{ current_user.name or current_user.email }}</p>
-                            <p class="text-[10px] text-indigo-300">
-                                {% if current_user.role == 'admin' %}
-                                <span class="text-amber-300 font-bold"><i class="fa-solid fa-crown text-[9px]"></i> Admin</span>
-                                {% else %}
-                                <span class="text-emerald-300 font-semibold"><i class="fa-solid fa-eye text-[9px]"></i> Leitor</span>
-                                {% endif %}
-                            </p>
+                            <p class="font-bold leading-tight text-emerald-100">Acesso Livre</p>
+                            <p class="text-[10px] text-emerald-300 font-semibold">Sem Login / Público</p>
                         </div>
                     </div>
-                    <a href="/logout" class="bg-rose-900/80 hover:bg-rose-800 text-rose-200 hover:text-white px-2.5 py-2 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 border border-rose-700/60 shadow-sm" title="Sair do sistema">
-                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
-                        <span class="hidden sm:inline">Sair</span>
-                    </a>
                 </div>
             </div>
         </div>
@@ -359,7 +349,7 @@
                         <button onclick="applyAllAutoReplies()" id="btn-apply-auto-replies" class="px-3 py-1.5 text-xs font-bold bg-slate-800 hover:bg-slate-900 text-white rounded-lg shadow-sm transition flex items-center gap-1.5" title="Gera respostas automáticas personalizadas para todas as avaliações de 1 a 5 estrelas">
                             <i class="fa-solid fa-bolt text-amber-300"></i> Gerar Respostas (1 a 5 ⭐)
                         </button>
-                        <button onclick="publishBatch()" id="btn-publish-batch" class="px-3.5 py-1.5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm transition flex items-center gap-1.5" title="Mandar publicar todas as respostas salvas diretamente nas lojas oficiais (Google Play e App Store)">
+                        <button onclick="publishBatch()" id="btn-publish-batch" class="hidden px-3.5 py-1.5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm transition items-center gap-1.5" title="Mandar publicar todas as respostas salvas diretamente nas lojas oficiais (Google Play e App Store)">
                             <i class="fa-solid fa-paper-plane"></i> Mandar Publicar (<span id="count-pending-publish">0</span>)
                         </button>
                         <button onclick="exportToExcel('excel', 'all')" class="px-3.5 py-1.5 text-xs font-bold bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg shadow-sm transition flex items-center gap-1.5" title="Exportar TODOS os 500 comentários da base completa para Excel (.xlsx)">
@@ -2782,20 +2772,6 @@
                                         </button>
                                         <button onclick="analyzeSingleReview('${r.id}')" class="px-3 py-1.5 text-xs font-medium bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-md transition flex items-center gap-1.5">
                                             <i class="fa-solid fa-wand-magic-sparkles"></i> Regenerar com IA
-                                        </button>
-                                    </div>
-
-                                    <div class="flex flex-wrap gap-2">
-                                        ${r.status !== 'ignorada' ? `
-                                            <button onclick="ignoreReview('${r.id}')" class="px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-700 rounded-md">
-                                                Ignorar
-                                            </button>
-                                        ` : ''}
-                                        <button onclick="submitReply('${r.id}', false)" title="Salvar resposta internamente no sistema como respondida" class="px-3 py-1.5 text-xs font-semibold bg-slate-700 hover:bg-slate-800 text-white rounded-md shadow transition flex items-center gap-1.5">
-                                            <i class="fa-solid fa-check"></i> ${isReplied ? 'Atualizar no Sistema' : 'Salvar no Sistema'}
-                                        </button>
-                                        <button onclick="sendToStorePublish('${r.id}')" title="Mandar publicar diretamente na Google Play Store ou App Store via API oficial" class="px-3.5 py-1.5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-md shadow transition flex items-center gap-1.5">
-                                            <i class="fa-solid fa-paper-plane"></i> Mandar Publicar na Loja
                                         </button>
                                     </div>
                                 </div>
