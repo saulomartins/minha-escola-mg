@@ -2677,14 +2677,11 @@
                                         </span>
                                     </div>
                                 ` : ''}
-                                <button onclick="openEditDeviceModal('${escapeHtml(r.id)}')" class="ml-auto inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold text-slate-600 hover:text-purple-700 bg-white hover:bg-purple-50 border border-slate-200 hover:border-purple-300 rounded transition shadow-xs" title="Editar aparelho ou versão desta avaliação">
-                                    <i class="fa-solid fa-pen-to-square text-purple-600"></i> Editar Aparelho
-                                </button>
                             </div>
                         `;
                     } else {
                         deviceIndicatorBar = `
-                            <div class="flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-slate-50/80 border border-dashed border-slate-300 rounded-lg text-xs text-slate-600">
+                            <div class="flex flex-wrap items-center gap-2.5 px-3 py-2 bg-slate-50/80 border border-dashed border-slate-300 rounded-lg text-xs text-slate-600">
                                 <div class="flex items-center gap-2">
                                     <i class="fa-solid fa-mobile-screen text-slate-400"></i>
                                     <span>Aparelho: <span class="italic text-slate-500">Não informado na página pública da loja</span></span>
@@ -2693,9 +2690,6 @@
                                         <span class="text-slate-500 font-mono text-[11px]"><i class="fa-solid fa-code-branch text-slate-400"></i> v${escapeHtml(r.app_version)} ${r.app_version_code ? `(Build ${escapeHtml(r.app_version_code)})` : ''}</span>
                                     ` : ''}
                                 </div>
-                                <button onclick="openEditDeviceModal('${escapeHtml(r.id)}')" class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-md transition shadow-xs" title="Informar modelo exato e versão do Android obtidos do Google Play Console">
-                                    <i class="fa-solid fa-pen-to-square text-purple-600"></i> Informar Aparelho (Play Console)
-                                </button>
                             </div>
                         `;
                     }
