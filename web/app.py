@@ -860,7 +860,18 @@ def run_sync_and_auto_analyze():
 
 @app.post("/api/sync")
 def api_sync():
-    google_reviews = fetch_google_play_reviews(count=150)
+    google_sa = get_setting("google_play_service_account", "") or os.environ.get("GOOGLE_PLAY_SERVICE_ACCOUNT_JSON", "")
+    google_reviews = []
+    if google_sa:
+        try:
+            from collector.google_play import fetch_google_play_api_reviews
+            google_reviews = fetch_google_play_api_reviews(google_sa)
+        except Exception as e:
+            logger.error(f"Falha ao sincronizar via Google Play API: {e}")
+
+    if not google_reviews:
+        google_reviews = fetch_google_play_reviews(count=150)
+
     new_google = 0
     for r in google_reviews:
         if upsert_review(r):
