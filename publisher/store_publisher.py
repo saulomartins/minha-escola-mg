@@ -22,9 +22,16 @@ def reply_to_google_play(review_id: str, reply_text: str, service_account_info_o
     try:
         # Se for string com caminho de arquivo ou string com conteúdo JSON
         if isinstance(service_account_info_or_path, str):
-            if os.path.exists(service_account_info_or_path):
+            candidate_path = service_account_info_or_path
+            if not os.path.exists(candidate_path):
+                base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                alt_path = os.path.join(base_dir, candidate_path)
+                if os.path.exists(alt_path):
+                    candidate_path = alt_path
+
+            if os.path.exists(candidate_path):
                 creds = service_account.Credentials.from_service_account_file(
-                    service_account_info_or_path,
+                    candidate_path,
                     scopes=['https://www.googleapis.com/auth/androidpublisher']
                 )
             else:

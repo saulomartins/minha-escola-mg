@@ -1069,7 +1069,7 @@ def api_reply(req: ReplyRequest):
 
     if should_send_store:
         if review["store"] == "google":
-            sa_creds = get_setting("google_play_service_account", "")
+            sa_creds = resolve_google_play_service_account()
             if sa_creds and sa_creds.strip():
                 success, msg = reply_to_google_play(review["review_id"], req.response_text, sa_creds)
                 if success:
@@ -1164,7 +1164,7 @@ def api_publish_batch(store: Optional[str] = None):
             "failed_count": 0
         }
         
-    google_sa = get_setting("google_play_service_account", "")
+    google_sa = resolve_google_play_service_account()
     apple_k_id = get_setting("apple_key_id", "")
     apple_iss = get_setting("apple_issuer_id", "")
     apple_p8 = get_setting("apple_private_key_p8", "")
