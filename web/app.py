@@ -858,9 +858,56 @@ def run_sync_and_auto_analyze():
             )
             update_review_status(r["id"], "respondida", resp_text)
 
+def resolve_google_play_service_account() -> str:
+    """Busca a chave em configurações, variáveis de ambiente (com tolerância a nomes), arquivos secretos do Render ou raiz"""
+    # 1. Configurações salvas no app
+    sa = get_setting("google_play_service_account", "")
+    if sa:
+        return sa
+    
+    # 2. Variáveis de ambiente possíveis
+    candidate_keys = [
+        "GOOGLE_PLAY_SERVICE_ACCOUNT_JSON",
+        "GOOGLE_PLAY_SERVICE_ACCOUNT",
+        "GOOGLE_SERVICE_ACCOUNT_JSON",
+        "GOOGLE_SERVICE_ACCOUNT",
+        "PLAY_SERVICE_ACCOUNT_JSON",
+        "GOOGLE_APPLICATION_CREDENTIALS"
+    ]
+    for k in candidate_keys:
+        val = os.environ.get(k, "").strip()
+        if val:
+            return val
+            
+    # Procura qualquer variável de ambiente que contenha SERVICE_ACCOUNT
+    for k, v in os.environ.items():
+        if "SERVICE_ACCOUNT" in k.upper() and v.strip().startswith("{"):
+            return v.strip()
+
+    # 3. Secret Files padrão do Render (/etc/secrets/) e arquivos locais
+    candidate_files = [
+        "/etc/secrets/google_play_service_account.json",
+        "/etc/secrets/service_account.json",
+        "/etc/secrets/google-play-key.json",
+        "google_play_service_account.json"
+    ]
+    for p in candidate_files:
+        if os.path.exists(p):
+            return p
+            
+    if os.path.exists("/etc/secrets"):
+        try:
+            for fname in os.listdir("/etc/secrets"):
+                if fname.endswith(".json"):
+                    return os.path.join("/etc/secrets", fname)
+        except Exception:
+            pass
+
+    return ""
+
 @app.post("/api/sync")
 def api_sync():
-    google_sa = get_setting("google_play_service_account", "") or os.environ.get("GOOGLE_PLAY_SERVICE_ACCOUNT_JSON", "")
+    google_sa = resolve_google_play_service_account()
     google_reviews = []
     if google_sa:
         try:
@@ -922,12 +969,14 @@ def api_sync():
 @app.get("/api/test-google-play-api")
 def api_test_google_play():
     """Diagnóstico para validar se a Service Account está configurada e respondendo"""
-    google_sa = get_setting("google_play_service_account", "") or os.environ.get("GOOGLE_PLAY_SERVICE_ACCOUNT_JSON", "")
+    google_sa = resolve_google_play_service_account()
     if not google_sa:
+        all_env_keys = [k for k in os.environ.keys() if any(sub in k.upper() for sub in ["GOOGLE", "PLAY", "SERVICE", "ACCOUNT"])]
         return {
             "configured": False,
             "status": "missing_variable",
-            "message": "Variável GOOGLE_PLAY_SERVICE_ACCOUNT_JSON não encontrada no ambiente do servidor."
+            "message": "Nenhuma variável de ambiente de Service Account ou arquivo foi encontrado no servidor.",
+            "detected_env_keys": all_env_keys
         }
     
     try:
