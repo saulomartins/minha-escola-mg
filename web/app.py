@@ -919,6 +919,40 @@ def api_sync():
         "new_reviews": new_total
     }
 
+@app.get("/api/test-google-play-api")
+def api_test_google_play():
+    """Diagnóstico para validar se a Service Account está configurada e respondendo"""
+    google_sa = get_setting("google_play_service_account", "") or os.environ.get("GOOGLE_PLAY_SERVICE_ACCOUNT_JSON", "")
+    if not google_sa:
+        return {
+            "configured": False,
+            "status": "missing_variable",
+            "message": "Variável GOOGLE_PLAY_SERVICE_ACCOUNT_JSON não encontrada no ambiente do servidor."
+        }
+    
+    try:
+        from collector.google_play import fetch_google_play_api_reviews
+        reviews = fetch_google_play_api_reviews(google_sa, max_results=5)
+        if reviews:
+            return {
+                "configured": True,
+                "status": "success",
+                "message": f"Conexão oficial com a Google Play Developer API funcionando perfeitamente! Foram coletadas {len(reviews)} avaliações com telemetria direta da loja.",
+                "sample_devices": [f"{r.get('user_name')}: {r.get('device_brand')} {r.get('device_model')}" for r in reviews[:5]]
+            }
+        else:
+            return {
+                "configured": True,
+                "status": "empty_or_failed",
+                "message": "A chave existe, mas a chamada à API não retornou dados. Verifique permissões."
+            }
+    except Exception as e:
+        return {
+            "configured": True,
+            "status": "error",
+            "message": f"Erro ao conectar na Google Play API: {str(e)}"
+        }
+
 @app.post("/api/analyze/{review_id}")
 def api_analyze_one(review_id: str):
     conn = get_connection()
