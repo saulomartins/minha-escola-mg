@@ -869,13 +869,18 @@ def api_sync():
         except Exception as e:
             logger.error(f"Falha ao sincronizar via Google Play API: {e}")
 
-    if not google_reviews:
-        google_reviews = fetch_google_play_reviews(count=150)
-
+    # 1. Coleta avaliações públicas para manter a base ampla
+    public_reviews = fetch_google_play_reviews(count=150)
     new_google = 0
-    for r in google_reviews:
+    for r in public_reviews:
         if upsert_review(r):
             new_google += 1
+
+    # 2. Sobrescreve e enriquece com telemetria oficial da Google Play Developer API
+    if google_reviews:
+        for r in google_reviews:
+            if upsert_review(r):
+                new_google += 1
             
     apple_reviews = fetch_apple_store_reviews(max_pages=5)
     new_apple = 0

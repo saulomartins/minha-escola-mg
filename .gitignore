@@ -3,3 +3,5 @@ __pycache__/
 *.pyc
 cloudflared.exe
 .env
+google_play_service_account.json
+*.json.key

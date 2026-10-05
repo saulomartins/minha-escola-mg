@@ -112,9 +112,17 @@ def fetch_google_play_api_reviews(service_account_info_or_path: Any, max_results
         from collector.play_console_importer import normalize_device_model
 
         if isinstance(service_account_info_or_path, str):
-            if os.path.exists(service_account_info_or_path):
+            candidate_path = service_account_info_or_path
+            if not os.path.exists(candidate_path):
+                # Try relative to project root
+                base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                alt_path = os.path.join(base_dir, candidate_path)
+                if os.path.exists(alt_path):
+                    candidate_path = alt_path
+
+            if os.path.exists(candidate_path):
                 creds = service_account.Credentials.from_service_account_file(
-                    service_account_info_or_path,
+                    candidate_path,
                     scopes=['https://www.googleapis.com/auth/androidpublisher']
                 )
             else:
@@ -139,81 +147,120 @@ def fetch_google_play_api_reviews(service_account_info_or_path: Any, max_results
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json"
         }
-        params = {
-            "maxResults": min(max_results, 100)
-        }
 
-        resp = requests.get(url, headers=headers, params=params, timeout=25)
-        if resp.status_code != 200:
-            logger.error(f"Erro na API do Google Play ({resp.status_code}): {resp.text}")
-            return []
-
-        data = resp.json()
-        raw_items = data.get("reviews", [])
         normalized = []
+        next_token = None
+        pages_fetched = 0
 
-        for item in raw_items:
-            review_id = item.get("reviewId", "")
-            author_name = item.get("authorName") or "Usuário Google Play"
-            comments = item.get("comments", [])
-            if not comments:
-                continue
+        while True:
+            params = {"maxResults": min(max_results, 100)}
+            if next_token:
+                params["token"] = next_token
 
-            user_comment = comments[0].get("userComment", {})
-            dev_comment = comments[1].get("developerComment", {}) if len(comments) > 1 else comments[0].get("developerComment", {})
+            resp = requests.get(url, headers=headers, params=params, timeout=25)
+            if resp.status_code != 200:
+                logger.error(f"Erro na API do Google Play ({resp.status_code}): {resp.text}")
+                break
 
-            content = user_comment.get("text", "").strip()
-            rating = int(user_comment.get("starRating", 3))
-            sdk_version = user_comment.get("androidSdkVersion")
-            os_version = parse_android_sdk(sdk_version) or (f"Android (SDK {sdk_version})" if sdk_version else "Android")
-            app_code = str(user_comment.get("appVersionCode") or "")
-            app_ver_name = str(user_comment.get("appVersionName") or "")
-            device_raw = user_comment.get("device") or ""
-            dev_meta = user_comment.get("deviceMetadata") or {}
-            
-            raw_model = dev_meta.get("deviceModel") or device_raw
-            brand, model = normalize_device_model(raw_model)
-            if dev_meta.get("manufacturer"):
-                brand = dev_meta.get("manufacturer").capitalize()
-                if not model.lower().startswith(brand.lower()):
-                    model = f"{brand} {model}".strip()
+            data = resp.json()
+            raw_items = data.get("reviews", [])
+            if not raw_items:
+                break
 
-            last_mod = user_comment.get("lastModified", {})
-            seconds = last_mod.get("seconds")
-            if seconds:
-                review_date = datetime.utcfromtimestamp(int(seconds)).isoformat()
-            else:
-                review_date = datetime.utcnow().isoformat()
+            for item in raw_items:
+                review_id = item.get("reviewId", "")
+                author_name = item.get("authorName") or "Usuário Google Play"
+                comments = item.get("comments", [])
+                if not comments:
+                    continue
 
-            dev_reply_text = dev_comment.get("text")
-            dev_reply_date = None
-            if dev_comment.get("lastModified", {}).get("seconds"):
-                dev_reply_date = datetime.utcfromtimestamp(int(dev_comment["lastModified"]["seconds"])).isoformat()
+                user_comment = comments[0].get("userComment", {})
+                dev_comment = comments[1].get("developerComment", {}) if len(comments) > 1 else comments[0].get("developerComment", {})
 
-            normalized.append({
-                "id": f"google_{review_id}",
-                "store": "google",
-                "review_id": review_id,
-                "user_name": author_name,
-                "rating": rating,
-                "title": "",
-                "content": content,
-                "review_date": review_date,
-                "developer_response": dev_reply_text,
-                "developer_response_date": dev_reply_date,
-                "status": "respondida" if dev_reply_text else "pendente",
-                "device_brand": brand,
-                "device_model": model,
-                "os_name": "Android",
-                "os_version": os_version,
-                "app_version": app_ver_name or "4.2.2",
-                "app_version_code": app_code or "59",
-                "reviewer_language": user_comment.get("reviewerLanguage") or "pt",
-                "device_source": "play_console_official"
-            })
+                content = user_comment.get("text", "").strip()
+                rating = int(user_comment.get("starRating", 3))
+                sdk_version = user_comment.get("androidSdkVersion")
+                os_version = parse_android_sdk(sdk_version)
+                app_code = str(user_comment.get("appVersionCode") or "59")
+                app_ver_name = str(user_comment.get("appVersionName") or "4.2.2")
+                device_raw = user_comment.get("device") or ""
+                dev_meta = user_comment.get("deviceMetadata") or {}
+                
+                product_name = dev_meta.get("productName") or dev_meta.get("deviceModel") or device_raw
+                manufacturer = (dev_meta.get("manufacturer") or "").strip()
+
+                # Extrai nome comercial amigável de strings como 'vayu (POCO X3 Pro)'
+                if '(' in product_name and ')' in product_name:
+                    friendly = product_name[product_name.find('(')+1 : product_name.rfind(')')].strip()
+                else:
+                    friendly = product_name.strip()
+
+                brand = manufacturer.capitalize() if manufacturer else "Android"
+                if brand.lower() in ["redmi", "poco", "mi"]:
+                    brand = "Xiaomi"
+                elif "samsung" in brand.lower():
+                    brand = "Samsung"
+                elif "motorola" in brand.lower():
+                    brand = "Motorola"
+                elif "infinix" in brand.lower():
+                    brand = "Infinix"
+
+                model = friendly or device_raw or "Dispositivo Android"
+                if brand == "Samsung" and not model.lower().startswith("samsung"):
+                    model = f"Samsung {model}"
+                elif brand == "Motorola" and not model.lower().startswith("motorola") and not model.lower().startswith("moto"):
+                    model = f"Motorola {model}"
+                elif brand == "Motorola" and model.lower().startswith("moto") and not model.lower().startswith("motorola"):
+                    model = f"Motorola {model}"
+                elif brand == "Infinix" and not model.lower().startswith("infinix"):
+                    model = f"Infinix {model}"
+
+                if not os_version:
+                    os_version = "Android 13"
+
+                last_mod = user_comment.get("lastModified", {})
+                seconds = last_mod.get("seconds")
+                if seconds:
+                    review_date = datetime.utcfromtimestamp(int(seconds)).isoformat()
+                else:
+                    review_date = datetime.utcnow().isoformat()
+
+                dev_reply_text = dev_comment.get("text")
+                dev_reply_date = None
+                if dev_comment.get("lastModified", {}).get("seconds"):
+                    dev_reply_date = datetime.utcfromtimestamp(int(dev_comment["lastModified"]["seconds"])).isoformat()
+
+                normalized.append({
+                    "id": f"google_{review_id}",
+                    "store": "google",
+                    "review_id": review_id,
+                    "user_name": author_name,
+                    "rating": rating,
+                    "title": "",
+                    "content": content,
+                    "review_date": review_date,
+                    "developer_response": dev_reply_text,
+                    "developer_response_date": dev_reply_date,
+                    "status": "respondida" if dev_reply_text else "pendente",
+                    "device_brand": brand,
+                    "device_model": model,
+                    "os_name": "Android",
+                    "os_version": os_version,
+                    "app_version": app_ver_name,
+                    "app_version_code": app_code,
+                    "reviewer_language": user_comment.get("reviewerLanguage") or "pt",
+                    "device_source": "play_console_official"
+                })
+
+            pages_fetched += 1
+            page_info = data.get("tokenPagination", {})
+            next_token = page_info.get("nextPageToken")
+            if not next_token or pages_fetched >= 5 or len(normalized) >= max_results:
+                break
 
         logger.info(f"Coletadas {len(normalized)} avaliações oficiais com telemetria direta da API do Google Play Console.")
         return normalized
     except Exception as e:
         logger.error(f"Exceção ao buscar avaliações da API do Play Console: {e}")
         return []
+
