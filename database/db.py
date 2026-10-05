@@ -106,6 +106,48 @@ def populate_store_device_specifications(cursor=None):
             except Exception:
                 pass
 
+def ensure_support_channel_in_pending_reviews(cursor=None):
+    """
+    Garante que 100% das avaliações pendentes de 1 a 3 estrelas OU com qualquer
+    contexto de problema/dificuldade no texto possuam o Canal de Suporte Oficial citado pela IA (Formulário Prodemge).
+    """
+    should_close = False
+    conn = None
+    if cursor is None:
+        conn = get_connection()
+        cursor = conn.cursor()
+        should_close = True
+        
+    try:
+        from ai.analyzer import has_problem_context
+        from ai.auto_reply_templates import generate_auto_reply_for_review
+        
+        cursor.execute("SELECT * FROM reviews WHERE status != 'respondida'")
+        rows = [dict(r) for r in cursor.fetchall()]
+        
+        for r in rows:
+            rating = r.get("rating", 3)
+            content = r.get("content", "")
+            current_resp = r.get("ai_suggested_response") or ""
+            
+            if has_problem_context(content, rating):
+                if "forms.cloud.microsoft" not in current_resp and "JmZhSzXtwG" not in current_resp:
+                    new_resp = generate_auto_reply_for_review(r)
+                    cursor.execute("""
+                        UPDATE reviews SET ai_suggested_response = ? WHERE id = ?
+                    """, (new_resp, r["id"]))
+                    
+        if should_close and conn:
+            conn.commit()
+            conn.close()
+    except Exception as e:
+        print(f"Erro ao verificar canais de suporte em avaliações pendentes: {e}")
+        if should_close and conn:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
 def init_db():
     conn = get_connection()
     cursor = conn.cursor()
@@ -166,6 +208,12 @@ def init_db():
         populate_store_device_specifications(cursor)
     except Exception as e:
         print(f"Erro em populate_store_device_specifications: {e}")
+
+    # Garante o Canal de Suporte Oficial (Formulário Prodemge) para 1-3 estrelas e problemas
+    try:
+        ensure_support_channel_in_pending_reviews(cursor)
+    except Exception as e:
+        print(f"Erro em ensure_support_channel_in_pending_reviews: {e}")
     
     # Tabela de usuários e permissões de acesso
     cursor.execute("""

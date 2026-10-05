@@ -1,5 +1,7 @@
+import re
 from typing import Dict, Any, List, Optional
 from database.db import get_connection, get_setting
+from ai.analyzer import has_problem_context
 
 # Configuração e descrição detalhada de cada causa-raiz com templates para todas as estrelas
 OFFICIAL_SUPPORT_FORM = "https://forms.cloud.microsoft/r/JmZhSzXtwG"
@@ -13,8 +15,8 @@ PROBLEM_TEMPLATES_CONFIG = {
         "severity": "Crítica",
         "complexity": "Alta",
         "templates": {
-            "critical": "Olá, {nome}! Sentimos muito pelo transtorno no acesso Gov.br. Esse erro geralmente ocorre por divergência cadastral entre a base federal e a secretaria da escola. Recomendamos confirmar se o seu CPF e data de nascimento estão atualizados junto à coordenação da sua escola. Se o problema persistir, pedimos que preencha o formulário oficial para verificarmos os detalhes da ocorrência: 👉 {canal_contato}",
-            "moderate": "Olá, {nome}! Agradecemos pelo seu retorno. O login com Gov.br exige que os dados cadastrais estejam 100% alinhados com o cadastro escolar. Caso o acesso continue instável, orientamos relatar pelo formulário oficial de atendimento: 👉 {canal_contato}",
+            "critical": "Olá, {nome}! Sentimos muito pelo transtorno no acesso Gov.br. Esse erro geralmente ocorre por divergência cadastral entre a base federal e a secretaria da escola. Recomendamos confirmar se o seu CPF e data de nascimento estão atualizados junto à coordenação da sua escola. Se o problema persistir, pedimos que preencha o Canal de Suporte Oficial citado pela IA (Formulário Prodemge): 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! Agradecemos pelo seu retorno. O login com Gov.br exige que os dados cadastrais estejam 100% alinhados com o cadastro escolar. Caso o acesso continue instável, orientamos relatar pelo Canal de Suporte Oficial citado pela IA (Formulário Prodemge): 👉 {canal_contato}",
             "positive": "Olá, {nome}! Muito obrigado pela avaliação de {estrelas} estrelas no Minha Escola MG! Trabalhamos constantemente na integração com o Gov.br para manter seu acesso seguro e prático. Conte conosco!"
         }
     },
@@ -26,9 +28,9 @@ PROBLEM_TEMPLATES_CONFIG = {
         "severity": "Alta",
         "complexity": "Média",
         "templates": {
-            "critical": "Olá, {nome}! Sentimos muito pela dificuldade na recuperação da senha. Verifique se a mensagem não foi para a caixa de Spam/Lixo Eletrônico. Caso o e-mail cadastrado na escola seja antigo ou inacessível, solicite a atualização junto à secretaria da sua escola ou registre no formulário: 👉 {canal_contato}",
-            "moderate": "Olá, {nome}! Agradecemos pelo seu contato. Para recuperar sua senha com segurança, certifique-se de que o e-mail cadastrado na escola é o seu e-mail atual. Havendo qualquer divergência, a secretaria escolar poderá realizar a redefinição imediata para você.",
-            "positive": "Olá, {nome}! Agradecemos pela avaliação positiva! Nosso objetivo é garantir que seu acesso ao Minha Escola MG seja sempre ágil e descomplicado. Um abraço da equipe!"
+            "critical": "Olá, {nome}! Sentimos muito pela dificuldade na recuperação da senha. Verifique se a mensagem não foi para a caixa de Spam/Lixo Eletrônico. Caso o e-mail cadastrado na escola seja antigo ou inacessível, solicite a atualização junto à secretaria da sua escola ou registre no Canal de Suporte Oficial citado pela IA (Formulário Prodemge): 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! Agradecemos pelo seu contato. Para recuperar sua senha com segurança, certifique-se de que o e-mail cadastrado na escola é o seu e-mail atual. Havendo qualquer divergência ou persistindo o erro, consulte a secretaria da escola ou registre no Canal de Suporte Oficial citado pela IA (Formulário Prodemge): 👉 {canal_contato}",
+            "positive": "Olá, {nome}! Agradecemos pela avaliação positiva de {estrelas} estrelas! Nosso objetivo é garantir que seu acesso ao Minha Escola MG seja sempre ágil e descomplicado. Um abraço da equipe!"
         }
     },
     "lentidao_tela_preta": {
@@ -39,8 +41,8 @@ PROBLEM_TEMPLATES_CONFIG = {
         "severity": "Alta",
         "complexity": "Média",
         "templates": {
-            "critical": "Olá, {nome}! Lamentamos muito pela lentidão ou travamento no Minha Escola MG. Nossa equipe técnica da Prodemge lançou atualizações para otimização de performance. Recomendamos atualizar o app para a versão mais recente na {loja} e limpar o cache nas configurações do aparelho. Se persistir, informe os detalhes no formulário: 👉 {canal_contato}",
-            "moderate": "Olá, {nome}! Obrigado por nos avisar sobre a lentidão. Estamos trabalhando continuamente na estabilidade do aplicativo. Certifique-se de manter o app atualizado e, caso precise de auxílio, relate em: 👉 {canal_contato}",
+            "critical": "Olá, {nome}! Lamentamos muito pela lentidão ou travamento no Minha Escola MG. Nossa equipe técnica da Prodemge lançou atualizações para otimização de performance. Recomendamos atualizar o app para a versão mais recente na {loja} e limpar o cache nas configurações do aparelho. Se persistir, informe os detalhes no Canal de Suporte Oficial citado pela IA (Formulário Prodemge): 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! Obrigado por nos avisar sobre a lentidão. Estamos trabalhando continuamente na estabilidade do aplicativo. Certifique-se de manter o app atualizado e, caso precise de auxílio, relate no Canal de Suporte Oficial citado pela IA (Formulário Prodemge): 👉 {canal_contato}",
             "positive": "Olá, {nome}! Muito obrigado pela avaliação de {estrelas} estrelas! Estamos sempre otimizando a velocidade do Minha Escola MG para oferecer a melhor experiência a você. Conte com a gente!"
         }
     },
@@ -52,8 +54,8 @@ PROBLEM_TEMPLATES_CONFIG = {
         "severity": "Alta",
         "complexity": "Alta",
         "templates": {
-            "critical": "Olá, {nome}! Entendemos a importância de acompanhar o boletim. As notas exibidas no Minha Escola MG dependem da sincronização e homologação feitas pelos professores no Diário Escolar Digital (DED). Caso o bimestre já tenha encerrado e as notas não apareçam, orientamos consultar a coordenação da sua escola para verificar a publicação das notas.",
-            "moderate": "Olá, {nome}! Agradecemos pelo seu relato. A atualização das notas no aplicativo ocorre conforme os professores realizam o lançamento oficial no sistema escolar. Havendo dúvidas ou divergências, a secretaria da escola poderá confirmar os lançamentos vigentes.",
+            "critical": "Olá, {nome}! Entendemos a importância de acompanhar o boletim. As notas exibidas no Minha Escola MG dependem da sincronização e homologação feitas pelos professores no Diário Escolar Digital (DED). Caso o bimestre já tenha encerrado e as notas não apareçam, consulte a coordenação da sua escola ou relate no Canal de Suporte Oficial citado pela IA (Formulário Prodemge): 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! Agradecemos pelo seu relato. A atualização das notas no aplicativo ocorre conforme os professores realizam o lançamento oficial no sistema escolar. Havendo dúvidas ou divergências não solucionadas pela escola, relate pelo Canal de Suporte Oficial citado pela IA (Formulário Prodemge): 👉 {canal_contato}",
             "positive": "Olá, {nome}! Ficamos muito felizes com a sua avaliação positiva! O acompanhamento das notas é fundamental e estamos empenhados em manter tudo sempre sincronizado para você. Bons estudos!"
         }
     },
@@ -65,8 +67,8 @@ PROBLEM_TEMPLATES_CONFIG = {
         "severity": "Média",
         "complexity": "Média",
         "templates": {
-            "critical": "Olá, {nome}! Agradecemos pelo alerta sobre a frequência. O registro de faltas e presenças no app é alimentado pelos professores. Se houver faltas indevidas ou justificativas médicas abonadas que não constam no app, procure a secretaria da sua escola para solicitar a retificação no sistema.",
-            "moderate": "Olá, {nome}! O controle de faltas reflete o Diário Escolar Digital. Caso note divergências na frequência, a coordenação da sua escola poderá verificar e retificar os registros das aulas.",
+            "critical": "Olá, {nome}! Agradecemos pelo alerta sobre a frequência. O registro de faltas e presenças no app é alimentado pelos professores no Diário Escolar Digital. Se houver divergências não solucionadas pela secretaria da escola, relate os detalhes no Canal de Suporte Oficial citado pela IA (Formulário Prodemge): 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! O controle de faltas reflete o Diário Escolar Digital. Caso note divergências na frequência, a coordenação da sua escola poderá verificar e retificar os registros, ou você pode registrar no Canal de Suporte Oficial citado pela IA (Formulário Prodemge): 👉 {canal_contato}",
             "positive": "Olá, {nome}! Muito obrigado pela avaliação de {estrelas} estrelas! O controle de frequência é essencial para o acompanhamento escolar. Conte conosco!"
         }
     },
@@ -78,8 +80,8 @@ PROBLEM_TEMPLATES_CONFIG = {
         "severity": "Crítica",
         "complexity": "Alta",
         "templates": {
-            "critical": "Olá, {nome}! Pedimos sinceras desculpas pelo fechamento inesperado do aplicativo. Nossa equipe de desenvolvimento está corrigindo as causas de instabilidade. Por gentileza, certifique-se de atualizar o app para a versão mais recente na {loja} e reiniciar o aparelho. Caso persista, pedimos que preencha o formulário abaixo informando os detalhes da ocorrência: 👉 {canal_contato}",
-            "moderate": "Olá, {nome}! Agradecemos pelo relato. Estamos trabalhando para eliminar falhas de fechamento. Recomendamos reinstalar o aplicativo ou registrar o modelo do celular em: 👉 {canal_contato}",
+            "critical": "Olá, {nome}! Pedimos sinceras desculpas pelo fechamento inesperado do aplicativo. Nossa equipe de desenvolvimento está corrigindo as causas de instabilidade. Por gentileza, certifique-se de atualizar o app para a versão mais recente na {loja} e reiniciar o aparelho. Caso persista, pedimos que preencha o Canal de Suporte Oficial citado pela IA (Formulário Prodemge): 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! Agradecemos pelo relato. Estamos trabalhando para eliminar falhas de fechamento. Recomendamos reinstalar o aplicativo ou registrar o modelo do celular no Canal de Suporte Oficial citado pela IA (Formulário Prodemge): 👉 {canal_contato}",
             "positive": "Olá, {nome}! Agradecemos pela confiança e avaliação de {estrelas} estrelas! Nossa equipe continuará monitorando a estabilidade para garantir o melhor funcionamento."
         }
     },
@@ -91,8 +93,8 @@ PROBLEM_TEMPLATES_CONFIG = {
         "severity": "Média",
         "complexity": "Média",
         "templates": {
-            "critical": "Olá, {nome}! Compreendemos sua necessidade de acompanhar seus filhos. Para que os dependentes apareçam no seu perfil, o CPF do responsável legal deve estar cadastrado de forma idêntica na matrícula de cada estudante. Orientamos procurar a secretaria escolar para conferir o vínculo dos alunos ao seu CPF.",
-            "moderate": "Olá, {nome}! O vínculo de múltiplos estudantes ao mesmo responsável depende da conferência cadastral nas secretarias das respectivas escolas. Ficamos à disposição pelo formulário oficial 👉 {canal_contato} caso precise de orientação adicional.",
+            "critical": "Olá, {nome}! Compreendemos sua necessidade de acompanhar seus filhos. Para que os dependentes apareçam no seu perfil, o CPF do responsável legal deve estar cadastrado de forma idêntica na matrícula de cada estudante. Orientamos procurar a secretaria escolar ou relatar pelo Canal de Suporte Oficial citado pela IA (Formulário Prodemge): 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! O vínculo de múltiplos estudantes ao mesmo responsável depende da conferência cadastral nas secretarias das respectivas escolas. Ficamos à disposição pelo Canal de Suporte Oficial citado pela IA (Formulário Prodemge): 👉 {canal_contato} caso precise de orientação adicional.",
             "positive": "Olá, {nome}! Que alegria receber sua avaliação positiva! É um prazer apoiar as famílias no acompanhamento da vida escolar dos estudantes mineiros. Obrigado!"
         }
     },
@@ -104,8 +106,8 @@ PROBLEM_TEMPLATES_CONFIG = {
         "severity": "Média",
         "complexity": "Baixa",
         "templates": {
-            "critical": "Olá, {nome}! Para nos ajudar a identificar e solucionar problemas no aplicativo Minha Escola, pedimos que preencha o formulário oficial abaixo, informando os detalhes da ocorrência: 👉 {canal_contato}",
-            "moderate": "Olá, {nome}! Agradecemos por compartilhar sua opinião. Suas observações nos ajudam a identificar pontos de melhoria no Minha Escola MG. Se tiver dúvidas específicas ou relatar um problema, preencha: 👉 {canal_contato}",
+            "critical": "Olá, {nome}! Para nos ajudar a identificar e solucionar problemas no aplicativo Minha Escola MG, pedimos que preencha o Canal de Suporte Oficial citado pela IA (Formulário Prodemge): 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! Agradecemos por compartilhar sua opinião. Se estiver enfrentando qualquer dificuldade ou dúvida técnica, pedimos que preencha o Canal de Suporte Oficial citado pela IA (Formulário Prodemge): 👉 {canal_contato}",
             "positive": "Olá, {nome}! Agradecemos pelo retorno e pelas observações. Estamos à disposição para apoiar sua jornada escolar!"
         }
     },
@@ -117,8 +119,8 @@ PROBLEM_TEMPLATES_CONFIG = {
         "severity": "Baixa",
         "complexity": "Baixa",
         "templates": {
-            "critical": "Olá, {nome}! Agradecemos pelo seu contato e apoio ao Minha Escola MG!",
-            "moderate": "Olá, {nome}! Muito obrigado pelo retorno positivo e pelas sugestões de aprimoramento. Continuaremos trabalhando para melhorar ainda mais o aplicativo!",
+            "critical": "Olá, {nome}! Agradecemos pelo seu contato. Caso esteja enfrentando qualquer instabilidade ou dificuldade no Minha Escola MG, pedimos que relate no Canal de Suporte Oficial citado pela IA (Formulário Prodemge): 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! Muito obrigado pelo retorno positivo. Se houver alguma dificuldade técnica que possamos ajudar a resolver, utilize o Canal de Suporte Oficial citado pela IA (Formulário Prodemge): 👉 {canal_contato}",
             "positive": "Olá, {nome}! Ficamos imensamente felizes com a sua avaliação de {estrelas} estrelas no Minha Escola MG! Nosso compromisso diário é facilitar a rotina de toda a comunidade escolar mineira. Muito obrigado pelo carinho e conte sempre conosco!"
         }
     },
@@ -130,8 +132,8 @@ PROBLEM_TEMPLATES_CONFIG = {
         "severity": "Baixa",
         "complexity": "Baixa",
         "templates": {
-            "critical": "Olá, {nome}! Sentimos muito por qualquer inconveniente no Minha Escola MG. Para nos ajudar a identificar e solucionar ocorrências, pedimos que preencha o formulário oficial: 👉 {canal_contato}",
-            "moderate": "Olá, {nome}! Muito obrigado por compartilhar sua visão e sugestões de aprimoramento. Analisamos continuamente as opiniões da comunidade para aperfeiçoar o Minha Escola MG.",
+            "critical": "Olá, {nome}! Sentimos muito por qualquer inconveniente no Minha Escola MG. Para nos ajudar a identificar e solucionar ocorrências, pedimos que preencha o Canal de Suporte Oficial citado pela IA (Formulário Prodemge): 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! Muito obrigado por compartilhar sua visão e sugestões de aprimoramento. Se notar qualquer instabilidade ou precisar de auxílio técnico, registre no Canal de Suporte Oficial citado pela IA (Formulário Prodemge): 👉 {canal_contato}",
             "positive": "Olá, {nome}! Agradecemos pela avaliação de {estrelas} estrelas no Minha Escola MG! Trabalhamos para tornar o dia a dia escolar cada vez mais prático. Conte conosco!"
         }
     }
@@ -139,10 +141,12 @@ PROBLEM_TEMPLATES_CONFIG = {
 
 def generate_auto_reply_for_review(review: Dict[str, Any], root_cause_id: Optional[str] = None) -> str:
     """
-    Gera a resposta automática perfeita com base na Causa-Raiz e na Nota (Estrelas),
-    adaptada para a loja (Google Play ou Apple Store).
-    NUNCA inclui e-mails pessoais (como saulomartins.costa@gmail.com).
-    Sempre direciona para o formulário oficial: https://forms.cloud.microsoft/r/JmZhSzXtwG.
+    Gera a resposta automática com base na Causa-Raiz e na Nota (Estrelas).
+    REGRAS CRÍTICAS:
+    1. Para TODAS as avaliações de 1 a 3 estrelas: SEMPRE inclui o Canal de Suporte Oficial citado pela IA (Formulário Prodemge).
+    2. Para 4 ou 5 estrelas: se contiver QUALQUER contexto de problema no texto do usuário, TAMBÉM inclui o Canal de Suporte Oficial citado pela IA (Formulário Prodemge).
+    3. NUNCA inclui e-mails pessoais ou de desenvolvedores (ex: saulomartins.costa@gmail.com).
+    4. Sempre direciona para o formulário oficial: https://forms.cloud.microsoft/r/JmZhSzXtwG.
     """
     user_name = review.get("user_name", "").strip()
     if not user_name or user_name.lower() in ("usuário", "usuario", "usuario google play", "usuário apple"):
@@ -151,6 +155,7 @@ def generate_auto_reply_for_review(review: Dict[str, Any], root_cause_id: Option
         greeting_name = user_name
 
     rating = int(review.get("rating", 3))
+    content = review.get("content", "")
     store = review.get("store", "google")
     store_name = "Google Play Store" if store == "google" else "Apple App Store"
 
@@ -160,21 +165,34 @@ def generate_auto_reply_for_review(review: Dict[str, Any], root_cause_id: Option
     if "@" in canal_contato or not canal_contato.strip():
         canal_contato = OFFICIAL_SUPPORT_FORM
 
+    # Avalia se há contexto de problema
+    is_problem = has_problem_context(content, rating)
+
     # Identifica o grupo se não fornecido
     from analytics.complexity import classify_text_issue
     if not root_cause_id or root_cause_id not in PROBLEM_TEMPLATES_CONFIG:
-        c = classify_text_issue(review.get("content", ""), review.get("title", ""), rating)
+        c = classify_text_issue(content, review.get("title", ""), rating)
         root_cause_id = c["id"]
 
     cfg = PROBLEM_TEMPLATES_CONFIG.get(root_cause_id, PROBLEM_TEMPLATES_CONFIG["outros_problemas"])
 
-    # Seleciona o template pelo nível de estrelas
+    # Seleciona o template pelo nível de estrelas e pelo contexto de problema
     if rating <= 2:
         template = cfg["templates"]["critical"]
     elif rating == 3:
         template = cfg["templates"]["moderate"]
     else:
-        template = cfg["templates"]["positive"]
+        # 4 ou 5 estrelas
+        if is_problem:
+            # Usuário deu nota alta, mas relatou erro, bug, lentidão ou problema
+            template = (
+                cfg["templates"]["positive"] + 
+                " Notamos que você mencionou uma instabilidade ou dificuldade. "
+                "Para que nossa equipe técnica possa verificar e solucionar o ocorrido, pedimos que preencha o "
+                "Canal de Suporte Oficial citado pela IA (Formulário Prodemge): 👉 {canal_contato}"
+            )
+        else:
+            template = cfg["templates"]["positive"]
 
     formatted = template.format(
         nome=greeting_name,
@@ -183,5 +201,16 @@ def generate_auto_reply_for_review(review: Dict[str, Any], root_cause_id: Option
         email=canal_contato,
         estrelas=rating
     )
+
+    # Verificação estrita de segurança:
+    # Se for 1 a 3 estrelas OU se houver contexto de problema, GARANTE que o formulário está no texto final!
+    if (rating <= 3 or is_problem) and ("forms.cloud.microsoft" not in formatted and "JmZhSzXtwG" not in formatted):
+        formatted = (
+            f"{formatted} Para que possamos analisar e solucionar sua situação, por favor preencha o "
+            f"Canal de Suporte Oficial citado pela IA (Formulário Prodemge): 👉 {canal_contato}"
+        )
+
+    # Limpeza contra qualquer e-mail acidental
+    formatted = re.sub(r'[\w\.-]+@[\w\.-]+\.\w+', '', formatted).strip()
 
     return formatted
