@@ -5,5 +5,12 @@
     "role": "admin",
     "status": "approved",
     "added_by": "system"
+  },
+  {
+    "email": "mgminhaescola@gmail.com",
+    "name": "Minha Escola MG (Publicador Oficial)",
+    "role": "admin",
+    "status": "approved",
+    "added_by": "system"
   }
 ]

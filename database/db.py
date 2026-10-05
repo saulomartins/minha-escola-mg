@@ -182,15 +182,16 @@ def init_db():
     );
     """)
 
-    # Garante o Super Admin inicial
-    admin_email = "saulomartins.costa@gmail.com"
+    # Garante os Super Admins iniciais
+    admin_emails = ["saulomartins.costa@gmail.com", "mgminhaescola@gmail.com"]
     now_iso = datetime.utcnow().isoformat()
-    cursor.execute("SELECT id FROM allowed_users WHERE LOWER(email) = ?", (admin_email.lower(),))
-    if not cursor.fetchone():
-        cursor.execute("""
-        INSERT INTO allowed_users (email, name, role, status, added_by, created_at)
-        VALUES (?, ?, 'admin', 'approved', 'system', ?)
-        """, (admin_email.lower(), "Saulo Martins Costa", now_iso))
+    for email in admin_emails:
+        cursor.execute("SELECT id FROM allowed_users WHERE LOWER(email) = ?", (email.lower(),))
+        if not cursor.fetchone():
+            cursor.execute("""
+            INSERT INTO allowed_users (email, name, role, status, added_by, created_at)
+            VALUES (?, ?, 'admin', 'approved', 'system', ?)
+            """, (email.lower(), "Minha Escola MG" if "minhaescola" in email else "Saulo Martins Costa", now_iso))
 
     # Carrega e sincroniza usuários permanentes de seed_users.json e da variável ALLOWED_USERS
     load_seed_users_into_cursor(cursor, now_iso)

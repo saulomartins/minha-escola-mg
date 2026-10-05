@@ -185,8 +185,16 @@ def require_admin(request: Request) -> Dict[str, Any]:
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
-    """Acesso livre sem login: redireciona direto para a página principal"""
-    return RedirectResponse(url="/", status_code=302)
+    """Página de Login com Google Identity Services"""
+    user = get_current_user_from_request(request)
+    if user and user.get("status") == "approved":
+        return RedirectResponse(url="/", status_code=302)
+    client_id = get_google_client_id()
+    return templates.TemplateResponse(
+        request=request,
+        name="login.html",
+        context={"google_client_id": client_id}
+    )
 
 @app.post("/api/auth/google")
 async def api_auth_google(req: GoogleAuthRequest):
@@ -1050,7 +1058,7 @@ def api_analyze_pending():
     return {"message": f"{analyzed_count} avaliações analisadas com sucesso!"}
 
 @app.post("/api/reply")
-def api_reply(req: ReplyRequest):
+def api_reply(req: ReplyRequest, request: Request):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM reviews WHERE id = ?", (req.review_id,))
@@ -1068,6 +1076,14 @@ def api_reply(req: ReplyRequest):
     should_send_store = req.send_to_store or (get_setting("auto_publish_direct", "false") == "true")
 
     if should_send_store:
+        user = get_current_user_from_request(request)
+        user_email = (user.get("email") if user else "").lower()
+        if user_email != "mgminhaescola@gmail.com" and (not user or user.get("role") != "admin"):
+            raise HTTPException(
+                status_code=403, 
+                detail="Apenas o usuário autorizado mgminhaescola@gmail.com possui permissão para mandar publicar respostas na loja oficial."
+            )
+
         if review["store"] == "google":
             sa_creds = resolve_google_play_service_account()
             if sa_creds and sa_creds.strip():
@@ -1134,10 +1150,19 @@ def api_reply(req: ReplyRequest):
         }
 
 @app.post("/api/reviews/publish-batch")
-def api_publish_batch(store: Optional[str] = None):
+def api_publish_batch(request: Request, store: Optional[str] = None):
     """
     Publica em lote todas as avaliações com respostas aprovadas que ainda não foram enviadas às lojas.
+    Exclusivo para mgminhaescola@gmail.com
     """
+    user = get_current_user_from_request(request)
+    user_email = (user.get("email") if user else "").lower()
+    if user_email != "mgminhaescola@gmail.com" and (not user or user.get("role") != "admin"):
+        raise HTTPException(
+            status_code=403, 
+            detail="Apenas o usuário autorizado mgminhaescola@gmail.com possui permissão para publicar respostas em lote."
+        )
+
     conn = get_connection()
     cursor = conn.cursor()
     

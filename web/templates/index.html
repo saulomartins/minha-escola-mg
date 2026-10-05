@@ -125,7 +125,40 @@
                     <i class="fa-solid fa-gear"></i> Configurações & Conexões
                 </button>
 
-                <!-- Status de Acesso Livre (Sem Autenticação) -->
+                <!-- Status de Autenticação / Perfil do Usuário -->
+                {% if current_user and current_user.email.lower() == 'mgminhaescola@gmail.com' %}
+                <div class="flex items-center gap-2 pl-2 border-l border-indigo-700 ml-1">
+                    <div class="flex items-center gap-2 bg-indigo-950/90 px-3 py-1.5 rounded-lg border border-amber-500/80 text-xs shadow-sm">
+                        <div class="w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center font-bold text-slate-950 text-[11px] shadow-sm">
+                            <i class="fa-solid fa-crown text-[10px]"></i>
+                        </div>
+                        <div class="text-left hidden sm:block">
+                            <p class="font-bold leading-tight text-amber-300">mgminhaescola@gmail.com</p>
+                            <p class="text-[10px] text-emerald-300 font-semibold flex items-center gap-1"><i class="fa-solid fa-circle-check text-[9px]"></i> Publicador Oficial Ativo</p>
+                        </div>
+                    </div>
+                    <a href="/logout" class="bg-rose-900/80 hover:bg-rose-800 text-rose-200 hover:text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 border border-rose-700/60 shadow-sm" title="Sair da conta de publicador">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                        <span class="hidden sm:inline">Sair</span>
+                    </a>
+                </div>
+                {% elif current_user and current_user.email != 'acesso.livre@prodemge.gov.br' %}
+                <div class="flex items-center gap-2 pl-2 border-l border-indigo-700 ml-1">
+                    <div class="flex items-center gap-2 bg-indigo-950/70 px-3 py-1.5 rounded-lg border border-indigo-700/60 text-xs">
+                        <div class="w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center font-bold text-white uppercase text-[10px] shadow-sm">
+                            {{ ((current_user.name or current_user.email)|default("U"))[0] }}
+                        </div>
+                        <div class="text-left hidden sm:block">
+                            <p class="font-bold leading-tight text-slate-100 max-w-[140px] truncate">{{ current_user.name or current_user.email }}</p>
+                            <p class="text-[10px] text-indigo-300">Leitor</p>
+                        </div>
+                    </div>
+                    <a href="/logout" class="bg-rose-900/80 hover:bg-rose-800 text-rose-200 hover:text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 border border-rose-700/60 shadow-sm" title="Sair do sistema">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                        <span class="hidden sm:inline">Sair</span>
+                    </a>
+                </div>
+                {% else %}
                 <div class="flex items-center gap-2 pl-2 border-l border-indigo-700 ml-1">
                     <div class="flex items-center gap-2 bg-emerald-950/70 px-3 py-1.5 rounded-lg border border-emerald-500/50 text-xs">
                         <div class="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center font-bold text-white text-[10px] shadow-sm">
@@ -133,10 +166,14 @@
                         </div>
                         <div class="text-left hidden sm:block">
                             <p class="font-bold leading-tight text-emerald-100">Acesso Livre</p>
-                            <p class="text-[10px] text-emerald-300 font-semibold">Sem Login / Público</p>
+                            <p class="text-[10px] text-emerald-300 font-semibold">Visualização</p>
                         </div>
                     </div>
+                    <a href="/login" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 border border-indigo-400 shadow-sm" title="Entrar com a conta mgminhaescola@gmail.com para publicar respostas">
+                        <i class="fa-solid fa-arrow-right-to-bracket"></i> Entrar
+                    </a>
                 </div>
+                {% endif %}
             </div>
         </div>
     </header>
@@ -353,7 +390,7 @@
                         <button onclick="applyAllAutoReplies()" id="btn-apply-auto-replies" class="px-3 py-1.5 text-xs font-bold bg-slate-800 hover:bg-slate-900 text-white rounded-lg shadow-sm transition flex items-center gap-1.5" title="Gera respostas automáticas personalizadas para todas as avaliações de 1 a 5 estrelas">
                             <i class="fa-solid fa-bolt text-amber-300"></i> Gerar Respostas (1 a 5 ⭐)
                         </button>
-                        <button onclick="publishBatch()" id="btn-publish-batch" class="hidden px-3.5 py-1.5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm transition items-center gap-1.5" title="Mandar publicar todas as respostas salvas diretamente nas lojas oficiais (Google Play e App Store)">
+                        <button onclick="publishBatch()" id="btn-publish-batch" class="{% if current_user and current_user.email.lower() == 'mgminhaescola@gmail.com' %}flex{% else %}hidden{% endif %} px-3.5 py-1.5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm transition items-center gap-1.5" title="Mandar publicar todas as respostas salvas diretamente nas lojas oficiais (Google Play e App Store)">
                             <i class="fa-solid fa-paper-plane"></i> Mandar Publicar (<span id="count-pending-publish">0</span>)
                         </button>
                         <button onclick="exportToExcel('excel', 'all')" class="px-3.5 py-1.5 text-xs font-bold bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg shadow-sm transition flex items-center gap-1.5" title="Exportar TODOS os 500 comentários da base completa para Excel (.xlsx)">
@@ -1729,6 +1766,9 @@
 
     <!-- JavaScript da Aplicação -->
     <script>
+        window.currentUserEmail = "{{ (current_user.email if current_user else 'acesso.livre@prodemge.gov.br') | lower }}";
+        window.isPublisher = (window.currentUserEmail === 'mgminhaescola@gmail.com');
+
         let debounceTimer;
         let chartParetoInstance = null;
         let chartComplexityInstance = null;
@@ -2779,6 +2819,22 @@
                                             <i class="fa-solid fa-wand-magic-sparkles"></i> Regenerar com IA
                                         </button>
                                     </div>
+
+                                    ${window.isPublisher ? `
+                                        <div class="flex flex-wrap gap-2">
+                                            ${r.status !== 'ignorada' ? `
+                                                <button onclick="ignoreReview('${r.id}')" class="px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-700 rounded-md transition">
+                                                    Ignorar
+                                                </button>
+                                            ` : ''}
+                                            <button onclick="submitReply('${r.id}', false)" title="Salvar resposta internamente no sistema como respondida" class="px-3 py-1.5 text-xs font-semibold bg-slate-700 hover:bg-slate-800 text-white rounded-md shadow transition flex items-center gap-1.5">
+                                                <i class="fa-solid fa-check"></i> ${isReplied ? 'Atualizar no Sistema' : 'Salvar no Sistema'}
+                                            </button>
+                                            <button onclick="sendToStorePublish('${r.id}')" title="Mandar publicar diretamente na Google Play Store via API oficial" class="px-3.5 py-1.5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-md shadow transition flex items-center gap-1.5">
+                                                <i class="fa-solid fa-paper-plane"></i> Mandar Publicar na Loja
+                                            </button>
+                                        </div>
+                                    ` : ''}
                                 </div>
                             </div>
                         </div>
