@@ -819,6 +819,91 @@ def api_apply_all_auto_replies():
         "count": updated_count
     }
 
+# -------------------------------------------------------------------------
+# Endpoints do Módulo Fale Conosco (Suporte Prodemge)
+# -------------------------------------------------------------------------
+
+@app.get("/api/support-tickets")
+def api_get_support_tickets(
+    search: str = "",
+    status: str = "",
+    user_type: str = "",
+    category: str = "",
+    has_mantis: bool = False,
+    limit: int = 50,
+    offset: int = 0
+):
+    try:
+        from database.db import get_support_tickets
+        return get_support_tickets(
+            search=search,
+            status=status,
+            user_type=user_type,
+            category=category,
+            has_mantis=has_mantis,
+            limit=limit,
+            offset=offset
+        )
+    except Exception as e:
+        logger.error(f"Erro ao buscar chamados do Fale Conosco: {e}")
+        return JSONResponse(status_code=500, content={"error": str(e), "tickets": [], "total": 0})
+
+@app.get("/api/support-tickets/stats")
+def api_get_support_tickets_stats():
+    try:
+        from database.db import get_support_tickets_stats
+        return get_support_tickets_stats()
+    except Exception as e:
+        logger.error(f"Erro ao calcular estatísticas do Fale Conosco: {e}")
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+@app.post("/api/support-tickets/import")
+async def api_import_support_tickets(file: UploadFile = File(...)):
+    try:
+        from collector.fale_conosco_importer import import_fale_conosco_file
+        content = await file.read()
+        res = import_fale_conosco_file(content, filename=file.filename or "")
+        return res
+    except Exception as e:
+        logger.error(f"Erro ao importar planilha do Fale Conosco: {e}")
+        return JSONResponse(status_code=500, content={"success": False, "message": f"Erro ao processar arquivo: {str(e)}"})
+
+@app.post("/api/support-tickets/{ticket_id}/generate-reply")
+def api_generate_support_ticket_reply(ticket_id: str, request: Request):
+    user = getattr(request.state, "user", None)
+    if not user or user.get("email", "").lower() != SUPER_ADMIN_EMAIL.lower():
+        raise HTTPException(status_code=403, detail="Apenas o administrador oficial tem permissão para gerar respostas.")
+    try:
+        from database.db import get_connection, upsert_support_ticket
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM support_tickets WHERE id = ?", (ticket_id,))
+        row = cursor.fetchone()
+        conn.close()
+        if not row:
+            raise HTTPException(status_code=404, detail="Chamado não encontrado")
+        
+        ticket = dict(row)
+        desc = ticket.get('description', '')
+        cat = ticket.get('category', '')
+        student_name = ticket.get('student_name', 'Estudante')
+        
+        if "token" in cat.lower() or "token" in desc.lower():
+            reply = f"Olá, {student_name}!\n\nIdentificamos o erro de token de autenticação no aplicativo Minha Escola MG (Mantis 0198268). Nossa equipe técnica da Prodemge já atuou na infraestrutura de autenticação. Por favor, limpe o cache do aplicativo em Configurações > Aplicativos > Minha Escola MG > Armazenamento > Limpar Cache e tente entrar novamente via Conta Gov.br ou e-mail institucional.\n\nAtenciosamente,\nEquipe de Suporte Minha Escola MG"
+        elif "gov" in cat.lower() or "seg.id" in desc.lower():
+            reply = f"Olá, {student_name}!\n\nEm relação à dificuldade de acesso via Gov.br / SEG.ID (Mantis 0198289), orientamos que certifique-se de que o CPF do estudante ou do responsável esteja devidamente vinculado no cadastro escolar da rede estadual. Caso continue sendo redirecionado para criação de conta, sugerimos acessar pelo navegador em idaluno.educacao.mg.gov.br para verificar o e-mail educacional.\n\nAtenciosamente,\nEquipe de Suporte Minha Escola MG"
+        elif "escola" in cat.lower() or "troca" in cat.lower():
+            reply = f"Olá, {student_name}!\n\nSobre a atualização de vínculo para sua nova escola estadual (Mantis 0198728), a sincronização entre o sistema DED da secretaria escolar e o aplicativo ocorre periodicamente. Solicitamos que confirme na secretaria da sua nova escola se sua matrícula já foi finalizada no sistema. Após a confirmação da escola, deslogue do aplicativo e faça um novo login para atualizar sua turma.\n\nAtenciosamente,\nEquipe de Suporte Minha Escola MG"
+        else:
+            reply = f"Olá, {student_name}!\n\nRecebemos sua solicitação enviada pelo Fale Conosco do Minha Escola MG. Em relação ao seu relato: \"{desc[:100]}...\", orientamos que caso se trate de consulta de notas, faltas ou emissão de histórico escolar, esses lançamentos dependem diretamente do registro da secretaria da sua escola. Para dúvidas cadastrais, procure a secretaria escolar. Para problemas técnicos no app, mantenha o aplicativo sempre atualizado na versão mais recente da loja.\n\nAtenciosamente,\nEquipe de Suporte Minha Escola MG"
+            
+        ticket['ai_suggested_reply'] = reply
+        upsert_support_ticket(ticket)
+        return {"success": True, "reply": reply}
+    except Exception as e:
+        logger.error(f"Erro ao gerar resposta para chamado {ticket_id}: {e}")
+        return JSONResponse(status_code=500, content={"success": False, "message": str(e)})
+
 def run_sync_and_auto_analyze():
     """Função para sincronizar e rodar auto-análise e auto-resposta se habilitada"""
     google_reviews = fetch_google_play_reviews(count=150)

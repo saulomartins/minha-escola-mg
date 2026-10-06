@@ -278,6 +278,40 @@ def init_db():
     );
     """)
     
+    # Tabela de Chamados do Fale Conosco
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS support_tickets (
+        id TEXT PRIMARY KEY,
+        ticket_date TEXT,
+        user_type TEXT,
+        student_name TEXT,
+        student_cpf TEXT,
+        student_id TEXT,
+        birth_date TEXT,
+        contact_email TEXT,
+        school_name TEXT,
+        description TEXT,
+        attachment_url TEXT,
+        city TEXT,
+        status TEXT,
+        internal_analysis TEXT,
+        category TEXT,
+        ai_suggested_reply TEXT,
+        created_at TEXT
+    );
+    """)
+
+    # Popula chamados do Fale Conosco na primeira inicialização se tabela estiver vazia
+    try:
+        cursor.execute("SELECT COUNT(*) FROM support_tickets")
+        cnt = cursor.fetchone()[0]
+        xlsx_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "fale_conosco.xlsx")
+        if cnt == 0 and os.path.exists(xlsx_file):
+            from collector.fale_conosco_importer import import_fale_conosco_file
+            import_fale_conosco_file(xlsx_file, xlsx_file)
+    except Exception as e:
+        print(f"Erro ao inicializar dados do Fale Conosco: {e}")
+
     # Configurações padrão
     defaults = {
         "gemini_api_key": os.environ.get("GEMINI_API_KEY", ""),
@@ -1286,3 +1320,200 @@ def delete_user(user_id: int) -> bool:
     conn.close()
     sync_seed_users()
     return True
+
+
+# -------------------------------------------------------------------------
+# Módulo de Chamados do Fale Conosco (Suporte Prodemge)
+# -------------------------------------------------------------------------
+
+def upsert_support_ticket(ticket: Dict[str, Any]) -> bool:
+    """Insere ou atualiza um chamado do Fale Conosco."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    now_iso = datetime.utcnow().isoformat()
+    
+    cursor.execute("SELECT id FROM support_tickets WHERE id = ?", (ticket['id'],))
+    existing = cursor.fetchone()
+    is_new = existing is None
+    
+    if is_new:
+        cursor.execute("""
+        INSERT INTO support_tickets (
+            id, ticket_date, user_type, student_name, student_cpf, student_id,
+            birth_date, contact_email, school_name, description, attachment_url,
+            city, status, internal_analysis, category, ai_suggested_reply, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            ticket['id'],
+            ticket.get('ticket_date'),
+            ticket.get('user_type', 'Aluno'),
+            ticket.get('student_name', ''),
+            ticket.get('student_cpf', ''),
+            ticket.get('student_id', ''),
+            ticket.get('birth_date', ''),
+            ticket.get('contact_email', ''),
+            ticket.get('school_name', ''),
+            ticket.get('description', ''),
+            ticket.get('attachment_url', ''),
+            ticket.get('city', ''),
+            ticket.get('status', 'Pendente'),
+            ticket.get('internal_analysis', ''),
+            ticket.get('category', 'Geral'),
+            ticket.get('ai_suggested_reply', ''),
+            now_iso
+        ))
+    else:
+        cursor.execute("""
+        UPDATE support_tickets SET
+            ticket_date = COALESCE(?, ticket_date),
+            user_type = COALESCE(?, user_type),
+            student_name = COALESCE(?, student_name),
+            student_cpf = COALESCE(?, student_cpf),
+            student_id = COALESCE(?, student_id),
+            birth_date = COALESCE(?, birth_date),
+            contact_email = COALESCE(?, contact_email),
+            school_name = COALESCE(?, school_name),
+            description = COALESCE(?, description),
+            attachment_url = COALESCE(?, attachment_url),
+            city = COALESCE(?, city),
+            status = COALESCE(?, status),
+            internal_analysis = COALESCE(?, internal_analysis),
+            category = COALESCE(?, category),
+            ai_suggested_reply = COALESCE(?, ai_suggested_reply)
+        WHERE id = ?
+        """, (
+            ticket.get('ticket_date'),
+            ticket.get('user_type'),
+            ticket.get('student_name'),
+            ticket.get('student_cpf'),
+            ticket.get('student_id'),
+            ticket.get('birth_date'),
+            ticket.get('contact_email'),
+            ticket.get('school_name'),
+            ticket.get('description'),
+            ticket.get('attachment_url'),
+            ticket.get('city'),
+            ticket.get('status'),
+            ticket.get('internal_analysis'),
+            ticket.get('category'),
+            ticket.get('ai_suggested_reply'),
+            ticket['id']
+        ))
+    conn.commit()
+    conn.close()
+    return is_new
+
+
+def get_support_tickets(
+    search: str = "",
+    status: str = "",
+    user_type: str = "",
+    category: str = "",
+    has_mantis: bool = False,
+    limit: int = 50,
+    offset: int = 0
+) -> Dict[str, Any]:
+    """Recupera lista paginada e filtrada de chamados do Fale Conosco."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    query = "SELECT * FROM support_tickets WHERE 1=1"
+    params = []
+    
+    if search:
+        s = f"%{search}%"
+        query += " AND (student_name LIKE ? OR description LIKE ? OR school_name LIKE ? OR city LIKE ? OR student_cpf LIKE ? OR internal_analysis LIKE ?)"
+        params.extend([s, s, s, s, s, s])
+        
+    if status and status != 'todos':
+        query += " AND status = ?"
+        params.append(status)
+        
+    if user_type and user_type != 'todos':
+        query += " AND user_type = ?"
+        params.append(user_type)
+        
+    if category and category != 'todos':
+        query += " AND category = ?"
+        params.append(category)
+        
+    if has_mantis:
+        query += " AND internal_analysis LIKE '%Mantis%'"
+        
+    # Total count
+    count_query = query.replace("SELECT *", "SELECT COUNT(*)")
+    cursor.execute(count_query, params)
+    total_count = cursor.fetchone()[0]
+    
+    query += " ORDER BY ticket_date DESC LIMIT ? OFFSET ?"
+    params.extend([limit, offset])
+    
+    cursor.execute(query, params)
+    tickets = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    
+    return {
+        "tickets": tickets,
+        "total": total_count,
+        "limit": limit,
+        "offset": offset
+    }
+
+
+def get_support_tickets_stats() -> Dict[str, Any]:
+    """Calcula estatísticas e distribuição dos chamados do Fale Conosco."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT COUNT(*) FROM support_tickets")
+    total = cursor.fetchone()[0]
+    
+    cursor.execute("""
+        SELECT status, COUNT(*) as count 
+        FROM support_tickets 
+        GROUP BY status
+    """)
+    by_status = {r['status']: r['count'] for r in cursor.fetchall()}
+    
+    cursor.execute("""
+        SELECT user_type, COUNT(*) as count 
+        FROM support_tickets 
+        GROUP BY user_type
+    """)
+    by_user_type = {r['user_type']: r['count'] for r in cursor.fetchall()}
+    
+    cursor.execute("""
+        SELECT category, COUNT(*) as count 
+        FROM support_tickets 
+        GROUP BY category 
+        ORDER BY count DESC
+    """)
+    by_category = {r['category']: r['count'] for r in cursor.fetchall()}
+    
+    cursor.execute("""
+        SELECT COUNT(*) FROM support_tickets 
+        WHERE internal_analysis LIKE '%Mantis%'
+    """)
+    mantis_count = cursor.fetchone()[0]
+    
+    cursor.execute("""
+        SELECT school_name, COUNT(*) as count 
+        FROM support_tickets 
+        WHERE school_name IS NOT NULL AND school_name != ''
+        GROUP BY school_name 
+        ORDER BY count DESC 
+        LIMIT 5
+    """)
+    top_schools = [{"school": r['school_name'], "count": r['count']} for r in cursor.fetchall()]
+
+    conn.close()
+    
+    return {
+        "total": total,
+        "by_status": by_status,
+        "by_user_type": by_user_type,
+        "by_category": by_category,
+        "mantis_count": mantis_count,
+        "top_schools": top_schools
+    }
+

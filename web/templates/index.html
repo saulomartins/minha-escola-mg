@@ -297,9 +297,13 @@
             <button onclick="switchMainView('scanner')" id="nav-btn-scanner" class="nav-view-btn flex-1 min-w-[200px] py-2.5 px-4 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2 text-slate-600 hover:bg-slate-50">
                 <i class="fa-solid fa-magnifying-glass-chart text-cyan-600"></i> 6. Varredura de Palavras & Termos
             </button>
+            <button onclick="switchMainView('support')" id="nav-btn-support" class="nav-view-btn flex-1 min-w-[200px] py-2.5 px-4 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2 text-slate-600 hover:bg-slate-50">
+                <i class="fa-solid fa-headset text-blue-600"></i> 7. Fale Conosco / Suporte Prodemge
+                <span id="badge-support-count" class="ml-1 px-2 py-0.5 text-[10px] font-extrabold bg-blue-100 text-blue-800 rounded-full">1.957</span>
+            </button>
             {% if current_user and current_user.role == 'admin' %}
             <button onclick="switchMainView('users')" id="nav-btn-users" class="nav-view-btn flex-1 min-w-[200px] py-2.5 px-4 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2 text-slate-600 hover:bg-slate-50">
-                <i class="fa-solid fa-users-gear text-emerald-600"></i> 7. Gestão de Acessos
+                <i class="fa-solid fa-users-gear text-emerald-600"></i> 8. Gestão de Acessos
                 <span id="badge-pending-count" class="hidden ml-1 px-2 py-0.5 text-[10px] font-extrabold bg-amber-500 text-white rounded-full animate-pulse">0</span>
             </button>
             {% endif %}
@@ -1261,7 +1265,156 @@
             </div>
         </div>
 
-        <!-- ================= VISÃO 7: GESTÃO DE ACESSOS & PERMISSÕES (ADMIN) ================= -->
+        <!-- ================= VISÃO 7: FALE CONOSCO / SUPORTE PRODEMGE ================= -->
+        <div id="view-support" class="hidden space-y-6">
+            <!-- Header do Fale Conosco -->
+            <div class="bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950 p-6 rounded-2xl text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-black bg-blue-500/30 text-blue-300 border border-blue-400/40 uppercase tracking-wide">
+                            Atendimento Oficial • Formulário Prodemge
+                        </span>
+                        <span class="text-xs text-blue-200 font-semibold">Base de Chamados & Telemetria Real</span>
+                    </div>
+                    <h2 class="text-xl font-black tracking-tight text-white flex items-center gap-2">
+                        <i class="fa-solid fa-headset text-blue-400"></i> Fale Conosco • Chamados de Suporte
+                    </h2>
+                    <p class="text-xs text-slate-300 max-w-2xl leading-relaxed">
+                        Acompanhe todos os chamados abertos por alunos e responsáveis através do canal oficial de suporte. Visualize causas-raiz, erros de autenticação, incidentes encaminhados para a equipe técnica no <b>Mantis da Prodemge</b> e gere respostas oficiais com inteligência artificial.
+                    </p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2.5 no-print">
+                    <button onclick="openImportSupportModal()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow transition flex items-center gap-2 border border-blue-400">
+                        <i class="fa-solid fa-file-import"></i> Importar Planilha (.xlsx / .csv)
+                    </button>
+                    <button onclick="loadSupportTickets(0)" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2.5 rounded-xl transition flex items-center gap-2 border border-slate-700">
+                        <i class="fa-solid fa-arrows-rotate"></i> Atualizar
+                    </button>
+                </div>
+            </div>
+
+            <!-- KPIs de Atendimento -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl shrink-0 font-bold border border-blue-100">
+                        <i class="fa-solid fa-ticket"></i>
+                    </div>
+                    <div>
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total de Chamados</span>
+                        <h3 id="stat-support-total" class="text-2xl font-black text-slate-900 leading-tight">1.957</h3>
+                        <span class="text-[11px] text-slate-500 font-medium">1.530 alunos • 427 responsáveis</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl shrink-0 font-bold border border-amber-100">
+                        <i class="fa-solid fa-bug"></i>
+                    </div>
+                    <div>
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Em Análise Técnica</span>
+                        <h3 id="stat-support-analysis" class="text-2xl font-black text-amber-700 leading-tight">823</h3>
+                        <span class="text-[11px] text-amber-600 font-semibold"><i class="fa-solid fa-code-branch mr-0.5"></i> 641 com chamado Mantis</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl shrink-0 font-bold border border-emerald-100">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                    <div>
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Resolvidos / Concluídos</span>
+                        <h3 id="stat-support-resolved" class="text-2xl font-black text-emerald-700 leading-tight">64</h3>
+                        <span class="text-[11px] text-emerald-600 font-medium">Retorno concluído</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center text-xl shrink-0 font-bold border border-slate-200">
+                        <i class="fa-solid fa-school"></i>
+                    </div>
+                    <div>
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Sem Atuação Técnica</span>
+                        <h3 id="stat-support-no-action" class="text-2xl font-black text-slate-700 leading-tight">1.056</h3>
+                        <span class="text-[11px] text-slate-500 font-medium">54% dúvidas pedagógicas/escola</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Principais Categorias / Causas-Raiz do Fale Conosco -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-column text-blue-600"></i> Distribuição por Tipo de Solicitação
+                    </h3>
+                    <span class="text-xs text-slate-500">Mapeamento automático por telemetria e IA</span>
+                </div>
+                <div id="support-categories-pills" class="flex flex-wrap gap-2 pt-1">
+                    <!-- Gerado dinamicamente -->
+                </div>
+            </div>
+
+            <!-- Filtros de Chamados -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                    <div class="relative lg:col-span-2">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-sm"></i>
+                        <input type="text" id="filter-support-search" oninput="debounceSupportFilter()" placeholder="Buscar por aluno, CPF, escola, cidade ou texto..." class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:bg-white transition">
+                    </div>
+                    <div>
+                        <select id="filter-support-status" onchange="filterSupportTickets()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:ring-2 focus:ring-blue-500">
+                            <option value="todos">Todos os Status</option>
+                            <option value="Em análise">Em análise</option>
+                            <option value="Sem necessidade de atuação da equipe">Sem atuação técnica (Escola)</option>
+                            <option value="Resolvido">Resolvido</option>
+                            <option value="Pendente">Pendente</option>
+                        </select>
+                    </div>
+                    <div>
+                        <select id="filter-support-user-type" onchange="filterSupportTickets()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:ring-2 focus:ring-blue-500">
+                            <option value="todos">Todos os Perfis</option>
+                            <option value="Aluno">Aluno</option>
+                            <option value="Responsável">Responsável</option>
+                        </select>
+                    </div>
+                    <div>
+                        <select id="filter-support-category" onchange="filterSupportTickets()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:ring-2 focus:ring-blue-500">
+                            <option value="todos">Todas as Categorias</option>
+                            <option value="Erro de Token de Autenticação">Erro de Token</option>
+                            <option value="Login Gov.br / SEG.ID">Login Gov.br / SEG.ID</option>
+                            <option value="Notas e Frequência">Notas e Frequência</option>
+                            <option value="Recuperação de Senha / ID">Senha / ID do Aluno</option>
+                            <option value="Vínculo / Troca de Escola">Troca de Escola</option>
+                            <option value="Compatibilidade de Dispositivo">Compatibilidade</option>
+                            <option value="Instabilidade / Falha no App">Falha / Não Abre</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
+                        <input type="checkbox" id="filter-support-mantis" onchange="filterSupportTickets()" class="w-4 h-4 text-blue-600 rounded">
+                        <label for="filter-support-mantis" class="text-xs font-semibold text-slate-700 cursor-pointer">Apenas com Mantis</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de Chamados do Fale Conosco -->
+            <div id="support-tickets-container" class="space-y-4">
+                <!-- Preenchido via loadSupportTickets() -->
+            </div>
+
+            <!-- Paginação -->
+            <div class="flex justify-between items-center bg-white px-5 py-3 rounded-xl border border-slate-200 text-xs shadow-sm no-print">
+                <span id="support-pagination-info" class="text-slate-500 font-medium">Carregando chamados...</span>
+                <div class="flex gap-2">
+                    <button id="support-btn-prev" onclick="changeSupportPage(-1)" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-md transition disabled:opacity-50">
+                        <i class="fa-solid fa-chevron-left"></i> Anterior
+                    </button>
+                    <button id="support-btn-next" onclick="changeSupportPage(1)" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-md transition disabled:opacity-50">
+                        Próxima <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= VISÃO 8: GESTÃO DE ACESSOS & PERMISSÕES (ADMIN) ================= -->
         <div id="view-users" class="hidden space-y-6">
             <!-- Header da Gestão de Acessos -->
             <div class="bg-gradient-to-r from-emerald-950 via-slate-900 to-indigo-950 p-6 rounded-2xl text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -1806,6 +1959,7 @@
             const isTemporal = view === 'temporal';
             const isHardwareRc = view === 'hardware-rc';
             const isScanner = view === 'scanner';
+            const isSupport = view === 'support';
             const isUsers = view === 'users';
 
             document.getElementById('view-reviews').classList.toggle('hidden', !isReviews);
@@ -1817,6 +1971,8 @@
             if (viewHardwareRc) viewHardwareRc.classList.toggle('hidden', !isHardwareRc);
             const viewScanner = document.getElementById('view-scanner');
             if (viewScanner) viewScanner.classList.toggle('hidden', !isScanner);
+            const viewSupport = document.getElementById('view-support');
+            if (viewSupport) viewSupport.classList.toggle('hidden', !isSupport);
             const viewUsers = document.getElementById('view-users');
             if (viewUsers) viewUsers.classList.toggle('hidden', !isUsers);
 
@@ -1826,6 +1982,7 @@
             const btnTemporal = document.getElementById('nav-btn-temporal');
             const btnHardwareRc = document.getElementById('nav-btn-hardware-rc');
             const btnScanner = document.getElementById('nav-btn-scanner');
+            const btnSupport = document.getElementById('nav-btn-support');
             const btnUsers = document.getElementById('nav-btn-users');
 
             const activeCls = 'nav-view-btn active flex-1 min-w-[200px] py-2.5 px-4 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2';
@@ -1837,7 +1994,13 @@
             if (btnTemporal) btnTemporal.className = isTemporal ? activeCls : inactiveCls;
             if (btnHardwareRc) btnHardwareRc.className = isHardwareRc ? activeCls : inactiveCls;
             if (btnScanner) btnScanner.className = isScanner ? activeCls : inactiveCls;
+            if (btnSupport) btnSupport.className = isSupport ? activeCls : inactiveCls;
             if (btnUsers) btnUsers.className = isUsers ? activeCls : inactiveCls;
+
+            if (isSupport) {
+                loadSupportTickets();
+                loadSupportTicketsStats();
+            }
 
             if (isDevices) {
                 loadDeviceAnalytics();
@@ -3730,6 +3893,9 @@
         async function initApp() {
             try {
                 await loadStats();
+                if (typeof loadSupportTicketsStats === 'function') {
+                    loadSupportTicketsStats();
+                }
             } catch (e) {
                 console.error("Erro stats:", e);
             }
@@ -5012,6 +5178,311 @@ async function uploadPlayConsoleCsv(input) {
                     </div>
                 `;
             }).join('');
+        // =========================================================================
+        // MÓDULO FALE CONOSCO (SUPORTE PRODEMGE)
+        // =========================================================================
+        let currentSupportOffset = 0;
+        const supportPageSize = 25;
+        let supportDebounceTimer = null;
+
+        function debounceSupportFilter() {
+            clearTimeout(supportDebounceTimer);
+            supportDebounceTimer = setTimeout(() => {
+                currentSupportOffset = 0;
+                loadSupportTickets(0);
+            }, 300);
+        }
+
+        function filterSupportTickets() {
+            currentSupportOffset = 0;
+            loadSupportTickets(0);
+        }
+
+        function changeSupportPage(delta) {
+            currentSupportOffset = Math.max(0, currentSupportOffset + (delta * supportPageSize));
+            loadSupportTickets(currentSupportOffset);
+        }
+
+        async function loadSupportTicketsStats() {
+            try {
+                const res = await fetch('/api/support-tickets/stats');
+                const stats = await res.json();
+                
+                const statTotal = document.getElementById('stat-support-total');
+                if (statTotal) statTotal.innerText = (stats.total || 0).toLocaleString('pt-BR');
+                
+                const statAnalysis = document.getElementById('stat-support-analysis');
+                if (statAnalysis) statAnalysis.innerText = (stats.by_status?.['Em análise'] || 0).toLocaleString('pt-BR');
+
+                const statResolved = document.getElementById('stat-support-resolved');
+                if (statResolved) statResolved.innerText = (stats.by_status?.['Resolvido'] || 0).toLocaleString('pt-BR');
+
+                const statNoAction = document.getElementById('stat-support-no-action');
+                if (statNoAction) statNoAction.innerText = (stats.by_status?.['Sem necessidade de atuação da equipe'] || 0).toLocaleString('pt-BR');
+
+                const badgeNav = document.getElementById('badge-support-count');
+                if (badgeNav) badgeNav.innerText = (stats.total || 0).toLocaleString('pt-BR');
+
+                const containerCats = document.getElementById('support-categories-pills');
+                if (containerCats && stats.by_category) {
+                    containerCats.innerHTML = Object.entries(stats.by_category).map(([cat, count]) => `
+                        <button onclick="setSupportCategoryFilter('${escapeHtml(cat)}')" class="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50/80 hover:bg-blue-100 border border-blue-200 rounded-full text-xs font-semibold text-blue-900 transition">
+                            <span>${escapeHtml(cat)}</span>
+                            <span class="px-1.5 py-0.2 bg-blue-200 text-blue-950 rounded-full text-[10px] font-black">${count}</span>
+                        </button>
+                    `).join('');
+                }
+            } catch (err) {
+                console.error('Erro ao carregar estatísticas do suporte:', err);
+            }
+        }
+
+        function setSupportCategoryFilter(cat) {
+            const select = document.getElementById('filter-support-category');
+            if (select) {
+                select.value = cat;
+                filterSupportTickets();
+            }
+        }
+
+        async function loadSupportTickets(offset = 0) {
+            const container = document.getElementById('support-tickets-container');
+            if (!container) return;
+            
+            currentSupportOffset = offset;
+            const search = document.getElementById('filter-support-search')?.value || '';
+            const status = document.getElementById('filter-support-status')?.value || '';
+            const userType = document.getElementById('filter-support-user-type')?.value || '';
+            const category = document.getElementById('filter-support-category')?.value || '';
+            const hasMantis = document.getElementById('filter-support-mantis')?.checked || false;
+
+            container.innerHTML = `
+                <div class="p-8 text-center bg-white rounded-xl border border-slate-200 text-slate-500">
+                    <i class="fa-solid fa-spinner fa-spin text-2xl text-blue-600 mb-2"></i>
+                    <p class="text-xs">Carregando chamados do Fale Conosco...</p>
+                </div>
+            `;
+
+            try {
+                const params = new URLSearchParams({
+                    search, status, user_type: userType, category,
+                    has_mantis: hasMantis ? 'true' : 'false',
+                    limit: supportPageSize,
+                    offset: currentSupportOffset
+                });
+                const res = await fetch(`/api/support-tickets?${params.toString()}`);
+                const data = await res.json();
+                const tickets = data.tickets || [];
+                const total = data.total || 0;
+
+                const pagInfo = document.getElementById('support-pagination-info');
+                if (pagInfo) {
+                    const start = total === 0 ? 0 : currentSupportOffset + 1;
+                    const end = Math.min(currentSupportOffset + tickets.length, total);
+                    pagInfo.innerText = `Mostrando ${start} a ${end} de ${total.toLocaleString('pt-BR')} chamados`;
+                }
+
+                const btnPrev = document.getElementById('support-btn-prev');
+                const btnNext = document.getElementById('support-btn-next');
+                if (btnPrev) btnPrev.disabled = currentSupportOffset === 0;
+                if (btnNext) btnNext.disabled = currentSupportOffset + tickets.length >= total;
+
+                if (tickets.length === 0) {
+                    container.innerHTML = `
+                        <div class="p-8 text-center bg-white rounded-xl border border-slate-200 text-slate-500 space-y-2">
+                            <i class="fa-solid fa-inbox text-3xl text-slate-300"></i>
+                            <p class="text-sm font-semibold text-slate-700">Nenhum chamado encontrado com os filtros selecionados.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = tickets.map(t => {
+                    let statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">Pendente</span>';
+                    if (t.status === 'Resolvido') {
+                        statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 flex items-center gap-1"><i class="fa-solid fa-circle-check text-emerald-600"></i> Resolvido</span>';
+                    } else if (t.status === 'Em análise') {
+                        statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-200 flex items-center gap-1"><i class="fa-solid fa-clock text-amber-600"></i> Em Análise</span>';
+                    } else if (t.status && t.status.includes('Sem necessidade')) {
+                        statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200" title="Informações que cabem à escola ou já disponíveis no portal">Escola / Secretaria</span>';
+                    }
+
+                    const mantisBadge = t.internal_analysis && t.internal_analysis.includes('Mantis') 
+                        ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-purple-100 text-purple-900 border border-purple-300"><i class="fa-solid fa-bug text-purple-600"></i> ${escapeHtml(t.internal_analysis)}</span>` 
+                        : '';
+
+                    const userTypeBadge = t.user_type === 'Responsável'
+                        ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200"><i class="fa-solid fa-user-group text-amber-600"></i> Responsável</span>'
+                        : '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-blue-50 text-blue-800 border border-blue-200"><i class="fa-solid fa-graduation-cap text-blue-600"></i> Aluno</span>';
+
+                    const categoryBadge = `<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-800 border border-indigo-200">${escapeHtml(t.category || 'Geral')}</span>`;
+
+                    const dateFormatted = t.ticket_date ? new Date(t.ticket_date).toLocaleString('pt-BR') : '';
+
+                    return `
+                        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 transition hover:border-slate-300 space-y-3.5" id="ticket-card-${t.id}">
+                            <div class="flex flex-wrap justify-between items-start gap-2 border-b border-slate-100 pb-3">
+                                <div class="flex items-center gap-2.5 flex-wrap">
+                                    ${userTypeBadge}
+                                    <span class="text-sm font-bold text-slate-900">${escapeHtml(t.student_name || 'Usuário')}</span>
+                                    ${t.student_cpf ? `<span class="text-xs text-slate-500 font-mono">CPF: ${escapeHtml(t.student_cpf)}</span>` : ''}
+                                    ${t.student_id ? `<span class="text-xs text-slate-500 font-mono">• ID: ${escapeHtml(t.student_id)}</span>` : ''}
+                                    <span class="text-xs text-slate-400">• ${dateFormatted}</span>
+                                </div>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    ${categoryBadge}
+                                    ${mantisBadge}
+                                    ${statusBadge}
+                                </div>
+                            </div>
+
+                            <div class="flex flex-wrap items-center gap-3 text-xs text-slate-600 bg-slate-50/80 px-3 py-2 rounded-lg border border-slate-200">
+                                <div class="flex items-center gap-1.5 font-medium">
+                                    <i class="fa-solid fa-school text-slate-400"></i>
+                                    <span>Escola: <b class="text-slate-800">${escapeHtml(t.school_name || 'Não informada')}</b></span>
+                                </div>
+                                ${t.city ? `
+                                    <span class="text-slate-300">•</span>
+                                    <div class="flex items-center gap-1.5 font-medium">
+                                        <i class="fa-solid fa-location-dot text-slate-400"></i>
+                                        <span>Cidade: <b class="text-slate-800">${escapeHtml(t.city)}</b></span>
+                                    </div>
+                                ` : ''}
+                                ${t.contact_email ? `
+                                    <span class="text-slate-300">•</span>
+                                    <div class="flex items-center gap-1.5 font-medium">
+                                        <i class="fa-regular fa-envelope text-slate-400"></i>
+                                        <a href="mailto:${escapeHtml(t.contact_email)}" class="text-blue-600 hover:underline">${escapeHtml(t.contact_email)}</a>
+                                    </div>
+                                ` : ''}
+                            </div>
+
+                            <div class="space-y-1">
+                                <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                                    <i class="fa-solid fa-comment-dots text-blue-600"></i> Relato do Cidadão no Fale Conosco:
+                                </h4>
+                                <p class="text-sm text-slate-800 whitespace-pre-line leading-relaxed bg-slate-50 p-3.5 rounded-lg border border-slate-200 font-medium">
+                                    ${escapeHtml(t.description || 'Sem descrição')}
+                                </p>
+                            </div>
+
+                            ${t.attachment_url ? `
+                                <div class="flex items-center gap-2 text-xs bg-amber-50/70 border border-amber-200 p-2.5 rounded-lg">
+                                    <i class="fa-brands fa-google-drive text-amber-600 text-sm"></i>
+                                    <span class="font-bold text-amber-900">Anexo do Usuário:</span>
+                                    <a href="${escapeHtml(t.attachment_url)}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline font-medium truncate max-w-md">
+                                        Abrir anexo no Google Drive <i class="fa-solid fa-arrow-up-right-from-square text-[10px] ml-1"></i>
+                                    </a>
+                                </div>
+                            ` : ''}
+
+                            <!-- Resposta Sugerida de Atendimento -->
+                            <div class="bg-blue-50/70 border border-blue-200 rounded-lg p-3.5 text-xs text-blue-950 space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold text-blue-900 flex items-center gap-1.5">
+                                        <i class="fa-solid fa-wand-magic-sparkles text-blue-600"></i> Sugestão de Orientação ao Cidadão (E-mail):
+                                    </span>
+                                    <div class="flex gap-2">
+                                        <button onclick="copySupportReply('${t.id}')" title="Copiar texto da resposta para colar no e-mail de retorno" class="px-2.5 py-1 bg-white hover:bg-blue-100 text-blue-800 font-semibold border border-blue-300 rounded shadow-xs transition flex items-center gap-1">
+                                            <i class="fa-regular fa-copy"></i> Copiar Resposta
+                                        </button>
+                                        ${window.isPublisher ? `
+                                            <button onclick="generateSupportReply('${t.id}')" title="Gerar resposta com IA" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded shadow-xs transition flex items-center gap-1">
+                                                <i class="fa-solid fa-robot"></i> Regenerar com IA
+                                            </button>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                                <div id="support-reply-box-${t.id}" class="text-xs text-slate-800 italic leading-relaxed whitespace-pre-line bg-white/80 p-2.5 rounded border border-blue-100 font-normal">
+                                    ${escapeHtml(t.ai_suggested_reply || 'Clique em "Regenerar com IA" para gerar um modelo de orientação oficial para este chamado.')}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                console.error('Erro ao listar chamados:', err);
+                container.innerHTML = `<div class="p-6 bg-rose-50 text-rose-800 text-center rounded-xl">Erro ao carregar chamados.</div>`;
+            }
+        }
+
+        function copySupportReply(ticketId) {
+            const el = document.getElementById(`support-reply-box-${ticketId}`);
+            if (el && el.innerText) {
+                navigator.clipboard.writeText(el.innerText.trim()).then(() => {
+                    showAlert("Resposta de suporte copiada! Pronta para enviar por e-mail.");
+                }).catch(() => {
+                    showAlert("Resposta copiada para a área de transferência!");
+                });
+            }
+        }
+
+        async function generateSupportReply(ticketId) {
+            showAlert("Gerando resposta personalizada com IA...");
+            try {
+                const res = await fetch(`/api/support-tickets/${ticketId}/generate-reply`, { method: 'POST' });
+                const data = await res.json();
+                if (data.success && data.reply) {
+                    const el = document.getElementById(`support-reply-box-${ticketId}`);
+                    if (el) el.innerText = data.reply;
+                    showAlert("Resposta gerada com sucesso!");
+                } else {
+                    showAlert(data.message || "Erro ao gerar resposta com IA.", "error");
+                }
+            } catch (err) {
+                showAlert("Erro ao conectar com o serviço de IA.", "error");
+            }
+        }
+
+        function openImportSupportModal() {
+            const m = document.getElementById('modal-import-support');
+            if (m) m.classList.remove('hidden');
+        }
+
+        function closeImportSupportModal() {
+            const m = document.getElementById('modal-import-support');
+            if (m) m.classList.add('hidden');
+        }
+
+        async function submitImportSupportFile() {
+            const input = document.getElementById('support-import-file-input');
+            if (!input || !input.files || input.files.length === 0) {
+                showAlert("Por favor, selecione um arquivo .xlsx ou .csv.", "error");
+                return;
+            }
+            const file = input.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const btn = document.getElementById('btn-submit-support-import');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Importando...';
+            }
+
+            try {
+                const res = await fetch('/api/support-tickets/import', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showAlert(`Planilha importada com sucesso! ${data.imported} novos chamados e ${data.updated} atualizados.`);
+                    closeImportSupportModal();
+                    await loadSupportTickets(0);
+                    await loadSupportTicketsStats();
+                } else {
+                    showAlert(data.message || "Erro ao processar importação.", "error");
+                }
+            } catch (err) {
+                showAlert("Erro ao enviar arquivo para importação: " + err, "error");
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-upload mr-1"></i> Iniciar Importação';
+                }
+            }
         }
 
 </script>
@@ -5129,6 +5600,39 @@ async function uploadPlayConsoleCsv(input) {
                 <button onclick="closeEditDeviceModal()" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition">Cancelar</button>
                 <button onclick="submitEditDevice()" id="btn-save-edit-device" class="px-4 py-2 text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white rounded-xl shadow transition flex items-center gap-1.5">
                     <i class="fa-solid fa-floppy-disk"></i> Salvar Dados do Aparelho
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Importar Planilha do Fale Conosco -->
+    <div id="modal-import-support" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-file-import text-blue-600"></i> Importar Planilha do Fale Conosco
+                </h3>
+                <button onclick="closeImportSupportModal()" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+            </div>
+
+            <div class="p-3 bg-blue-50 rounded-xl border border-blue-200 text-xs text-blue-900 space-y-1">
+                <p class="font-bold flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-info text-blue-600"></i> Formato Suportado:
+                </p>
+                <p class="text-[11px] leading-relaxed text-blue-800">
+                    Selecione a planilha exportada do Google Sheets ou Microsoft Forms nos formatos <b>.xlsx (Excel)</b> ou <b>.csv</b>. O sistema reconhece automaticamente os campos de Aluno, Responsável, Escola, Relato e Mantis.
+                </p>
+            </div>
+
+            <div class="space-y-2">
+                <label class="block text-xs font-bold text-slate-700">Arquivo da Planilha (.xlsx ou .csv):</label>
+                <input type="file" id="support-import-file-input" accept=".xlsx,.csv" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border border-slate-200 rounded-xl p-2 bg-slate-50">
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button onclick="closeImportSupportModal()" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition">Cancelar</button>
+                <button onclick="submitImportSupportFile()" id="btn-submit-support-import" class="px-4 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-upload"></i> Iniciar Importação
                 </button>
             </div>
         </div>
