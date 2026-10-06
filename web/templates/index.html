@@ -2657,13 +2657,18 @@
 
                     const formattedDate = r.review_date ? new Date(r.review_date).toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : '';
 
-                    const isReplied = r.status === 'respondida';
-                    const isPublishedStore = Boolean(r.published_to_store);
+                    const hasDeveloperResponse = Boolean(r.developer_response && r.developer_response.trim());
+                    const isReplied = r.status === 'respondida' || hasDeveloperResponse;
+                    const isPublishedStore = Boolean(r.published_to_store || hasDeveloperResponse);
+                    const hasExistingResponse = Boolean(hasDeveloperResponse || (r.status === 'respondida' && (r.local_response || r.developer_response)));
+                    const officialResponseText = hasDeveloperResponse 
+                        ? r.developer_response.trim() 
+                        : ((r.local_response && r.local_response.trim()) || r.ai_suggested_response || '');
                     const responseText = r.local_response || r.ai_suggested_response || '';
 
                     let replyStatusBadge = '';
-                    if (isReplied) {
-                        if (isPublishedStore) {
+                    if (isReplied || hasDeveloperResponse) {
+                        if (isPublishedStore || hasDeveloperResponse) {
                             replyStatusBadge = '<span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 flex items-center gap-1"><i class="fa-solid fa-circle-check text-emerald-600"></i> Publicada na Loja</span>';
                         } else {
                             replyStatusBadge = '<span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-200 flex items-center gap-1" title="Resposta gravada no painel local. Para publicar na loja oficial, use o botão Copiar Resposta e cole no Google Play Console."><i class="fa-solid fa-clipboard-check text-amber-600"></i> Salva no Sistema (Local)</span>';
@@ -2786,59 +2791,73 @@
                                 <p class="text-sm text-slate-700 whitespace-pre-line leading-relaxed">${escapeHtml(r.content || 'Avaliação sem texto (apenas estrelas).')}</p>
                             </div>
 
-                            ${r.developer_response ? `
-                                <div class="bg-blue-50/70 border border-blue-200 rounded-lg p-3 text-xs text-blue-950 space-y-1">
-                                    <div class="flex items-center justify-between">
-                                        <span class="font-bold text-blue-900 flex items-center gap-1.5">
-                                            <i class="fa-solid fa-building-columns text-blue-700"></i> Resposta Oficial da Prodemge (já existente na loja):
-                                        </span>
-                                        ${r.developer_response_date ? `<span class="text-[10px] text-blue-600 font-medium">Data: ${new Date(r.developer_response_date).toLocaleDateString('pt-BR')}</span>` : ''}
+                            ${hasExistingResponse ? `
+                                <!-- Resposta Registrada / Publicada (Leitura e Cópia Apenas - Sem Textarea) -->
+                                <div class="bg-blue-50/70 border border-blue-200 rounded-lg p-3.5 text-xs text-blue-950 space-y-2">
+                                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-blue-100 pb-2">
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-bold text-blue-900 flex items-center gap-1.5">
+                                                <i class="fa-solid fa-building-columns text-blue-700"></i> 
+                                                ${hasDeveloperResponse || isPublishedStore ? 'Resposta Oficial da Prodemge (já existente na loja):' : 'Resposta Registrada no Sistema:'}
+                                            </span>
+                                            ${replyStatusBadge}
+                                        </div>
+                                        ${r.developer_response_date ? `<span class="text-[11px] text-blue-600 font-medium"><i class="fa-regular fa-clock mr-1"></i>${new Date(r.developer_response_date).toLocaleDateString('pt-BR')}</span>` : ''}
                                     </div>
-                                    <p class="leading-relaxed italic text-slate-800">${escapeHtml(r.developer_response)}</p>
-                                </div>
-                            ` : ''}
+                                    <p class="leading-relaxed italic text-slate-800 text-xs whitespace-pre-line">${escapeHtml(officialResponseText)}</p>
+                                    <span id="response-val-${r.id}" class="hidden">${escapeHtml(officialResponseText)}</span>
 
-                            <!-- Área de Resposta -->
-                            <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
-                                <div class="flex justify-between items-center">
-                                    <span class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                                        <i class="fa-solid fa-reply text-indigo-600"></i> 
-                                        ${isReplied ? (isPublishedStore ? 'Resposta Publicada na Loja' : 'Resposta Salva no Painel') : 'Sugestão de Resposta Oficial (IA)'}
-                                    </span>
-                                    ${replyStatusBadge}
-                                </div>
-
-                                <textarea id="reply-text-${r.id}" rows="3" class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-xs leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800" placeholder="Clique em 'Gerar com IA' para criar uma resposta automática...">${escapeHtml(responseText)}</textarea>
-
-                                <div class="flex flex-wrap justify-between items-center gap-2 pt-1">
-                                    <div class="flex flex-wrap gap-2">
-                                        <button onclick="copyToClipboard('${r.id}')" title="Copiar resposta para colar no Google Play Console" class="px-3 py-1.5 text-xs font-medium bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-md shadow-sm transition flex items-center gap-1.5">
+                                    <div class="flex items-center justify-between pt-1">
+                                        <span class="text-[11px] text-emerald-700 font-medium flex items-center gap-1">
+                                            <i class="fa-solid fa-circle-check text-emerald-600"></i> Comentário já respondido
+                                        </span>
+                                        <button onclick="copyToClipboard('${r.id}')" title="Copiar resposta oficial" class="px-2.5 py-1 text-xs font-medium bg-white hover:bg-blue-50 text-blue-800 border border-blue-300 rounded shadow-sm transition flex items-center gap-1.5">
                                             <i class="fa-regular fa-copy"></i> Copiar Resposta
                                         </button>
-                                        ${window.isPublisher ? `
-                                            <button onclick="analyzeSingleReview('${r.id}')" title="Regenerar sugestão de resposta oficial usando inteligência artificial" class="px-3 py-1.5 text-xs font-medium bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-md transition flex items-center gap-1.5">
-                                                <i class="fa-solid fa-wand-magic-sparkles"></i> Regenerar com IA
-                                            </button>
-                                        ` : ''}
+                                    </div>
+                                </div>
+                            ` : `
+                                <!-- Área de Resposta para Comentários Pendentes (Apenas aqui o Textarea aparece) -->
+                                <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                                            <i class="fa-solid fa-reply text-indigo-600"></i> Sugestão de Resposta Oficial (IA)
+                                        </span>
+                                        ${replyStatusBadge}
                                     </div>
 
-                                    ${window.isPublisher ? `
+                                    <textarea id="reply-text-${r.id}" rows="3" class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-xs leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800" placeholder="Clique em 'Regenerar com IA' para criar uma resposta automática...">${escapeHtml(responseText)}</textarea>
+
+                                    <div class="flex flex-wrap justify-between items-center gap-2 pt-1">
                                         <div class="flex flex-wrap gap-2">
-                                            ${r.status !== 'ignorada' ? `
-                                                <button onclick="ignoreReview('${r.id}')" class="px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-700 rounded-md transition">
-                                                    Ignorar
+                                            <button onclick="copyToClipboard('${r.id}')" title="Copiar resposta para colar no Google Play Console" class="px-3 py-1.5 text-xs font-medium bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-md shadow-sm transition flex items-center gap-1.5">
+                                                <i class="fa-regular fa-copy"></i> Copiar Resposta
+                                            </button>
+                                            ${window.isPublisher ? `
+                                                <button onclick="analyzeSingleReview('${r.id}')" title="Regenerar sugestão de resposta oficial usando inteligência artificial" class="px-3 py-1.5 text-xs font-medium bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-md transition flex items-center gap-1.5">
+                                                    <i class="fa-solid fa-wand-magic-sparkles"></i> Regenerar com IA
                                                 </button>
                                             ` : ''}
-                                            <button onclick="submitReply('${r.id}', false)" title="Salvar resposta internamente no sistema como respondida" class="px-3 py-1.5 text-xs font-semibold bg-slate-700 hover:bg-slate-800 text-white rounded-md shadow transition flex items-center gap-1.5">
-                                                <i class="fa-solid fa-check"></i> ${isReplied ? 'Atualizar no Sistema' : 'Salvar no Sistema'}
-                                            </button>
-                                            <button onclick="sendToStorePublish('${r.id}')" title="Mandar publicar diretamente na Google Play Store via API oficial" class="px-3.5 py-1.5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-md shadow transition flex items-center gap-1.5">
-                                                <i class="fa-solid fa-paper-plane"></i> Mandar Publicar na Loja
-                                            </button>
                                         </div>
-                                    ` : ''}
+
+                                        ${window.isPublisher ? `
+                                            <div class="flex flex-wrap gap-2">
+                                                ${r.status !== 'ignorada' ? `
+                                                    <button onclick="ignoreReview('${r.id}')" class="px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-700 rounded-md transition">
+                                                        Ignorar
+                                                    </button>
+                                                ` : ''}
+                                                <button onclick="submitReply('${r.id}', false)" title="Salvar resposta internamente no sistema como respondida" class="px-3 py-1.5 text-xs font-semibold bg-slate-700 hover:bg-slate-800 text-white rounded-md shadow transition flex items-center gap-1.5">
+                                                    <i class="fa-solid fa-check"></i> Salvar no Sistema
+                                                </button>
+                                                <button onclick="sendToStorePublish('${r.id}')" title="Mandar publicar diretamente na Google Play Store via API oficial" class="px-3.5 py-1.5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-md shadow transition flex items-center gap-1.5">
+                                                    <i class="fa-solid fa-paper-plane"></i> Mandar Publicar na Loja
+                                                </button>
+                                            </div>
+                                        ` : ''}
+                                    </div>
                                 </div>
-                            </div>
+                            `}
                         </div>
                     `;
                 }).join('');
@@ -2987,15 +3006,18 @@
         }
 
         function copyToClipboard(reviewId) {
-            const textarea = document.getElementById(`reply-text-${reviewId}`);
-            if (textarea && textarea.value) {
-                navigator.clipboard.writeText(textarea.value).then(() => {
+            const el = document.getElementById(`reply-text-${reviewId}`) || document.getElementById(`response-val-${reviewId}`);
+            const text = el ? (el.value !== undefined ? el.value : (el.innerText || el.textContent || '')) : '';
+            if (text && text.trim()) {
+                navigator.clipboard.writeText(text.trim()).then(() => {
                     showAlert("Resposta copiada para a área de transferência! Pronta para colar na loja.");
                 }).catch(() => {
-                    textarea.select();
+                    if (el.select) el.select();
                     document.execCommand('copy');
                     showAlert("Resposta copiada para a área de transferência!");
                 });
+            } else {
+                showAlert("Nenhuma resposta encontrada para copiar.", "error");
             }
         }
 

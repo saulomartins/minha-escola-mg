@@ -228,6 +228,18 @@ def init_db():
         ensure_support_channel_in_pending_reviews(cursor)
     except Exception as e:
         print(f"Erro em ensure_support_channel_in_pending_reviews: {e}")
+
+    # Sincroniza status e publicação na loja para avaliações que já possuem resposta oficial do desenvolvedor
+    try:
+        cursor.execute("""
+            UPDATE reviews 
+            SET status = 'respondida', published_to_store = 1 
+            WHERE developer_response IS NOT NULL 
+              AND TRIM(developer_response) != '' 
+              AND (status != 'respondida' OR published_to_store != 1)
+        """)
+    except Exception as e:
+        print(f"Erro ao sincronizar status de avaliações respondidas: {e}")
     
     # Tabela de usuários e permissões de acesso
     cursor.execute("""
@@ -310,14 +322,18 @@ def upsert_review(review: Dict[str, Any]) -> bool:
     is_new = existing is None
     
     if is_new:
+        has_dev_resp = bool(review.get('developer_response') and str(review.get('developer_response')).strip())
+        initial_status = 'respondida' if has_dev_resp else review.get('status', 'pendente')
+        initial_published = 1 if has_dev_resp else (1 if review.get('published_to_store') else 0)
+
         cursor.execute("""
         INSERT INTO reviews (
             id, store, review_id, user_name, rating, title, content, 
             review_date, developer_response, developer_response_date, 
-            sentiment, category, root_cause_id, ai_suggested_response, status,
+            sentiment, category, root_cause_id, ai_suggested_response, status, published_to_store,
             device_brand, device_model, os_name, os_version, app_version, device_source,
             created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             review['id'],
             review['store'],
@@ -333,7 +349,8 @@ def upsert_review(review: Dict[str, Any]) -> bool:
             review.get('category', None),
             review.get('root_cause_id', None),
             review.get('ai_suggested_response', None),
-            review.get('status', 'pendente'),
+            initial_status,
+            initial_published,
             review.get('device_brand', None),
             review.get('device_model', None),
             review.get('os_name', None),
