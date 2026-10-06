@@ -931,24 +931,19 @@ def evaluate_stuck_android_12(
     is_stuck = False
     reasons = []
     
+    has_upgrade_to_13_plus = any(k in max_os.lower() for k in ["android 13", "android 14", "android 15", "android 16"])
+    
     # 1. Verificação direta pelo modelo catalogado
     if life.get("is_stuck_android_12") is True:
         is_stuck = True
         reasons.append(f"O modelo '{life.get('model_name', model)}' parou em {max_os}. A fabricante encerrou as atualizações e não libera Android 13+.")
         
-    # 2. Verificação se max_os explicitamente indica <= 12
-    elif any(k in max_os.lower() for k in ["android 12", "android 11", "android 10", "android 9", "android 8"]) and not any(k in max_os.lower() for k in ["android 13", "android 14", "android 15"]):
+    # 2. Verificação se max_os explicitamente indica <= 12 e NÃO tem atualização para Android 13+
+    elif not has_upgrade_to_13_plus and any(k in max_os.lower() for k in ["android 12", "android 11", "android 10", "android 9", "android 8"]):
         is_stuck = True
-        reasons.append(f"Aparelho com suporte máximo homologado em {max_os}.")
+        reasons.append(f"Aparelho com suporte máximo oficial do fabricante encerrado em {max_os}.")
         
-    # 3. Verificação pela versão de SO relatada
-    if any(k in os_ver_str for k in ["Android 12", "Android 11", "Android 10", "Android 9", "Android 8", "Android 7", "Android 6", "Android 5"]):
-        # Se for Android 12 ou anterior, e o modelo não é confirmado como tendo Android 14/15
-        if not ("Android 14" in max_os or "Android 15" in max_os):
-            is_stuck = True
-            reasons.append(f"Aparelho no {os_ver_str} (Google encerrou suporte ativo e fabricantes congelaram modelos de entrada sem upgrade para Android 13+).")
-            
-    # 4. Verificação por menção explícita no texto da avaliação
+    # 3. Verificação por menção explícita no texto da avaliação
     incompat_phrases = [
         "não pode ser instalado mais no android 12",
         "não instala mais no android 12",
@@ -970,6 +965,11 @@ def evaluate_stuck_android_12(
             is_stuck = True
             reasons.append(f"Relato explícito do usuário: '{phrase}'.")
             break
+
+    # Se o fabricante comprovadamente liberou Android 13, 14 ou 15 para o modelo (ex: Galaxy A03, Redmi Note 11, Redmi 12C),
+    # o aparelho NÃO está preso pelo fabricante, pois o usuário pode atualizar o sistema.
+    if has_upgrade_to_13_plus and not any(phrase in content_lower for phrase in ["não atualiza mais", "meu celular não atualiza"]):
+        is_stuck = False
             
     if is_stuck:
         final_reason = " | ".join(reasons) if reasons else f"Aparelho preso em {max_os} sem suporte a Android 13+."
