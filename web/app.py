@@ -1011,7 +1011,15 @@ def api_test_google_play():
         }
 
 @app.post("/api/analyze/{review_id}")
-def api_analyze_one(review_id: str):
+def api_analyze_one(review_id: str, request: Request):
+    user = get_current_user_from_request(request)
+    user_email = (user.get("email") if user else "").lower()
+    if user_email != "mgminhaescola@gmail.com" and (not user or user.get("role") != "admin"):
+        raise HTTPException(
+            status_code=403, 
+            detail="Apenas o usuário autorizado mgminhaescola@gmail.com possui permissão para regenerar respostas com IA."
+        )
+
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM reviews WHERE id = ?", (review_id,))
