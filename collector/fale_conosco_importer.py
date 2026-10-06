@@ -10,27 +10,60 @@ from database.db import upsert_support_ticket
 
 def classify_ticket_category(description: str, analysis: str = "") -> str:
     """Classifica a categoria do chamado com base no relato e análise interna."""
-    desc = (description or "").lower()
-    ana = (analysis or "").lower()
+    import unicodedata
+    def norm(s: str) -> str:
+        s = unicodedata.normalize('NFKD', str(s or '')).encode('ASCII', 'ignore').decode('utf-8')
+        return s.strip().lower()
+        
+    desc = norm(description)
+    ana = norm(analysis)
     combined = f"{desc} {ana}"
     
     if "token" in combined or "0198268" in ana or "totem" in combined or "tolken" in combined:
         return "Erro de Token de Autenticação"
+    elif any(k in combined for k in ["pe de meia", "pe-de-meia", "jornada estudante", "caixa tem", "caixa"]):
+        return "Pé-de-Meia / Jornada Estudante"
     elif "gov" in combined or "seg.id" in combined or "seg id" in combined or "0198289" in ana or "0198367" in ana or "0198269" in ana:
         return "Login Gov.br / SEG.ID"
-    elif any(k in combined for k in ["mudei de escola", "troquei de escola", "transfer", "escola antiga"]) or "0198728" in ana:
+    elif any(k in combined for k in ["cpf nao encontrado", "cpf invalido", "cadastro nao encontrado", "cpf"]):
+        return "Cadastro de Aluno / CPF Não Vinculado"
+    elif any(k in combined for k in ["mudei de escola", "troquei de escola", "transfer", "escola antiga", "turma errada", "ano letivo"]) or "0198728" in ana:
         return "Vínculo / Troca de Escola"
-    elif any(k in combined for k in ["senha", "esqueci", "id do aluno", "id aluno", "não sei meu id"]):
+    elif any(k in combined for k in ["senha", "esqueci", "id do aluno", "id aluno", "nao sei meu id", "redefinir", "recuperar"]):
         return "Recuperação de Senha / ID"
-    elif any(k in combined for k in ["reprovad", "nota", "boletim", "falta", "frequência", "frequencia", "presença"]):
+    elif any(k in combined for k in ["reprovad", "nota", "boletim", "falta", "frequencia", "presenca", "bimestre"]):
         return "Notas e Frequência"
-    elif any(k in combined for k in ["compatív", "compativ", "dispositivo", "poco", "redmi", "android 14", "android 12"]):
+    elif any(k in combined for k in ["compativ", "poco", "redmi", "android 14", "android 12"]):
         return "Compatibilidade de Dispositivo"
-    elif any(k in combined for k in ["histórico", "historico", "declaração", "declaracao", "transferência"]):
+    elif any(k in combined for k in ["historico", "declaracao", "transferencia", "secretaria", "document"]):
         return "Documentação / Secretaria"
-    elif any(k in combined for k in ["não entra", "nao entra", "tela preta", "trava", "congela", "não abre"]):
+    elif any(k in combined for k in ["nao entra", "tela preta", "trava", "congela", "nao abre", "fecha sozinho", "login", "desconecta", "sai sozinho", "erro ao carregar", "acessar"]):
         return "Instabilidade / Falha no App"
     return "Outros"
+
+
+import unicodedata
+
+def normalize_header(s: Any) -> str:
+    """Remove acentos, converte para minúsculas e remove espaços."""
+    if s is None:
+        return ""
+    text = unicodedata.normalize('NFKD', str(s)).encode('ASCII', 'ignore').decode('utf-8')
+    return text.strip().lower()
+
+def clean_cell_value(val: Any) -> str:
+    """Limpa e formata o valor de uma célula para string consistente."""
+    if val is None:
+        return ""
+    if isinstance(val, datetime):
+        return val.strftime("%Y-%m-%d %H:%M:%S")
+    s = str(val).strip()
+    if s.lower() == 'none':
+        return ""
+    # Remove sufixo .0 de números que foram lidos como float no Excel (ex: CPF ou ID)
+    if s.endswith('.0') and s[:-2].replace('.', '').replace('-', '').isdigit():
+        s = s[:-2]
+    return s
 
 def import_fale_conosco_file(file_path_or_bytes: Union[str, bytes], filename: str = "") -> Dict[str, Any]:
     """Importa chamados do Fale Conosco a partir de Excel (.xlsx) ou CSV."""
@@ -44,7 +77,7 @@ def import_fale_conosco_file(file_path_or_bytes: Union[str, bytes], filename: st
             wb = openpyxl.load_workbook(file_path_or_bytes, data_only=True)
         sheet = wb.active
         for row in sheet.iter_rows(values_only=True):
-            rows.append([str(c) if c is not None else "" for c in row])
+            rows.append([clean_cell_value(c) for c in row])
     else:
         # CSV
         text = ""
@@ -63,12 +96,12 @@ def import_fale_conosco_file(file_path_or_bytes: Union[str, bytes], filename: st
                 text = str(file_path_or_bytes)
                 
         reader = csv.reader(io.StringIO(text))
-        rows = list(reader)
+        rows = [[clean_cell_value(c) for c in row] for row in reader]
 
     if not rows:
         return {"success": False, "message": "Arquivo vazio ou inválido."}
 
-    # Mapeamento dinâmico de colunas
+    # Mapeamento inicial padrão baseado nas colunas do formulário
     col_idx = {
         'date': 0,
         'user_type': 1,
@@ -85,30 +118,44 @@ def import_fale_conosco_file(file_path_or_bytes: Union[str, bytes], filename: st
         'analysis': 12
     }
 
-    header_found = False
     data_rows = []
 
     for row_num, row in enumerate(rows):
         if not row or not any(row):
             continue
-        first_cell = str(row[0]).strip().lower()
-        if 'carimbo' in first_cell or 'data' in first_cell:
+        first_cell_norm = normalize_header(row[0])
+        # Identifica cabeçalho
+        if 'carimbo' in first_cell_norm or 'data/hora' in first_cell_norm or 'data de envio' in first_cell_norm:
             for i, h in enumerate(row):
-                hl = str(h).strip().lower()
-                if 'carimbo' in hl or 'data' in hl: col_idx['date'] = i
-                elif 'você é' in hl or 'perfil' in hl: col_idx['user_type'] = i
-                elif 'nome' in hl and 'aluno' in hl: col_idx['student_name'] = i
-                elif 'cpf' in hl: col_idx['student_cpf'] = i
-                elif 'id' in hl and 'aluno' in hl: col_idx['student_id'] = i
-                elif 'nascimento' in hl: col_idx['birth_date'] = i
-                elif 'email' in hl or 'contato' in hl: col_idx['contact_email'] = i
-                elif 'escola' in hl: col_idx['school_name'] = i
-                elif 'problema' in hl or 'descreva' in hl: col_idx['description'] = i
-                elif 'anexo' in hl: col_idx['attachment_url'] = i
-                elif 'cidade' in hl or 'município' in hl: col_idx['city'] = i
-                elif 'status' in hl: col_idx['status'] = i
-                elif 'análise' in hl or 'analise' in hl or 'mantis' in hl: col_idx['analysis'] = i
-            header_found = True
+                hn = normalize_header(h)
+                if not hn:
+                    continue
+                if 'carimbo' in hn or 'data/hora' in hn:
+                    col_idx['date'] = i
+                elif 'nascimento' in hn:
+                    col_idx['birth_date'] = i
+                elif 'voce e' in hn or 'perfil' in hn:
+                    col_idx['user_type'] = i
+                elif 'cpf' in hn:
+                    col_idx['student_cpf'] = i
+                elif ('id' in hn and 'aluno' in hn) or hn == 'id':
+                    col_idx['student_id'] = i
+                elif 'nome' in hn and 'aluno' in hn:
+                    col_idx['student_name'] = i
+                elif 'email' in hn or 'contato' in hn:
+                    col_idx['contact_email'] = i
+                elif 'escola' in hn:
+                    col_idx['school_name'] = i
+                elif 'anexo' in hn or 'print' in hn:
+                    col_idx['attachment_url'] = i
+                elif 'descreva' in hn or ('problema' in hn and 'anexo' not in hn):
+                    col_idx['description'] = i
+                elif 'cidade' in hn or 'municipio' in hn:
+                    col_idx['city'] = i
+                elif 'status' in hn:
+                    col_idx['status'] = i
+                elif 'analise' in hn or 'mantis' in hn:
+                    col_idx['analysis'] = i
             continue
             
         data_rows.append(row)
@@ -126,25 +173,33 @@ def import_fale_conosco_file(file_path_or_bytes: Union[str, bytes], filename: st
             return default
 
         ticket_date = get_val('date')
-        if not ticket_date or 'carimbo' in ticket_date.lower():
+        student_name = get_val('student_name')
+        description = get_val('description')
+        student_cpf = get_val('student_cpf')
+
+        # Se não tiver data nem nome nem descrição, linha vazia
+        if not ticket_date and not student_name and not description:
+            continue
+        if 'carimbo' in ticket_date.lower():
             continue
 
         user_type = get_val('user_type', 'Aluno')
-        student_name = get_val('student_name')
-        student_cpf = get_val('student_cpf')
         student_id = get_val('student_id')
         birth_date = get_val('birth_date')
         contact_email = get_val('contact_email')
         school_name = get_val('school_name')
-        description = get_val('description')
         attachment_url = get_val('attachment_url')
         city = get_val('city')
         status = get_val('status', 'Pendente')
         analysis = get_val('analysis')
 
-        # Formata data se vier com formato datetime do Excel
+        # Formata data se vier com microssegundos
         if len(ticket_date) > 19 and '.' in ticket_date:
             ticket_date = ticket_date.split('.')[0]
+
+        # Formata data de nascimento removendo 00:00:00 se houver
+        if ' 00:00:00' in birth_date:
+            birth_date = birth_date.replace(' 00:00:00', '')
 
         hash_seed = f"{ticket_date}_{student_cpf}_{student_name}_{description[:30]}"
         ticket_id = "fc_" + hashlib.md5(hash_seed.encode('utf-8')).hexdigest()[:16]
@@ -180,3 +235,4 @@ def import_fale_conosco_file(file_path_or_bytes: Union[str, bytes], filename: st
         "updated": updated_count,
         "total": imported_count + updated_count
     }
+

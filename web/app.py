@@ -857,6 +857,20 @@ def api_get_support_tickets_stats():
         logger.error(f"Erro ao calcular estatísticas do Fale Conosco: {e}")
         return JSONResponse(status_code=500, content={"error": str(e)})
 
+@app.get("/api/support-tickets/analytics")
+def api_get_support_tickets_analytics():
+    """
+    Retorna o diagnóstico analítico completo do Fale Conosco, cobrindo todos os 13 campos da planilha
+    de forma 100% isolada e sem misturar com as avaliações das lojas (Google Play e Apple Store).
+    """
+    try:
+        from database.db import get_fale_conosco_analytics
+        return get_fale_conosco_analytics()
+    except Exception as e:
+        logger.error(f"Erro ao gerar analytics do Fale Conosco: {e}")
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
 @app.post("/api/support-tickets/import")
 async def api_import_support_tickets(file: UploadFile = File(...)):
     try:

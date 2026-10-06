@@ -1293,123 +1293,527 @@
                 </div>
             </div>
 
-            <!-- KPIs de Atendimento -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl shrink-0 font-bold border border-blue-100">
-                        <i class="fa-solid fa-ticket"></i>
-                    </div>
-                    <div>
-                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total de Chamados</span>
-                        <h3 id="stat-support-total" class="text-2xl font-black text-slate-900 leading-tight">1.957</h3>
-                        <span class="text-[11px] text-slate-500 font-medium">1.530 alunos • 427 responsáveis</span>
-                    </div>
-                </div>
-
-                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl shrink-0 font-bold border border-amber-100">
-                        <i class="fa-solid fa-bug"></i>
-                    </div>
-                    <div>
-                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Em Análise Técnica</span>
-                        <h3 id="stat-support-analysis" class="text-2xl font-black text-amber-700 leading-tight">823</h3>
-                        <span class="text-[11px] text-amber-600 font-semibold"><i class="fa-solid fa-code-branch mr-0.5"></i> 641 com chamado Mantis</span>
-                    </div>
-                </div>
-
-                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl shrink-0 font-bold border border-emerald-100">
-                        <i class="fa-solid fa-circle-check"></i>
-                    </div>
-                    <div>
-                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Resolvidos / Concluídos</span>
-                        <h3 id="stat-support-resolved" class="text-2xl font-black text-emerald-700 leading-tight">64</h3>
-                        <span class="text-[11px] text-emerald-600 font-medium">Retorno concluído</span>
-                    </div>
-                </div>
-
-                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center text-xl shrink-0 font-bold border border-slate-200">
-                        <i class="fa-solid fa-school"></i>
-                    </div>
-                    <div>
-                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Sem Atuação Técnica</span>
-                        <h3 id="stat-support-no-action" class="text-2xl font-black text-slate-700 leading-tight">1.056</h3>
-                        <span class="text-[11px] text-slate-500 font-medium">54% dúvidas pedagógicas/escola</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Principais Categorias / Causas-Raiz do Fale Conosco -->
-            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
-                        <i class="fa-solid fa-chart-column text-blue-600"></i> Distribuição por Tipo de Solicitação
-                    </h3>
-                    <span class="text-xs text-slate-500">Mapeamento automático por telemetria e IA</span>
-                </div>
-                <div id="support-categories-pills" class="flex flex-wrap gap-2 pt-1">
-                    <!-- Gerado dinamicamente -->
-                </div>
-            </div>
-
-            <!-- Filtros de Chamados -->
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3">
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                    <div class="relative lg:col-span-2">
-                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-sm"></i>
-                        <input type="text" id="filter-support-search" oninput="debounceSupportFilter()" placeholder="Buscar por aluno, CPF, escola, cidade ou texto..." class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:bg-white transition">
-                    </div>
-                    <div>
-                        <select id="filter-support-status" onchange="filterSupportTickets()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:ring-2 focus:ring-blue-500">
-                            <option value="todos">Todos os Status</option>
-                            <option value="Em análise">Em análise</option>
-                            <option value="Sem necessidade de atuação da equipe">Sem atuação técnica (Escola)</option>
-                            <option value="Resolvido">Resolvido</option>
-                            <option value="Pendente">Pendente</option>
-                        </select>
-                    </div>
-                    <div>
-                        <select id="filter-support-user-type" onchange="filterSupportTickets()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:ring-2 focus:ring-blue-500">
-                            <option value="todos">Todos os Perfis</option>
-                            <option value="Aluno">Aluno</option>
-                            <option value="Responsável">Responsável</option>
-                        </select>
-                    </div>
-                    <div>
-                        <select id="filter-support-category" onchange="filterSupportTickets()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:ring-2 focus:ring-blue-500">
-                            <option value="todos">Todas as Categorias</option>
-                            <option value="Erro de Token de Autenticação">Erro de Token</option>
-                            <option value="Login Gov.br / SEG.ID">Login Gov.br / SEG.ID</option>
-                            <option value="Notas e Frequência">Notas e Frequência</option>
-                            <option value="Recuperação de Senha / ID">Senha / ID do Aluno</option>
-                            <option value="Vínculo / Troca de Escola">Troca de Escola</option>
-                            <option value="Compatibilidade de Dispositivo">Compatibilidade</option>
-                            <option value="Instabilidade / Falha no App">Falha / Não Abre</option>
-                        </select>
-                    </div>
-                    <div class="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
-                        <input type="checkbox" id="filter-support-mantis" onchange="filterSupportTickets()" class="w-4 h-4 text-blue-600 rounded">
-                        <label for="filter-support-mantis" class="text-xs font-semibold text-slate-700 cursor-pointer">Apenas com Mantis</label>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Lista de Chamados do Fale Conosco -->
-            <div id="support-tickets-container" class="space-y-4">
-                <!-- Preenchido via loadSupportTickets() -->
-            </div>
-
-            <!-- Paginação -->
-            <div class="flex justify-between items-center bg-white px-5 py-3 rounded-xl border border-slate-200 text-xs shadow-sm no-print">
-                <span id="support-pagination-info" class="text-slate-500 font-medium">Carregando chamados...</span>
-                <div class="flex gap-2">
-                    <button id="support-btn-prev" onclick="changeSupportPage(-1)" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-md transition disabled:opacity-50">
-                        <i class="fa-solid fa-chevron-left"></i> Anterior
+            <!-- Sub-navegação interna: Chamados vs Visão Analítica -->
+            <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-xs">
+                <div class="flex items-center gap-2">
+                    <button id="fc-subtab-btn-list" onclick="switchSupportSubTab('list')" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-blue-600 text-white shadow-xs">
+                        <i class="fa-solid fa-list-check"></i> Chamados & Atendimento (<span id="fc-tab-badge-tickets">862</span>)
                     </button>
-                    <button id="support-btn-next" onclick="changeSupportPage(1)" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-md transition disabled:opacity-50">
-                        Próxima <i class="fa-solid fa-chevron-right"></i>
+                    <button id="fc-subtab-btn-analytics" onclick="switchSupportSubTab('analytics')" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-white text-slate-700 hover:bg-slate-100 border border-slate-200">
+                        <i class="fa-solid fa-chart-pie text-indigo-600"></i> Painel Analítico Completo (13 Dimensões)
                     </button>
+                </div>
+                <div class="flex items-center gap-2 text-xs font-medium text-slate-500">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-full font-semibold text-[11px]">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Base Exclusiva Fale Conosco • 100% Isolada das Avaliações de Lojas
+                    </span>
+                </div>
+            </div>
+
+            <!-- SUB-TAB 1: LISTA DE CHAMADOS & ATENDIMENTO -->
+            <div id="fc-subtab-content-list" class="space-y-6">
+                <!-- KPIs de Atendimento -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl shrink-0 font-bold border border-blue-100">
+                            <i class="fa-solid fa-ticket"></i>
+                        </div>
+                        <div>
+                            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total de Chamados</span>
+                            <h3 id="stat-support-total" class="text-2xl font-black text-slate-900 leading-tight">862</h3>
+                            <span id="stat-support-sub-users" class="text-[11px] text-slate-500 font-medium">721 alunos • 141 responsáveis</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl shrink-0 font-bold border border-amber-100">
+                            <i class="fa-solid fa-bug"></i>
+                        </div>
+                        <div>
+                            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Em Análise Técnica</span>
+                            <h3 id="stat-support-analysis" class="text-2xl font-black text-amber-700 leading-tight">171</h3>
+                            <span id="stat-support-sub-mantis" class="text-[11px] text-amber-600 font-semibold"><i class="fa-solid fa-code-branch mr-0.5"></i> 159 com chamado Mantis</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl shrink-0 font-bold border border-emerald-100">
+                            <i class="fa-solid fa-circle-check"></i>
+                        </div>
+                        <div>
+                            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Resolvidos / Concluídos</span>
+                            <h3 id="stat-support-resolved" class="text-2xl font-black text-emerald-700 leading-tight">25</h3>
+                            <span class="text-[11px] text-emerald-600 font-medium">Retorno ao usuário concluído</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center text-xl shrink-0 font-bold border border-slate-200">
+                            <i class="fa-solid fa-school"></i>
+                        </div>
+                        <div>
+                            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Sem Atuação Técnica</span>
+                            <h3 id="stat-support-no-action" class="text-2xl font-black text-slate-700 leading-tight">407</h3>
+                            <span class="text-[11px] text-slate-500 font-medium">Competência da secretaria/escola</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Principais Categorias / Causas-Raiz do Fale Conosco -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-column text-blue-600"></i> Distribuição por Tipo de Solicitação
+                        </h3>
+                        <span class="text-xs text-slate-500">Mapeamento dinâmico baseado no relato do formulário</span>
+                    </div>
+                    <div id="support-categories-pills" class="flex flex-wrap gap-2 pt-1">
+                        <!-- Gerado dinamicamente -->
+                    </div>
+                </div>
+
+                <!-- Filtros de Chamados -->
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                        <div class="relative lg:col-span-2">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-sm"></i>
+                            <input type="text" id="filter-support-search" oninput="debounceSupportFilter()" placeholder="Buscar por aluno, CPF, escola, cidade ou texto..." class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:bg-white transition">
+                        </div>
+                        <div>
+                            <select id="filter-support-status" onchange="filterSupportTickets()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:ring-2 focus:ring-blue-500">
+                                <option value="todos">Todos os Status</option>
+                                <option value="Em análise">Em análise</option>
+                                <option value="Sem necessidade de atuação da equipe">Sem atuação técnica (Escola)</option>
+                                <option value="Resolvido">Resolvido</option>
+                                <option value="Pendente">Pendente</option>
+                            </select>
+                        </div>
+                        <div>
+                            <select id="filter-support-user-type" onchange="filterSupportTickets()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:ring-2 focus:ring-blue-500">
+                                <option value="todos">Todos os Perfis</option>
+                                <option value="Aluno">Aluno</option>
+                                <option value="Responsável">Responsável</option>
+                            </select>
+                        </div>
+                        <div>
+                            <select id="filter-support-category" onchange="filterSupportTickets()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:ring-2 focus:ring-blue-500">
+                                <option value="todos">Todas as Categorias</option>
+                                <option value="Login Gov.br / SEG.ID">Login Gov.br / SEG.ID</option>
+                                <option value="Notas e Frequência">Notas e Frequência</option>
+                                <option value="Instabilidade / Falha no App">Instabilidade / Falha</option>
+                                <option value="Erro de Token de Autenticação">Erro de Token</option>
+                                <option value="Recuperação de Senha / ID">Senha / ID do Aluno</option>
+                                <option value="Cadastro de Aluno / CPF Não Vinculado">Cadastro / CPF</option>
+                                <option value="Vínculo / Troca de Escola">Troca de Escola</option>
+                                <option value="Pé-de-Meia / Jornada Estudante">Pé-de-Meia</option>
+                                <option value="Documentação / Secretaria">Documentação / Secretaria</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
+                            <input type="checkbox" id="filter-support-mantis" onchange="filterSupportTickets()" class="w-4 h-4 text-blue-600 rounded">
+                            <label for="filter-support-mantis" class="text-xs font-semibold text-slate-700 cursor-pointer">Apenas com Mantis</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista de Chamados do Fale Conosco -->
+                <div id="support-tickets-container" class="space-y-4">
+                    <!-- Preenchido via loadSupportTickets() -->
+                </div>
+
+                <!-- Paginação -->
+                <div class="flex justify-between items-center bg-white px-5 py-3 rounded-xl border border-slate-200 text-xs shadow-sm no-print">
+                    <span id="support-pagination-info" class="text-slate-500 font-medium">Carregando chamados...</span>
+                    <div class="flex gap-2">
+                        <button id="support-btn-prev" onclick="changeSupportPage(-1)" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-md transition disabled:opacity-50">
+                            <i class="fa-solid fa-chevron-left"></i> Anterior
+                        </button>
+                        <button id="support-btn-next" onclick="changeSupportPage(1)" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-md transition disabled:opacity-50">
+                            Próxima <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUB-TAB 2: PAINEL ANALÍTICO COMPLETO (13 DIMENSÕES) -->
+            <div id="fc-subtab-content-analytics" class="hidden space-y-6">
+                <!-- Banner de introdução analítica -->
+                <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-950 p-6 rounded-2xl text-white shadow-md flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border border-indigo-900/50">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-indigo-500/30 text-indigo-300 border border-indigo-400/30 uppercase tracking-wider">
+                                Inteligência de Dados Prodemge • 13 Campos
+                            </span>
+                            <span class="text-xs text-indigo-200 font-semibold">Auditoria Completa da Base Oficial</span>
+                        </div>
+                        <h3 class="text-lg font-black tracking-tight flex items-center gap-2">
+                            <i class="fa-solid fa-chart-line text-indigo-400"></i> Diagnóstico Analítico & Telemetria do Fale Conosco
+                        </h3>
+                        <p class="text-xs text-slate-300 max-w-3xl leading-relaxed mt-1">
+                            Visão analítica desvinculada das lojas, cobrindo 100% dos dados coletados pelo formulário: temporalidade, perfis (Aluno/Responsável), integridade cadastral de CPF e ID, faixa etária dos estudantes, confiabilidade de e-mails, escolas recorrentes, evidências com prints e rastreamento de defeitos de software no <b>Mantis da Prodemge</b>.
+                        </p>
+                    </div>
+                    <div class="shrink-0 flex gap-2">
+                        <button onclick="loadFaleConoscoAnalytics()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition shadow flex items-center gap-2 border border-indigo-400">
+                            <i class="fa-solid fa-arrows-rotate"></i> Atualizar Dados
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 6 KPIs Executivos Estruturados -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                        <div class="flex items-center justify-between text-slate-500 mb-2">
+                            <span class="text-[11px] font-bold uppercase tracking-wider">Total Geral</span>
+                            <span class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-sm font-bold"><i class="fa-solid fa-ticket"></i></span>
+                        </div>
+                        <h4 id="fc-kpi-total" class="text-2xl font-black text-slate-900 leading-tight">862</h4>
+                        <span class="text-[11px] text-slate-500 mt-1">Chamados cadastrados</span>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                        <div class="flex items-center justify-between text-slate-500 mb-2">
+                            <span class="text-[11px] font-bold uppercase tracking-wider">Cidadãos Únicos</span>
+                            <span class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-sm font-bold"><i class="fa-solid fa-users"></i></span>
+                        </div>
+                        <h4 id="fc-kpi-unique" class="text-2xl font-black text-indigo-900 leading-tight">780</h4>
+                        <span id="fc-kpi-repeat-sub" class="text-[11px] text-amber-600 font-semibold mt-1">35 alunos reincidentes</span>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                        <div class="flex items-center justify-between text-slate-500 mb-2">
+                            <span class="text-[11px] font-bold uppercase tracking-wider">ID Informado</span>
+                            <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm font-bold"><i class="fa-solid fa-id-card"></i></span>
+                        </div>
+                        <h4 id="fc-kpi-id-rate" class="text-2xl font-black text-emerald-700 leading-tight">67.9%</h4>
+                        <span class="text-[11px] text-slate-500 mt-1">585 com ID do aluno</span>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                        <div class="flex items-center justify-between text-slate-500 mb-2">
+                            <span class="text-[11px] font-bold uppercase tracking-wider">Prints / Anexos</span>
+                            <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-sm font-bold"><i class="fa-brands fa-google-drive"></i></span>
+                        </div>
+                        <h4 id="fc-kpi-attachments" class="text-2xl font-black text-amber-700 leading-tight">21.9%</h4>
+                        <span class="text-[11px] text-slate-500 mt-1">189 anexaram print</span>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                        <div class="flex items-center justify-between text-slate-500 mb-2">
+                            <span class="text-[11px] font-bold uppercase tracking-wider">Anotação Mantis</span>
+                            <span class="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center text-sm font-bold"><i class="fa-solid fa-bug"></i></span>
+                        </div>
+                        <h4 id="fc-kpi-mantis" class="text-2xl font-black text-purple-700 leading-tight">159</h4>
+                        <span class="text-[11px] text-purple-600 font-semibold mt-1">18.4% com bug Prodemge</span>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                        <div class="flex items-center justify-between text-slate-500 mb-2">
+                            <span class="text-[11px] font-bold uppercase tracking-wider">E-mails Válidos</span>
+                            <span class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-sm font-bold"><i class="fa-solid fa-envelope"></i></span>
+                        </div>
+                        <h4 id="fc-kpi-emails" class="text-2xl font-black text-slate-800 leading-tight">96.8%</h4>
+                        <span id="fc-kpi-emails-sub" class="text-[11px] text-rose-600 font-semibold mt-1">28 sem @ no e-mail</span>
+                    </div>
+                </div>
+
+                <!-- DIMENSÃO 1: TEMPORALIDADE & SAZONALIDADE (Carimbo de data/hora) -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                    <i class="fa-regular fa-calendar-days text-blue-600"></i> Evolução Mensal dos Chamados (Carimbo de Data/Hora)
+                                </h4>
+                                <p class="text-xs text-slate-500">Distribuição temporal do volume de aberturas de suporte ao longo do ano de 2026</p>
+                            </div>
+                            <span class="text-[11px] font-bold px-2.5 py-1 bg-blue-50 text-blue-800 rounded-full border border-blue-200">
+                                Pico: Maio/2026 (425 chamados)
+                            </span>
+                        </div>
+                        <div class="h-64">
+                            <canvas id="fc-chart-timeline-months"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                        <div>
+                            <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                <i class="fa-regular fa-clock text-indigo-600"></i> Chamados por Dia da Semana
+                            </h4>
+                            <p class="text-xs text-slate-500">Concentração de solicitações de suporte</p>
+                        </div>
+                        <div class="h-64">
+                            <canvas id="fc-chart-timeline-days"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DIMENSÃO 2: PERFIL DO SOLICITANTE & FAIXA ETÁRIA (Você é: & Data de nascimento) -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                        <div>
+                            <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                <i class="fa-solid fa-users text-blue-600"></i> Perfil do Solicitante (Você é:)
+                            </h4>
+                            <p class="text-xs text-slate-500">Proporção entre Alunos e Pais/Responsáveis</p>
+                        </div>
+                        <div class="h-56 flex items-center justify-center">
+                            <canvas id="fc-chart-user-type"></canvas>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-center">
+                            <div class="p-2 bg-blue-50 rounded-lg">
+                                <span class="text-[11px] text-blue-700 font-semibold">Alunos</span>
+                                <h5 id="fc-stat-aluno-pct" class="text-base font-black text-blue-900">83.6%</h5>
+                                <span id="fc-stat-aluno-count" class="text-[10px] text-blue-600">721 chamados</span>
+                            </div>
+                            <div class="p-2 bg-amber-50 rounded-lg">
+                                <span class="text-[11px] text-amber-700 font-semibold">Responsáveis</span>
+                                <h5 id="fc-stat-resp-pct" class="text-base font-black text-amber-900">16.4%</h5>
+                                <span id="fc-stat-resp-count" class="text-[10px] text-amber-600">141 chamados</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                    <i class="fa-solid fa-cake-candles text-purple-600"></i> Distribuição por Ano de Nascimento do Aluno
+                                </h4>
+                                <p class="text-xs text-slate-500">Demografia e faixa etária dos estudantes afetados (Ensino Fundamental II e Médio)</p>
+                            </div>
+                            <span class="text-[11px] font-bold px-2.5 py-1 bg-purple-50 text-purple-800 rounded-full border border-purple-200">
+                                Maior concentração: 2008 a 2010 (15 a 18 anos)
+                            </span>
+                        </div>
+                        <div class="h-64">
+                            <canvas id="fc-chart-birth-years"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DIMENSÃO 3: CATEGORIAS DO PROBLEMA & NUVEM SEMÂNTICA (Descreva o seu problema) -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <div class="lg:col-span-7 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                        <div>
+                            <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                <i class="fa-solid fa-layer-group text-indigo-600"></i> Categorização dos Relatos de Problemas
+                            </h4>
+                            <p class="text-xs text-slate-500">Classificação dos chamados por tipo de impedimento enfrentado pelo cidadão</p>
+                        </div>
+                        <div class="h-72">
+                            <canvas id="fc-chart-categories"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-5 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                    <i class="fa-solid fa-cloud text-blue-600"></i> Termos Mais Frequentes nos Relatos
+                                </h4>
+                                <span class="text-[11px] text-slate-500 font-medium">Top 20 palavras</span>
+                            </div>
+                            <p class="text-xs text-slate-500 mb-3">Vocabulário mais citado na coluna "Descreva o seu problema"</p>
+                            
+                            <div id="fc-keywords-cloud" class="flex flex-wrap gap-1.5 max-h-56 overflow-y-auto pr-1">
+                                <!-- Preenchido dinamicamente com badges de palavras -->
+                            </div>
+                        </div>
+
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-600 space-y-1">
+                            <span class="font-bold text-slate-800 flex items-center gap-1">
+                                <i class="fa-solid fa-lightbulb text-amber-500"></i> Insight Semântico:
+                            </span>
+                            <p class="text-[11px] leading-relaxed">
+                                Os termos <b>escola</b>, <b>acessar</b>, <b>conta</b> e <b>notas</b> lideram o vocabulário. Muitos estudantes utilizam o Fale Conosco para questionar o lançamento de notas e faltas pela secretaria escolar ou para regularizar conta do Gov.br.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DIMENSÃO 4: RANKING DE ESCOLAS ESTADUAIS COM MAIOR VOLUME (Nome da escola) -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                        <div>
+                            <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                <i class="fa-solid fa-school text-emerald-600"></i> Escolas com Maior Demanda de Suporte (Nome da Escola)
+                            </h4>
+                            <p class="text-xs text-slate-500">Ranking das instituições de ensino mais citadas nos 862 chamados (98.6% com escola preenchida)</p>
+                        </div>
+                        <span class="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-full">
+                            850 chamados vinculados a escolas
+                        </span>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 text-slate-600 uppercase tracking-wider text-[10px] font-bold border-b border-slate-200">
+                                <tr>
+                                    <th class="py-2.5 px-3">Posição</th>
+                                    <th class="py-2.5 px-3">Nome da Escola Estadual / Municipal</th>
+                                    <th class="py-2.5 px-3 text-center">Volume de Chamados</th>
+                                    <th class="py-2.5 px-3 text-center">% do Total</th>
+                                    <th class="py-2.5 px-3">Representatividade Visual</th>
+                                    <th class="py-2.5 px-3 text-right">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fc-table-top-schools" class="divide-y divide-slate-100">
+                                <!-- Gerado dinamicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- DIMENSÃO 5 & 6: RASTREAMENTO TÉCNICO MANTIS & STATUS (Análise & Status) -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <div class="lg:col-span-7 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                    <i class="fa-solid fa-bug text-purple-600"></i> Rastreamento de Defeitos Técnicos no Mantis Prodemge
+                                </h4>
+                                <p class="text-xs text-slate-500">Incidentes mapeados pela equipe de engenharia e sustentação</p>
+                            </div>
+                            <span class="text-xs font-bold px-2.5 py-1 bg-purple-100 text-purple-900 rounded-full border border-purple-300">
+                                159 chamados catalogados
+                            </span>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-50 text-slate-600 uppercase tracking-wider text-[10px] font-bold border-b border-slate-200">
+                                    <tr>
+                                        <th class="py-2 px-3">Ticket Mantis</th>
+                                        <th class="py-2 px-3">Causa Mapeada</th>
+                                        <th class="py-2 px-3 text-center">Afetados</th>
+                                        <th class="py-2 px-3">Impacto Técnico</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fc-table-mantis" class="divide-y divide-slate-100">
+                                    <!-- Preenchido dinamicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-5 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                        <div>
+                            <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                <i class="fa-solid fa-list-check text-emerald-600"></i> Status de Atendimento dos Chamados
+                            </h4>
+                            <p class="text-xs text-slate-500">Distribuição entre demandas resolvidas, sob análise e pedagógicas</p>
+                        </div>
+                        <div class="h-56 flex items-center justify-center">
+                            <canvas id="fc-chart-statuses"></canvas>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-600">
+                            <span class="font-bold text-slate-800">Nota sobre "Sem necessidade de atuação":</span>
+                            <p class="text-[11px] text-slate-500 mt-0.5">
+                                Quase metade (47.2%) dos chamados foram classificados como sem atuação técnica da equipe de TI por se tratarem de dúvidas pedagógicas, emissão de históricos ou consultas de notas que competem à secretaria escolar.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DIMENSÃO 7 & 8: COMUNICAÇÃO (Email pra contato) & REINCIDÊNCIA (Nome/CPF) -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <div class="lg:col-span-6 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                    <i class="fa-regular fa-envelope text-blue-600"></i> Provedores de E-mail para Contato
+                                </h4>
+                                <p class="text-xs text-slate-500">Canais de retorno cadastrados pelos estudantes</p>
+                            </div>
+                        </div>
+
+                        <div id="fc-email-providers-list" class="space-y-2 pt-1">
+                            <!-- Preenchido dinamicamente -->
+                        </div>
+
+                        <!-- Alerta de E-mails Mal Formatados -->
+                        <div class="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs space-y-1">
+                            <span class="font-bold text-rose-900 flex items-center gap-1.5">
+                                <i class="fa-solid fa-triangle-exclamation text-rose-600"></i> Alerta de Falha de Comunicação (28 E-mails sem @):
+                            </span>
+                            <p class="text-[11px] text-rose-800 leading-relaxed">
+                                Foram identificados <b>28 chamados</b> onde o estudante digitou o e-mail incorretamente (ex: <code class="bg-rose-100 px-1 py-0.5 rounded text-rose-900 font-mono">thamirysdornelas88gmail.com</code>). 
+                                <b>Recomendação Prodemge:</b> Implementar validação de máscara de e-mail no formulário do Microsoft Forms / Google Forms para impedir envios com formato inválido.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-6 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                    <i class="fa-solid fa-arrows-rotate text-amber-600"></i> Reincidência de Chamados por Aluno
+                                </h4>
+                                <p class="text-xs text-slate-500">Estudantes com múltiplos registros abertos (35 alunos com 100 chamados)</p>
+                            </div>
+                            <span class="text-xs font-bold px-2 py-0.5 bg-amber-100 text-amber-900 rounded-full border border-amber-300">
+                                Auditoria de CPF
+                            </span>
+                        </div>
+
+                        <div class="overflow-x-auto max-h-80 overflow-y-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-50 text-slate-600 uppercase tracking-wider text-[10px] font-bold border-b border-slate-200 sticky top-0">
+                                    <tr>
+                                        <th class="py-2 px-3">Estudante</th>
+                                        <th class="py-2 px-3">CPF</th>
+                                        <th class="py-2 px-3 text-center">Chamados</th>
+                                        <th class="py-2 px-3">Escola</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fc-table-repeat-students" class="divide-y divide-slate-100">
+                                    <!-- Preenchido dinamicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DIMENSÃO 9 & 10: EVIDÊNCIAS DE PRINTS (Google Drive) & LOCALIZAÇÃO (Cidade) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                        <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-brands fa-google-drive text-amber-600"></i> Anexos e Evidências Visuais Enviadas
+                        </h4>
+                        <p class="text-xs text-slate-500">Proporção de chamados contendo prints do problema</p>
+                        
+                        <div class="flex items-center gap-4 p-4 bg-amber-50/70 border border-amber-200 rounded-xl">
+                            <div class="w-12 h-12 rounded-xl bg-amber-500 text-white flex items-center justify-center text-2xl font-black shrink-0">
+                                <i class="fa-regular fa-image"></i>
+                            </div>
+                            <div>
+                                <h5 class="text-base font-black text-amber-950">189 Chamados com Prints (21.9%)</h5>
+                                <p class="text-xs text-amber-800 leading-relaxed mt-0.5">
+                                    Os anexos estão hospedados no Google Drive oficial do formulário e podem ser acessados diretamente no cartão de cada chamado para ver o print exato da tela de erro do estudante.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                        <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-map-location-dot text-indigo-600"></i> Abrangência Territorial (Cidade)
+                        </h4>
+                        <p class="text-xs text-slate-500">Municípios de Minas Gerais registrados</p>
+                        
+                        <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="font-bold text-slate-800">Cobertura da Rede:</span>
+                                <span class="text-slate-500">853 municípios de MG</span>
+                            </div>
+                            <p class="text-[11px] text-slate-600 leading-relaxed">
+                                A coluna direta "Cidade" foi preenchida em chamados pontuais (ex: Mendes Pimentel, Ibirité, Manga, Santa Rita de Caldas), enquanto a maioria das localizações dos estudantes é mapeada pelo vínculo oficial com as <b>Escolas Estaduais</b> distribuídas pelas Superintendências Regionais de Ensino (SREs).
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2000,6 +2404,10 @@
             if (isSupport) {
                 loadSupportTickets();
                 loadSupportTicketsStats();
+                const analyticsSubtab = document.getElementById('fc-subtab-content-analytics');
+                if (analyticsSubtab && !analyticsSubtab.classList.contains('hidden')) {
+                    loadFaleConoscoAnalytics();
+                }
             }
 
             if (isDevices) {
@@ -5186,6 +5594,55 @@ async function uploadPlayConsoleCsv(input) {
         let currentSupportOffset = 0;
         const supportPageSize = 25;
         let supportDebounceTimer = null;
+        let fcCharts = {};
+
+        function destroyFcChart(id) {
+            if (fcCharts[id]) {
+                try { fcCharts[id].destroy(); } catch (e) {}
+                delete fcCharts[id];
+            }
+        }
+
+        function switchSupportSubTab(tab) {
+            const listContent = document.getElementById('fc-subtab-content-list');
+            const analyticsContent = document.getElementById('fc-subtab-content-analytics');
+            const btnList = document.getElementById('fc-subtab-btn-list');
+            const btnAnalytics = document.getElementById('fc-subtab-btn-analytics');
+
+            if (tab === 'analytics') {
+                if (listContent) listContent.classList.add('hidden');
+                if (analyticsContent) analyticsContent.classList.remove('hidden');
+
+                if (btnList) btnList.className = "px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-white text-slate-700 hover:bg-slate-100 border border-slate-200";
+                if (btnAnalytics) btnAnalytics.className = "px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-blue-600 text-white shadow-xs";
+
+                loadFaleConoscoAnalytics();
+            } else {
+                if (listContent) listContent.classList.remove('hidden');
+                if (analyticsContent) analyticsContent.classList.add('hidden');
+
+                if (btnList) btnList.className = "px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-blue-600 text-white shadow-xs";
+                if (btnAnalytics) btnAnalytics.className = "px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-white text-slate-700 hover:bg-slate-100 border border-slate-200";
+            }
+        }
+
+        function filterSupportByWord(word) {
+            switchSupportSubTab('list');
+            const searchInput = document.getElementById('filter-support-search');
+            if (searchInput) {
+                searchInput.value = word;
+                filterSupportTickets();
+            }
+        }
+
+        function filterSupportBySchool(school) {
+            switchSupportSubTab('list');
+            const searchInput = document.getElementById('filter-support-search');
+            if (searchInput) {
+                searchInput.value = school;
+                filterSupportTickets();
+            }
+        }
 
         function debounceSupportFilter() {
             clearTimeout(supportDebounceTimer);
@@ -5212,6 +5669,9 @@ async function uploadPlayConsoleCsv(input) {
                 
                 const statTotal = document.getElementById('stat-support-total');
                 if (statTotal) statTotal.innerText = (stats.total || 0).toLocaleString('pt-BR');
+
+                const subBadge = document.getElementById('fc-tab-badge-tickets');
+                if (subBadge) subBadge.innerText = (stats.total || 0).toLocaleString('pt-BR');
                 
                 const statAnalysis = document.getElementById('stat-support-analysis');
                 if (statAnalysis) statAnalysis.innerText = (stats.by_status?.['Em análise'] || 0).toLocaleString('pt-BR');
@@ -5224,6 +5684,18 @@ async function uploadPlayConsoleCsv(input) {
 
                 const badgeNav = document.getElementById('badge-support-count');
                 if (badgeNav) badgeNav.innerText = (stats.total || 0).toLocaleString('pt-BR');
+
+                const subUsers = document.getElementById('stat-support-sub-users');
+                if (subUsers && stats.by_user_type) {
+                    const aCount = stats.by_user_type['Aluno'] || 0;
+                    const rCount = stats.by_user_type['Responsável'] || 0;
+                    subUsers.innerText = `${aCount.toLocaleString('pt-BR')} alunos • ${rCount.toLocaleString('pt-BR')} responsáveis`;
+                }
+
+                const subMantis = document.getElementById('stat-support-sub-mantis');
+                if (subMantis && stats.mantis_count !== undefined) {
+                    subMantis.innerHTML = `<i class="fa-solid fa-code-branch mr-0.5"></i> ${stats.mantis_count} com chamado Mantis`;
+                }
 
                 const containerCats = document.getElementById('support-categories-pills');
                 if (containerCats && stats.by_category) {
@@ -5238,6 +5710,336 @@ async function uploadPlayConsoleCsv(input) {
                 console.error('Erro ao carregar estatísticas do suporte:', err);
             }
         }
+
+        async function loadFaleConoscoAnalytics() {
+            try {
+                const res = await fetch('/api/support-tickets/analytics');
+                const data = await res.json();
+                if (!data || !data.summary) return;
+
+                const s = data.summary;
+
+                // 1. Atualizar KPIs do Topo
+                const elTotal = document.getElementById('fc-kpi-total');
+                if (elTotal) elTotal.innerText = (s.total_tickets || 0).toLocaleString('pt-BR');
+
+                const elUnique = document.getElementById('fc-kpi-unique');
+                if (elUnique) elUnique.innerText = (s.unique_students || 0).toLocaleString('pt-BR');
+
+                const elRepeatSub = document.getElementById('fc-kpi-repeat-sub');
+                if (elRepeatSub) elRepeatSub.innerText = `${s.repeat_students_count || 0} alunos com chamados repetidos`;
+
+                const elIdRate = document.getElementById('fc-kpi-id-rate');
+                if (elIdRate) elIdRate.innerText = `${s.has_id_percentage || 0}%`;
+
+                const elAtt = document.getElementById('fc-kpi-attachments');
+                if (elAtt) elAtt.innerText = `${s.has_attachment_percentage || 0}%`;
+
+                const elMantis = document.getElementById('fc-kpi-mantis');
+                if (elMantis) elMantis.innerText = (s.mantis_tagged_count || 0).toLocaleString('pt-BR');
+
+                const elEmails = document.getElementById('fc-kpi-emails');
+                if (elEmails) elEmails.innerText = `${(100 - (s.invalid_email_count / (s.total_tickets || 1) * 100)).toFixed(1)}%`;
+
+                const elEmailsSub = document.getElementById('fc-kpi-emails-sub');
+                if (elEmailsSub) elEmailsSub.innerText = `${s.invalid_email_count || 0} e-mails sem @ (inválidos)`;
+
+                // 2. Gráfico de Evolução Mensal (Timeline)
+                if (data.timeline_months && document.getElementById('fc-chart-timeline-months')) {
+                    destroyFcChart('fc-chart-timeline-months');
+                    const ctx = document.getElementById('fc-chart-timeline-months').getContext('2d');
+                    fcCharts['fc-chart-timeline-months'] = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: data.timeline_months.map(m => m.month),
+                            datasets: [{
+                                label: 'Volume de Chamados',
+                                data: data.timeline_months.map(m => m.count),
+                                backgroundColor: data.timeline_months.map(m => m.month === '2026-05' ? 'rgba(59, 130, 246, 0.9)' : 'rgba(99, 102, 241, 0.6)'),
+                                borderColor: 'rgba(59, 130, 246, 1)',
+                                borderWidth: 1,
+                                borderRadius: 6
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        label: (c) => ` ${c.parsed.y} chamados abertos`
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+                                x: { grid: { display: false } }
+                            }
+                        }
+                    });
+                }
+
+                // 3. Gráfico de Dias da Semana
+                if (data.timeline_days && document.getElementById('fc-chart-timeline-days')) {
+                    destroyFcChart('fc-chart-timeline-days');
+                    const ctx = document.getElementById('fc-chart-timeline-days').getContext('2d');
+                    fcCharts['fc-chart-timeline-days'] = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: data.timeline_days.map(d => d.day.split('-')[0]),
+                            datasets: [{
+                                label: 'Chamados',
+                                data: data.timeline_days.map(d => d.count),
+                                backgroundColor: 'rgba(129, 140, 248, 0.7)',
+                                borderRadius: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+                                x: { grid: { display: false } }
+                            }
+                        }
+                    });
+                }
+
+                // 4. Gráfico Donut de Perfil (Você é:)
+                if (data.user_types && document.getElementById('fc-chart-user-type')) {
+                    destroyFcChart('fc-chart-user-type');
+                    const ctx = document.getElementById('fc-chart-user-type').getContext('2d');
+                    const alunoItem = data.user_types.find(u => u.type === 'Aluno') || { count: 0, percentage: 0 };
+                    const respItem = data.user_types.find(u => u.type === 'Responsável') || { count: 0, percentage: 0 };
+
+                    const elAlunoPct = document.getElementById('fc-stat-aluno-pct');
+                    if (elAlunoPct) elAlunoPct.innerText = `${alunoItem.percentage}%`;
+                    const elAlunoCnt = document.getElementById('fc-stat-aluno-count');
+                    if (elAlunoCnt) elAlunoCnt.innerText = `${alunoItem.count} chamados`;
+
+                    const elRespPct = document.getElementById('fc-stat-resp-pct');
+                    if (elRespPct) elRespPct.innerText = `${respItem.percentage}%`;
+                    const elRespCnt = document.getElementById('fc-stat-resp-count');
+                    if (elRespCnt) elRespCnt.innerText = `${respItem.count} chamados`;
+
+                    fcCharts['fc-chart-user-type'] = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Alunos', 'Responsáveis'],
+                            datasets: [{
+                                data: [alunoItem.count, respItem.count],
+                                backgroundColor: ['#3b82f6', '#f59e0b'],
+                                borderWidth: 2,
+                                borderColor: '#ffffff'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            cutout: '70%',
+                            plugins: {
+                                legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }
+                            }
+                        }
+                    });
+                }
+
+                // 5. Gráfico de Ano de Nascimento (Demografia)
+                if (data.birth_years && document.getElementById('fc-chart-birth-years')) {
+                    destroyFcChart('fc-chart-birth-years');
+                    const ctx = document.getElementById('fc-chart-birth-years').getContext('2d');
+                    const sortedYears = [...data.birth_years].sort((a,b) => parseInt(a.year) - parseInt(b.year));
+                    fcCharts['fc-chart-birth-years'] = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: sortedYears.map(y => y.year),
+                            datasets: [{
+                                label: 'Estudantes',
+                                data: sortedYears.map(y => y.count),
+                                backgroundColor: sortedYears.map(y => ['2008', '2009', '2010'].includes(y.year) ? 'rgba(147, 51, 234, 0.85)' : 'rgba(192, 132, 252, 0.6)'),
+                                borderRadius: 5
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        title: (items) => `Ano de Nascimento: ${items[0].label}`,
+                                        label: (c) => ` ${c.parsed.y} estudantes registrados`
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+                                x: { grid: { display: false } }
+                            }
+                        }
+                    });
+                }
+
+                // 6. Gráfico Horizontal de Categorias de Problemas
+                if (data.categories && document.getElementById('fc-chart-categories')) {
+                    destroyFcChart('fc-chart-categories');
+                    const ctx = document.getElementById('fc-chart-categories').getContext('2d');
+                    fcCharts['fc-chart-categories'] = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: data.categories.map(c => c.category),
+                            datasets: [{
+                                label: 'Chamados',
+                                data: data.categories.map(c => c.count),
+                                backgroundColor: [
+                                    '#4f46e5', '#3b82f6', '#06b6d4', '#10b981',
+                                    '#f59e0b', '#ec4899', '#8b5cf6', '#64748b',
+                                    '#14b8a6', '#f97316', '#94a3b8'
+                                ],
+                                borderRadius: 4
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                x: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+                                y: { grid: { display: false }, ticks: { font: { size: 10 } } }
+                            }
+                        }
+                    });
+                }
+
+                // 7. Nuvem Semântica de Palavras-Chave
+                const cloudContainer = document.getElementById('fc-keywords-cloud');
+                if (cloudContainer && data.keywords) {
+                    cloudContainer.innerHTML = data.keywords.map(k => `
+                        <button onclick="filterSupportByWord('${escapeHtml(k.word)}')" title="Filtrar chamados com a palavra '${escapeHtml(k.word)}'" class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 hover:bg-blue-100 hover:text-blue-900 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 transition">
+                            <span>${escapeHtml(k.word)}</span>
+                            <span class="text-[10px] font-black text-slate-500 bg-white px-1.5 py-0.2 rounded-full border border-slate-200">${k.count}</span>
+                        </button>
+                    `).join('');
+                }
+
+                // 8. Tabela de Top Escolas
+                const schoolsTable = document.getElementById('fc-table-top-schools');
+                if (schoolsTable && data.top_schools) {
+                    const maxCount = data.top_schools[0]?.count || 1;
+                    schoolsTable.innerHTML = data.top_schools.map((sc, idx) => {
+                        const pctBar = Math.round((sc.count / maxCount) * 100);
+                        return `
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="py-2.5 px-3 font-bold text-slate-400">#${idx + 1}</td>
+                                <td class="py-2.5 px-3 font-semibold text-slate-800">${escapeHtml(sc.school)}</td>
+                                <td class="py-2.5 px-3 text-center font-black text-blue-700">${sc.count}</td>
+                                <td class="py-2.5 px-3 text-center text-slate-500 font-medium">${sc.percentage}%</td>
+                                <td class="py-2.5 px-3">
+                                    <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                        <div class="bg-blue-600 h-2 rounded-full" style="width: ${pctBar}%"></div>
+                                    </div>
+                                </td>
+                                <td class="py-2.5 px-3 text-right">
+                                    <button onclick="filterSupportBySchool('${escapeHtml(sc.school)}')" class="px-2 py-1 bg-slate-100 hover:bg-blue-600 hover:text-white rounded text-[11px] font-bold text-slate-600 transition">
+                                        Ver chamados
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+
+                // 9. Tabela de Ocorrências Mantis
+                const mantisTable = document.getElementById('fc-table-mantis');
+                if (mantisTable && data.mantis) {
+                    const mantisCauseMap = {
+                        "Mantis 0198289": { cause: "Login Gov.br e SEG.ID (Vínculo de CPF)", impact: "Crítico (Acesso bloqueado)", badge: "bg-rose-100 text-rose-800" },
+                        "Mantis 0198268": { cause: "Erro de Token de Autenticação", impact: "Alto (Desconexão frequente)", badge: "bg-amber-100 text-amber-800" },
+                        "Mantis 0198290": { cause: "Instabilidade de Login / Sessão", impact: "Médio", badge: "bg-indigo-100 text-indigo-800" },
+                        "Mantis 0197546": { cause: "Lançamento e Consulta de Boletim", impact: "Médio", badge: "bg-blue-100 text-blue-800" },
+                        "Mantis 0198367": { cause: "Autenticação Gov.br / Redirecionamento", impact: "Alto", badge: "bg-purple-100 text-purple-800" },
+                        "Mantis 0198288": { cause: "Erro ao carregar dados do aluno", impact: "Médio", badge: "bg-slate-100 text-slate-800" },
+                        "Mantis 0198728": { cause: "Vínculo de Escola Antiga / Transferência", impact: "Médio", badge: "bg-amber-100 text-amber-800" }
+                    };
+
+                    mantisTable.innerHTML = data.mantis.map(m => {
+                        const meta = mantisCauseMap[m.code] || { cause: "Falha de software em análise", impact: "Investigação", badge: "bg-slate-100 text-slate-800" };
+                        return `
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="py-2 px-3 font-mono font-bold text-purple-700">${escapeHtml(m.code)}</td>
+                                <td class="py-2 px-3 font-medium text-slate-700">${escapeHtml(meta.cause)}</td>
+                                <td class="py-2 px-3 text-center font-black text-slate-900">${m.count}</td>
+                                <td class="py-2 px-3">
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold ${meta.badge}">${meta.impact}</span>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+
+                // 10. Gráfico Donut de Status
+                if (data.statuses && document.getElementById('fc-chart-statuses')) {
+                    destroyFcChart('fc-chart-statuses');
+                    const ctx = document.getElementById('fc-chart-statuses').getContext('2d');
+                    fcCharts['fc-chart-statuses'] = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: data.statuses.map(st => st.status),
+                            datasets: [{
+                                data: data.statuses.map(st => st.count),
+                                backgroundColor: ['#64748b', '#f59e0b', '#3b82f6', '#10b981', '#a855f7'],
+                                borderWidth: 2,
+                                borderColor: '#ffffff'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            cutout: '65%',
+                            plugins: {
+                                legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } }
+                            }
+                        }
+                    });
+                }
+
+                // 11. Lista de Provedores de E-mail
+                const emailContainer = document.getElementById('fc-email-providers-list');
+                if (emailContainer && data.email_providers) {
+                    emailContainer.innerHTML = data.email_providers.map(p => `
+                        <div class="flex items-center justify-between text-xs p-2 rounded-lg bg-slate-50 border border-slate-100">
+                            <span class="font-semibold text-slate-800">${escapeHtml(p.provider)}</span>
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-slate-900">${p.count}</span>
+                                <span class="text-slate-400 font-medium">(${p.percentage}%)</span>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+
+                // 12. Tabela de Alunos Reincidentes
+                const repeatTable = document.getElementById('fc-table-repeat-students');
+                if (repeatTable && data.top_repeat_students) {
+                    repeatTable.innerHTML = data.top_repeat_students.map(st => `
+                        <tr class="hover:bg-slate-50 transition">
+                            <td class="py-2 px-3 font-semibold text-slate-800">${escapeHtml(st.name)}</td>
+                            <td class="py-2 px-3 font-mono text-slate-500">${escapeHtml(st.cpf_masked)}</td>
+                            <td class="py-2 px-3 text-center">
+                                <span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-black text-[11px]">${st.tickets_count} chamados</span>
+                            </td>
+                            <td class="py-2 px-3 text-slate-600 truncate max-w-xs" title="${escapeHtml(st.school)}">${escapeHtml(st.school)}</td>
+                        </tr>
+                    `).join('');
+                }
+
+            } catch (err) {
+                console.error('Erro ao carregar analítico do Fale Conosco:', err);
+            }
+        }
+
 
         function setSupportCategoryFilter(cat) {
             const select = document.getElementById('filter-support-category');

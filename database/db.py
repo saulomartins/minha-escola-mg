@@ -1517,3 +1517,207 @@ def get_support_tickets_stats() -> Dict[str, Any]:
         "top_schools": top_schools
     }
 
+
+def get_fale_conosco_analytics() -> Dict[str, Any]:
+    """
+    Retorna diagnóstico analítico aprofundado cobrindo 100% dos campos do Fale Conosco:
+    Carimbo de data/hora, Você é, Nome/CPF/ID do aluno, Data de nascimento,
+    Email pra contato, Nome da escola, Descreva o seu problema, Mande um anexo,
+    Cidade, Status e Análise técnica (Mantis).
+    Totalmente isolado das métricas de avaliações das lojas (Google/Apple).
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM support_tickets")
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+
+    total = len(rows)
+    if total == 0:
+        return {
+            "summary": {
+                "total_tickets": 0, "unique_students": 0, "repeat_tickets_count": 0,
+                "repeat_students_count": 0, "has_id_count": 0, "has_id_percentage": 0,
+                "has_attachment_count": 0, "has_attachment_percentage": 0, "invalid_email_count": 0,
+                "resolved_count": 0, "pending_count": 0, "mantis_tagged_count": 0
+            },
+            "user_types": [], "statuses": [], "categories": [], "top_schools": [],
+            "cities": [], "mantis": [], "mantis_unannotated": 0, "email_providers": [],
+            "birth_years": [], "timeline_months": [], "timeline_days": [],
+            "keywords": [], "top_repeat_students": []
+        }
+
+    from collections import Counter
+    import re
+    from datetime import datetime
+
+    user_types = Counter()
+    statuses = Counter()
+    categories = Counter()
+    schools = Counter()
+    cities = Counter()
+    mantis_codes = Counter()
+    email_providers = Counter()
+    birth_years = Counter()
+    timeline_months = Counter()
+    timeline_days_of_week = Counter()
+    cpf_counts = Counter()
+    student_records_by_cpf = {}
+
+    has_attachment = 0
+    has_student_id = 0
+    invalid_email_count = 0
+
+    day_names = ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado", "Domingo"]
+
+    stopwords = {
+        'de', 'a', 'o', 'que', 'e', 'do', 'da', 'em', 'um', 'para', 'com', 'nao', 'uma', 'os', 'no',
+        'se', 'na', 'por', 'mais', 'as', 'dos', 'como', 'mas', 'foi', 'ao', 'ele', 'das', 'tem',
+        'pra', 'meu', 'minha', 'eu', 'estou', 'consigo', 'entrar', 'app', 'aplicativo', 'ja',
+        'me', 'quando', 'tento', 'coloco', 'fazer', 'esta', 'so', 'meus', 'minhas', 'vai', 'fala',
+        'nem', 'dia', 'dar', 'ate', 'pelo', 'pela', 'sobre', 'ter', 'mesmo', 'diz', 'aparece',
+        'está', 'não', 'já', 'só', 'até', 'tudo', 'outro', 'outra', 'pois', 'onde',
+        'esta', 'estao', 'estão', 'isso', 'esse', 'essa', 'esses', 'essas', 'aqui', 'dele', 'dela',
+        'porque', 'qual', 'pelo', 'pelos', 'pelas', 'neste', 'nesta', 'favor', 'ajuda'
+    }
+    keywords = Counter()
+
+    for r in rows:
+        ut = r.get('user_type') or 'Não informado'
+        user_types[ut] += 1
+
+        st = r.get('status') or 'Pendente'
+        statuses[st] += 1
+
+        cat = r.get('category') or 'Outros'
+        categories[cat] += 1
+
+        sch = (r.get('school_name') or '').strip()
+        if sch and sch.lower() != 'none':
+            schools[sch] += 1
+        else:
+            schools['Não informada'] += 1
+
+        cit = (r.get('city') or '').strip()
+        if cit and cit.lower() != 'none':
+            cities[cit] += 1
+
+        ana = (r.get('internal_analysis') or '').strip()
+        if ana and ana.lower() != 'none':
+            mantis_matches = re.findall(r'Mantis\s*#?([0-9]+)', ana, re.IGNORECASE)
+            if mantis_matches:
+                for m in mantis_matches:
+                    mantis_codes[f"Mantis {m}"] += 1
+            else:
+                mantis_codes[ana] += 1
+        else:
+            mantis_codes['Sem anotação técnica'] += 1
+
+        att = (r.get('attachment_url') or '').strip()
+        if att and att.lower() != 'none':
+            has_attachment += 1
+
+        sid = (r.get('student_id') or '').strip()
+        if sid and sid.lower() != 'none':
+            has_student_id += 1
+
+        cpf = (r.get('student_cpf') or '').strip()
+        clean_cpf = re.sub(r'[^0-9]', '', cpf)
+        if clean_cpf:
+            cpf_counts[clean_cpf] += 1
+            if clean_cpf not in student_records_by_cpf:
+                student_records_by_cpf[clean_cpf] = {
+                    "name": r.get('student_name') or "Estudante",
+                    "cpf_masked": f"{clean_cpf[:3]}.***.***-{clean_cpf[-2:]}" if len(clean_cpf) >= 11 else clean_cpf,
+                    "school": r.get('school_name') or "-",
+                    "tickets_count": 0,
+                    "last_ticket_date": r.get('ticket_date'),
+                    "category": r.get('category') or "Outros"
+                }
+            student_records_by_cpf[clean_cpf]["tickets_count"] += 1
+
+        em = (r.get('contact_email') or '').strip().lower()
+        if '@' in em:
+            domain = em.split('@')[1].strip()
+            if 'aluno.mg.gov.br' in domain:
+                email_providers['@aluno.mg.gov.br (Institucional)'] += 1
+            elif 'gmail' in domain:
+                email_providers['@gmail.com'] += 1
+            elif 'hotmail' in domain or 'outlook' in domain or 'live' in domain:
+                email_providers['@microsoft (Hotmail/Outlook)'] += 1
+            elif 'yahoo' in domain:
+                email_providers['@yahoo.com'] += 1
+            elif 'icloud' in domain:
+                email_providers['@icloud.com (Apple)'] += 1
+            else:
+                email_providers[f"@{domain}"] += 1
+        elif em:
+            invalid_email_count += 1
+            email_providers['Sem @ (Digitação Incorreta)'] += 1
+        else:
+            email_providers['Não informado'] += 1
+
+        tdate_str = r.get('ticket_date') or ''
+        if tdate_str:
+            try:
+                dt = datetime.strptime(tdate_str[:19], "%Y-%m-%d %H:%M:%S")
+                timeline_months[dt.strftime("%Y-%m")] += 1
+                timeline_days_of_week[day_names[dt.weekday()]] += 1
+            except Exception:
+                pass
+
+        bdate_str = (r.get('birth_date') or '').strip()
+        if bdate_str:
+            try:
+                dt_b = datetime.strptime(bdate_str[:10], "%Y-%m-%d")
+                if 1950 <= dt_b.year <= 2026:
+                    birth_years[dt_b.year] += 1
+            except Exception:
+                pass
+
+        desc = (r.get('description') or '').lower()
+        words = re.findall(r'[a-záéíóúâêôãõç]{4,}', desc)
+        for w in words:
+            if w not in stopwords:
+                keywords[w] += 1
+
+    top_repeat = []
+    for clean_cpf, meta in student_records_by_cpf.items():
+        if meta["tickets_count"] > 1:
+            top_repeat.append(meta)
+    top_repeat.sort(key=lambda x: x["tickets_count"], reverse=True)
+
+    sorted_months = [{"month": k, "count": v} for k, v in sorted(timeline_months.items())]
+    ordered_days = [{"day": d, "count": timeline_days_of_week.get(d, 0)} for d in day_names]
+
+    return {
+        "summary": {
+            "total_tickets": total,
+            "unique_students": len(student_records_by_cpf),
+            "repeat_tickets_count": sum(m["tickets_count"] for m in top_repeat),
+            "repeat_students_count": len(top_repeat),
+            "has_id_count": has_student_id,
+            "has_id_percentage": round((has_student_id / total) * 100, 1),
+            "has_attachment_count": has_attachment,
+            "has_attachment_percentage": round((has_attachment / total) * 100, 1),
+            "invalid_email_count": invalid_email_count,
+            "resolved_count": statuses.get("Resolvido", 0) + statuses.get("Sem necessidade de atuação da equipe", 0),
+            "pending_count": statuses.get("Pendente", 0) + statuses.get("Em análise", 0),
+            "mantis_tagged_count": total - mantis_codes.get("Sem anotação técnica", 0)
+        },
+        "user_types": [{"type": k, "count": v, "percentage": round(v/total*100, 1)} for k, v in user_types.most_common()],
+        "statuses": [{"status": k, "count": v, "percentage": round(v/total*100, 1)} for k, v in statuses.most_common()],
+        "categories": [{"category": k, "count": v, "percentage": round(v/total*100, 1)} for k, v in categories.most_common()],
+        "top_schools": [{"school": k, "count": v, "percentage": round(v/total*100, 1)} for k, v in schools.most_common(15) if k != 'Não informada'],
+        "cities": [{"city": k, "count": v} for k, v in cities.most_common(10)],
+        "mantis": [{"code": k, "count": v} for k, v in mantis_codes.most_common(12) if k != 'Sem anotação técnica'],
+        "mantis_unannotated": mantis_codes.get('Sem anotação técnica', 0),
+        "email_providers": [{"provider": k, "count": v, "percentage": round(v/total*100, 1)} for k, v in email_providers.most_common(8)],
+        "birth_years": [{"year": str(k), "count": v} for k, v in sorted(birth_years.items(), reverse=True) if 2000 <= k <= 2020],
+        "timeline_months": sorted_months,
+        "timeline_days": ordered_days,
+        "keywords": [{"word": k, "count": v} for k, v in keywords.most_common(20)],
+        "top_repeat_students": top_repeat[:10]
+    }
+
+
