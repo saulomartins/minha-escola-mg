@@ -1300,7 +1300,10 @@
                         <i class="fa-solid fa-list-check"></i> Chamados & Atendimento (<span id="fc-tab-badge-tickets">862</span>)
                     </button>
                     <button id="fc-subtab-btn-analytics" onclick="switchSupportSubTab('analytics')" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-white text-slate-700 hover:bg-slate-100 border border-slate-200">
-                        <i class="fa-solid fa-chart-pie text-indigo-600"></i> Painel Analítico Completo (13 Dimensões)
+                        <i class="fa-solid fa-chart-pie text-indigo-600"></i> Painel Analítico Geral (13 Dimensões)
+                    </button>
+                    <button id="fc-subtab-btn-complexity" onclick="switchSupportSubTab('complexity')" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-white text-slate-700 hover:bg-slate-100 border border-slate-200">
+                        <i class="fa-solid fa-microchip text-rose-600"></i> Causas-Raiz & Complexidade Técnica (Prodemge)
                     </button>
                 </div>
                 <div class="flex items-center gap-2 text-xs font-medium text-slate-500">
@@ -1375,10 +1378,26 @@
 
                 <!-- Filtros de Chamados -->
                 <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3">
                         <div class="relative lg:col-span-2">
                             <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-sm"></i>
                             <input type="text" id="filter-support-search" oninput="debounceSupportFilter()" placeholder="Buscar por aluno, CPF, escola, cidade ou texto..." class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:bg-white transition">
+                        </div>
+                        <div>
+                            <select id="filter-support-root-cause" onchange="filterSupportTickets()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-blue-500">
+                                <option value="todos">Causas Técnicas (Todas)</option>
+                                <option value="ded_notas_boletim">Sincronização DED / Notas</option>
+                                <option value="oauth_gov_br">OAuth Gov.br / SEG.ID</option>
+                                <option value="crash_loop_inicial">Crash / App Não Abre</option>
+                                <option value="token_jwt_sessao">Token JWT / Sessão</option>
+                                <option value="recuperacao_senha_idaluno">Senha & idaluno</option>
+                                <option value="inconsistencia_cpf_ded">Vínculo de CPF no DED</option>
+                                <option value="login_generico_bloqueio">Bloqueio Geral de Conta</option>
+                                <option value="troca_escola_matricula">Troca de Escola</option>
+                                <option value="compatibilidade_dispositivo">Compatibilidade Aparelho</option>
+                                <option value="demandas_secretaria_n1">Secretaria (Fora TI)</option>
+                                <option value="pe_de_meia_mec">Pé-de-Meia (MEC)</option>
+                            </select>
                         </div>
                         <div>
                             <select id="filter-support-status" onchange="filterSupportTickets()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:ring-2 focus:ring-blue-500">
@@ -1398,7 +1417,7 @@
                         </div>
                         <div>
                             <select id="filter-support-category" onchange="filterSupportTickets()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:ring-2 focus:ring-blue-500">
-                                <option value="todos">Todas as Categorias</option>
+                                <option value="todos">Categorias Planilha (Todas)</option>
                                 <option value="Login Gov.br / SEG.ID">Login Gov.br / SEG.ID</option>
                                 <option value="Notas e Frequência">Notas e Frequência</option>
                                 <option value="Instabilidade / Falha no App">Instabilidade / Falha</option>
@@ -1412,7 +1431,7 @@
                         </div>
                         <div class="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
                             <input type="checkbox" id="filter-support-mantis" onchange="filterSupportTickets()" class="w-4 h-4 text-blue-600 rounded">
-                            <label for="filter-support-mantis" class="text-xs font-semibold text-slate-700 cursor-pointer">Apenas com Mantis</label>
+                            <label for="filter-support-mantis" class="text-xs font-semibold text-slate-700 cursor-pointer">Com Mantis</label>
                         </div>
                     </div>
                 </div>
@@ -1813,6 +1832,211 @@
                                 A coluna direta "Cidade" foi preenchida em chamados pontuais (ex: Mendes Pimentel, Ibirité, Manga, Santa Rita de Caldas), enquanto a maioria das localizações dos estudantes é mapeada pelo vínculo oficial com as <b>Escolas Estaduais</b> distribuídas pelas Superintendências Regionais de Ensino (SREs).
                             </p>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUB-TAB 3: CAUSAS-RAIZ & COMPLEXIDADE TÉCNICA (PRODEMGE) -->
+            <div id="fc-subtab-content-complexity" class="hidden space-y-6">
+                <!-- Header do Diagnóstico de Complexidade -->
+                <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 rounded-2xl text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border border-slate-800">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-black bg-rose-500/20 text-rose-300 border border-rose-500/30 uppercase tracking-wide">
+                                <i class="fa-solid fa-microchip mr-1"></i> Engenharia & Arquitetura Prodemge
+                            </span>
+                            <span class="text-xs text-slate-300 font-semibold">Telemetria de 862 Chamados Oficiais</span>
+                        </div>
+                        <h2 class="text-xl font-black tracking-tight text-white flex items-center gap-2">
+                            Diagnóstico de Causas-Raiz & Complexidade Técnica
+                        </h2>
+                        <p class="text-xs text-slate-300 max-w-3xl leading-relaxed">
+                            Mapeamento arquitetural de todos os incidentes abertos no Fale Conosco, estratificados por camada técnica, grau de complexidade de software, correlação direta com os <b>chamados Mantis</b> e plano de ação estruturado para o time de desenvolvimento.
+                        </p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2.5 no-print shrink-0">
+                        <button onclick="loadFaleConoscoComplexity()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl shadow transition flex items-center gap-2 border border-indigo-500">
+                            <i class="fa-solid fa-arrows-rotate"></i> Atualizar Dados
+                        </button>
+                        <button onclick="window.print()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3.5 py-2.5 rounded-xl transition flex items-center gap-2 border border-slate-700">
+                            <i class="fa-solid fa-print"></i> Imprimir Relatório
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 1. KPIs Executivos de Complexidade -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3.5">
+                        <div class="w-11 h-11 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center text-lg font-bold shrink-0">
+                            <i class="fa-solid fa-clipboard-list"></i>
+                        </div>
+                        <div>
+                            <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Total Analisado</span>
+                            <h3 id="fc-comp-kpi-total" class="text-2xl font-black text-slate-900 leading-tight">862</h3>
+                            <span id="fc-comp-kpi-score" class="text-[11px] text-indigo-600 font-bold">Score Médio: 2.03 / 3.0</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-xl border border-rose-200 shadow-sm flex items-center gap-3.5 bg-rose-50/20">
+                        <div class="w-11 h-11 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center text-lg font-bold shrink-0">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                        <div>
+                            <span class="text-[11px] font-bold text-rose-800 uppercase tracking-wider block">Alta / Crítica Complexidade</span>
+                            <h3 id="fc-comp-kpi-high" class="text-2xl font-black text-rose-700 leading-tight">237</h3>
+                            <span id="fc-comp-kpi-high-pct" class="text-[11px] text-rose-600 font-bold">27.5% da base (OAuth & JWT)</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-xl border border-amber-200 shadow-sm flex items-center gap-3.5 bg-amber-50/20">
+                        <div class="w-11 h-11 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-lg font-bold shrink-0">
+                            <i class="fa-solid fa-gears"></i>
+                        </div>
+                        <div>
+                            <span class="text-[11px] font-bold text-amber-800 uppercase tracking-wider block">Complexidade Média</span>
+                            <h3 id="fc-comp-kpi-medium" class="text-2xl font-black text-amber-700 leading-tight">413</h3>
+                            <span id="fc-comp-kpi-medium-pct" class="text-[11px] text-amber-600 font-bold">47.9% (DED & Mobile App)</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-xl border border-blue-200 shadow-sm flex items-center gap-3.5 bg-blue-50/20">
+                        <div class="w-11 h-11 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center text-lg font-bold shrink-0">
+                            <i class="fa-solid fa-code-branch"></i>
+                        </div>
+                        <div>
+                            <span class="text-[11px] font-bold text-blue-800 uppercase tracking-wider block">Com Chamado Mantis</span>
+                            <h3 id="fc-comp-kpi-mantis" class="text-2xl font-black text-blue-700 leading-tight">157</h3>
+                            <span id="fc-comp-kpi-mantis-pct" class="text-[11px] text-blue-600 font-bold">18.2% em homologação</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3.5">
+                        <div class="w-11 h-11 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center text-lg font-bold shrink-0">
+                            <i class="fa-solid fa-headset"></i>
+                        </div>
+                        <div>
+                            <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Suporte N1 & Fora TI</span>
+                            <h3 id="fc-comp-kpi-low" class="text-2xl font-black text-slate-700 leading-tight">212</h3>
+                            <span id="fc-comp-kpi-low-pct" class="text-[11px] text-slate-500 font-bold">24.6% (Secretaria e Senha)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Matriz de Priorização Técnica de Engenharia (P1 a P4) -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                <i class="fa-solid fa-diagram-project text-indigo-600"></i> Matriz de Priorização por Impacto & Esforço de Resolução
+                            </h3>
+                            <p class="text-xs text-slate-500">Classificação conforme gravidade do bloqueio para o aluno versus complexidade de intervenção no código</p>
+                        </div>
+                        <span class="text-[11px] px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg font-bold">Priorização P1 a P4</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5" id="fc-priorities-cards">
+                        <!-- Gerado dinamicamente -->
+                    </div>
+                </div>
+
+                <!-- 3. Gráficos de Complexidade e Camadas Arquiteturais -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                    <i class="fa-solid fa-chart-pie text-rose-600"></i> Distribuição por Nível de Complexidade
+                                </h4>
+                                <p class="text-xs text-slate-500">Esforço técnico necessário para saneamento</p>
+                            </div>
+                        </div>
+                        <div class="h-64 flex items-center justify-center">
+                            <canvas id="chart-fc-complexity-pie"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                    <i class="fa-solid fa-layer-group text-indigo-600"></i> Incidentes por Camada da Arquitetura
+                                </h4>
+                                <p class="text-xs text-slate-500">Responsabilidade sistêmica (Backend, Mobile, DED, Externo)</p>
+                            </div>
+                        </div>
+                        <div class="h-64 flex items-center justify-center">
+                            <canvas id="chart-fc-complexity-layers"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Tabela Matriz de Causas-Raiz & Recomendações de Engenharia -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <div>
+                            <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                                <i class="fa-solid fa-table-list text-blue-600"></i> Matriz Detalhada de Causas-Raiz & Recomendações para a Prodemge
+                            </h3>
+                            <p class="text-xs text-slate-500">Diagnóstico técnico completo para a equipe de engenharia e sustentação</p>
+                        </div>
+                        <div class="text-xs text-slate-500 flex items-center gap-2">
+                            <span class="inline-flex items-center gap-1 font-semibold text-slate-700">
+                                <i class="fa-solid fa-filter text-slate-400"></i> Clique em "Ver Chamados" para filtrar a lista oficial
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
+                                    <th class="p-3.5">Causa-Raiz Técnica</th>
+                                    <th class="p-3.5 text-center">Volume & %</th>
+                                    <th class="p-3.5 text-center">Gravidade</th>
+                                    <th class="p-3.5 text-center">Complexidade</th>
+                                    <th class="p-3.5">Camada Arquitetural</th>
+                                    <th class="p-3.5">Mantis Correlacionado</th>
+                                    <th class="p-3.5 min-w-[280px]">Recomendação Técnica de Engenharia</th>
+                                    <th class="p-3.5 text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fc-complexity-tbody" class="divide-y divide-slate-100 font-medium text-slate-700">
+                                <tr>
+                                    <td colspan="8" class="p-8 text-center text-slate-400">Carregando matriz de causas-raiz...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 5. Roadmap Estruturado de Recomendações de Engenharia -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <div class="border-b border-slate-100 pb-3">
+                        <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-road text-emerald-600"></i> Roadmap Técnico de Engenharia Recomendado para a Prodemge
+                        </h3>
+                        <p class="text-xs text-slate-500">Plano de sustentação de software em ondas de entrega (P1 Imediato, P2 Curto Prazo, P3 Médio Prazo)</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="fc-roadmap-container">
+                        <!-- Gerado dinamicamente -->
+                    </div>
+                </div>
+
+                <!-- 6. Amostras Reais de Chamados por Causa-Raiz (Sanfona) -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                <i class="fa-solid fa-folder-open text-amber-600"></i> Amostras Reais de Chamados por Causa Técnica
+                            </h3>
+                            <p class="text-xs text-slate-500">Evidências reais relatadas pelos estudantes e análises técnicas da equipe</p>
+                        </div>
+                        <span class="text-xs text-slate-400">Clique para expandir</span>
+                    </div>
+
+                    <div class="space-y-3" id="fc-samples-accordion">
+                        <!-- Gerado dinamicamente -->
                     </div>
                 </div>
             </div>
@@ -2407,6 +2631,10 @@
                 const analyticsSubtab = document.getElementById('fc-subtab-content-analytics');
                 if (analyticsSubtab && !analyticsSubtab.classList.contains('hidden')) {
                     loadFaleConoscoAnalytics();
+                }
+                const complexitySubtab = document.getElementById('fc-subtab-content-complexity');
+                if (complexitySubtab && !complexitySubtab.classList.contains('hidden')) {
+                    loadFaleConoscoComplexity();
                 }
             }
 
@@ -4589,8 +4817,11 @@
                                     <strong class="text-xs text-slate-800 font-bold">${escapeHtml(lc.user_name || 'Usuário')}</strong>
                                     <span class="text-amber-500 text-xs font-semibold">${starsHtml}</span>
                                     ${deviceBadge}
+                                    <button onclick="focusSpecificReview('${escapeHtml(lc.id)}')" class="ml-auto text-[10px] text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded border border-indigo-200 transition" title="Ir diretamente para este comentário no feed">
+                                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Ver Relato
+                                    </button>
                                 </div>
-                                <p class="text-xs text-slate-600 italic bg-slate-50 p-2 rounded-lg border border-slate-200/60 leading-relaxed">
+                                <p onclick="focusSpecificReview('${escapeHtml(lc.id)}')" class="text-xs text-slate-600 italic bg-slate-50 hover:bg-indigo-50/50 hover:border-indigo-300 p-2 rounded-lg border border-slate-200/60 leading-relaxed cursor-pointer transition" title="Clique para ver este comentário em detalhes no feed">
                                     ${(lc.content_snippet || lc.content || '').trim() ? `"${escapeHtml((lc.content_snippet || lc.content).trim())}"` : '<span class="text-slate-400 not-italic">(Avaliação sem comentário em texto)</span>'}
                                 </p>
                             </div>
@@ -4603,9 +4834,14 @@
 
                         <!-- Coluna 6: Ação -->
                         <td class="p-3.5 text-center align-middle">
-                            <button onclick="filterByRootCauseFromTemporal('${c.id}')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-700 font-bold text-[11px] rounded-lg border border-slate-200 hover:border-indigo-600 transition flex items-center gap-1 mx-auto shadow-xs" title="Filtrar todas as avaliações desta causa no feed">
-                                <i class="fa-solid fa-filter"></i> Ver Casos
-                            </button>
+                            <div class="flex flex-col gap-1.5 items-center justify-center min-w-[115px]">
+                                <button onclick="focusSpecificReview('${escapeHtml(lc.id)}')" class="w-full px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] rounded-lg shadow-xs transition flex items-center justify-center gap-1.5" title="Ir diretamente para o comentário específico de ${escapeHtml(lc.user_name || 'Usuário')}">
+                                    <i class="fa-solid fa-eye"></i> Ver Este Caso
+                                </button>
+                                <button onclick="filterByRootCauseFromTemporal('${c.id}')" class="w-full px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-[10px] rounded-lg border border-slate-200 transition flex items-center justify-center gap-1" title="Filtrar todas as ${c.total} avaliações desta causa no feed">
+                                    <i class="fa-solid fa-filter text-slate-400"></i> Todos (${c.total})
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 `;
@@ -4738,8 +4974,78 @@
             }
         }
 
+        async function focusSpecificReview(reviewId) {
+            if (!reviewId) return;
+            switchMainView('reviews');
+
+            // Reseta filtros conflitantes para garantir exibição imediata
+            const store = document.getElementById('filter-store');
+            if (store) store.value = 'todas';
+            const rating = document.getElementById('filter-rating');
+            if (rating) rating.value = '0';
+            const status = document.getElementById('filter-status');
+            if (status) status.value = 'todos';
+            const rcSelect = document.getElementById('filter-root-cause');
+            if (rcSelect) rcSelect.value = 'todos';
+            const osSelect = document.getElementById('filter-os');
+            if (osSelect) osSelect.value = 'todos';
+            const brandSelect = document.getElementById('filter-device-brand');
+            if (brandSelect) brandSelect.value = 'todas';
+            if (typeof filterStuckAndroidOnly !== 'undefined' && filterStuckAndroidOnly) {
+                filterStuckAndroidOnly = false;
+                const btnStuck = document.getElementById('btn-filter-stuck-android');
+                if (btnStuck) {
+                    btnStuck.className = 'px-3 py-1.5 text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 rounded-lg shadow-sm transition flex items-center gap-1.5';
+                    btnStuck.innerHTML = '<i class="fa-solid fa-ban text-rose-600"></i> Presos no Android ≤ 12 <span id="badge-stuck-android-count" class="ml-1 px-1.5 py-0.2 bg-rose-600 text-white text-[10px] font-extrabold rounded-full">12</span>';
+                }
+            }
+
+            // Pesquisa pelo ID exato da avaliação
+            const searchInput = document.getElementById('filter-search');
+            if (searchInput) {
+                searchInput.value = reviewId;
+            }
+
+            await loadReviews();
+
+            // Rola suavemente até o card e aplica realce pulsante
+            setTimeout(() => {
+                const card = document.getElementById('card-' + reviewId);
+                if (card) {
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    card.classList.add('ring-4', 'ring-indigo-500', 'ring-offset-4', 'bg-indigo-50/40', 'transition-all', 'duration-500');
+                    setTimeout(() => {
+                        card.classList.remove('ring-4', 'ring-indigo-500', 'ring-offset-4', 'bg-indigo-50/40');
+                    }, 4500);
+                }
+            }, 350);
+        }
+
         function filterByRootCauseFromTemporal(rcId) {
             switchMainView('reviews');
+
+            // Limpa filtros conflitantes
+            const searchInput = document.getElementById('filter-search');
+            if (searchInput) searchInput.value = '';
+            const store = document.getElementById('filter-store');
+            if (store) store.value = 'todas';
+            const rating = document.getElementById('filter-rating');
+            if (rating) rating.value = '0';
+            const status = document.getElementById('filter-status');
+            if (status) status.value = 'todos';
+            const osSelect = document.getElementById('filter-os');
+            if (osSelect) osSelect.value = 'todos';
+            const brandSelect = document.getElementById('filter-device-brand');
+            if (brandSelect) brandSelect.value = 'todas';
+            if (typeof filterStuckAndroidOnly !== 'undefined' && filterStuckAndroidOnly) {
+                filterStuckAndroidOnly = false;
+                const btnStuck = document.getElementById('btn-filter-stuck-android');
+                if (btnStuck) {
+                    btnStuck.className = 'px-3 py-1.5 text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 rounded-lg shadow-sm transition flex items-center gap-1.5';
+                    btnStuck.innerHTML = '<i class="fa-solid fa-ban text-rose-600"></i> Presos no Android ≤ 12 <span id="badge-stuck-android-count" class="ml-1 px-1.5 py-0.2 bg-rose-600 text-white text-[10px] font-extrabold rounded-full">12</span>';
+                }
+            }
+
             const rcSelect = document.getElementById('filter-root-cause');
             if (rcSelect) {
                 rcSelect.value = rcId;
@@ -5606,24 +5912,410 @@ async function uploadPlayConsoleCsv(input) {
         function switchSupportSubTab(tab) {
             const listContent = document.getElementById('fc-subtab-content-list');
             const analyticsContent = document.getElementById('fc-subtab-content-analytics');
+            const complexityContent = document.getElementById('fc-subtab-content-complexity');
             const btnList = document.getElementById('fc-subtab-btn-list');
             const btnAnalytics = document.getElementById('fc-subtab-btn-analytics');
+            const btnComplexity = document.getElementById('fc-subtab-btn-complexity');
 
-            if (tab === 'analytics') {
+            const activeBtnClass = "px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-blue-600 text-white shadow-xs";
+            const inactiveBtnClass = "px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-white text-slate-700 hover:bg-slate-100 border border-slate-200";
+
+            if (tab === 'complexity') {
+                if (listContent) listContent.classList.add('hidden');
+                if (analyticsContent) analyticsContent.classList.add('hidden');
+                if (complexityContent) complexityContent.classList.remove('hidden');
+
+                if (btnList) btnList.className = inactiveBtnClass;
+                if (btnAnalytics) btnAnalytics.className = inactiveBtnClass;
+                if (btnComplexity) btnComplexity.className = activeBtnClass;
+
+                loadFaleConoscoComplexity();
+            } else if (tab === 'analytics') {
                 if (listContent) listContent.classList.add('hidden');
                 if (analyticsContent) analyticsContent.classList.remove('hidden');
+                if (complexityContent) complexityContent.classList.add('hidden');
 
-                if (btnList) btnList.className = "px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-white text-slate-700 hover:bg-slate-100 border border-slate-200";
-                if (btnAnalytics) btnAnalytics.className = "px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-blue-600 text-white shadow-xs";
+                if (btnList) btnList.className = inactiveBtnClass;
+                if (btnAnalytics) btnAnalytics.className = activeBtnClass;
+                if (btnComplexity) btnComplexity.className = inactiveBtnClass;
 
                 loadFaleConoscoAnalytics();
             } else {
                 if (listContent) listContent.classList.remove('hidden');
                 if (analyticsContent) analyticsContent.classList.add('hidden');
+                if (complexityContent) complexityContent.classList.add('hidden');
 
-                if (btnList) btnList.className = "px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-blue-600 text-white shadow-xs";
-                if (btnAnalytics) btnAnalytics.className = "px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-white text-slate-700 hover:bg-slate-100 border border-slate-200";
+                if (btnList) btnList.className = activeBtnClass;
+                if (btnAnalytics) btnAnalytics.className = inactiveBtnClass;
+                if (btnComplexity) btnComplexity.className = inactiveBtnClass;
             }
+        }
+
+        async function loadFaleConoscoComplexity() {
+            try {
+                const res = await fetch('/api/support-tickets/complexity');
+                const data = await res.json();
+                if (!data || !data.summary) return;
+
+                const s = data.summary;
+
+                // 1. KPIs Executivos
+                const elTotal = document.getElementById('fc-comp-kpi-total');
+                if (elTotal) elTotal.innerText = (s.total_tickets || 0).toLocaleString('pt-BR');
+
+                const elScore = document.getElementById('fc-comp-kpi-score');
+                if (elScore) elScore.innerText = `Score Médio: ${s.average_complexity_score || 0} / 3.0`;
+
+                const elHigh = document.getElementById('fc-comp-kpi-high');
+                if (elHigh) elHigh.innerText = (s.high_critical_complexity_count || 0).toLocaleString('pt-BR');
+
+                const elHighPct = document.getElementById('fc-comp-kpi-high-pct');
+                if (elHighPct) elHighPct.innerText = `${s.high_critical_complexity_pct || 0}% da base (OAuth & JWT)`;
+
+                const elMedium = document.getElementById('fc-comp-kpi-medium');
+                if (elMedium) elMedium.innerText = (s.medium_complexity_count || 0).toLocaleString('pt-BR');
+
+                const elMediumPct = document.getElementById('fc-comp-kpi-medium-pct');
+                if (elMediumPct) elMediumPct.innerText = `${s.medium_complexity_pct || 0}% (DED & Mobile)`;
+
+                const elMantis = document.getElementById('fc-comp-kpi-mantis');
+                if (elMantis) elMantis.innerText = (s.mantis_linked_count || 0).toLocaleString('pt-BR');
+
+                const elMantisPct = document.getElementById('fc-comp-kpi-mantis-pct');
+                if (elMantisPct) elMantisPct.innerText = `${s.mantis_linked_pct || 0}% em homologação`;
+
+                const elLow = document.getElementById('fc-comp-kpi-low');
+                if (elLow) elLow.innerText = (s.low_complexity_count || 0).toLocaleString('pt-BR');
+
+                const elLowPct = document.getElementById('fc-comp-kpi-low-pct');
+                if (elLowPct) elLowPct.innerText = `${s.low_complexity_pct || 0}% (Secretaria e Senha)`;
+
+                // 2. Priorização P1 a P4
+                const prioContainer = document.getElementById('fc-priorities-cards');
+                if (prioContainer && s.priorities) {
+                    const p1 = s.priorities.p1_urgent_hotfix;
+                    const p2 = s.priorities.p2_structural;
+                    const p3 = s.priorities.p3_improvements;
+                    const p4 = s.priorities.p4_operational;
+
+                    prioContainer.innerHTML = `
+                        <div class="bg-rose-50/60 border border-rose-200 rounded-xl p-3.5 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-600 text-white uppercase tracking-wider">Prioridade P1</span>
+                                <span class="text-xs font-black text-rose-700">${p1.count} chamados (${p1.pct}%)</span>
+                            </div>
+                            <h5 class="text-xs font-bold text-rose-950">Bloqueante • Hotfix de Gateway & JWT</h5>
+                            <p class="text-[11px] text-rose-800 leading-relaxed">Intervenção imediata nos callbacks de OAuth Gov.br e renovação silenciosa de JWT para destravar o acesso de ${p1.count} usuários.</p>
+                        </div>
+
+                        <div class="bg-amber-50/60 border border-amber-200 rounded-xl p-3.5 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-600 text-white uppercase tracking-wider">Prioridade P2</span>
+                                <span class="text-xs font-black text-amber-700">${p2.count} chamados (${p2.pct}%)</span>
+                            </div>
+                            <h5 class="text-xs font-bold text-amber-950">Alta Gravidade • Sincronização DED & Splash</h5>
+                            <p class="text-[11px] text-amber-800 leading-relaxed">Cache inteligente de notas/boletim no app móvel e tratamento de exceção na inicialização contra fechamento inesperado.</p>
+                        </div>
+
+                        <div class="bg-blue-50/60 border border-blue-200 rounded-xl p-3.5 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-600 text-white uppercase tracking-wider">Prioridade P3</span>
+                                <span class="text-xs font-black text-blue-700">${p3.count} chamados (${p3.pct}%)</span>
+                            </div>
+                            <h5 class="text-xs font-bold text-blue-950">Moderada • Validação Cadastral & Regras</h5>
+                            <p class="text-[11px] text-blue-800 leading-relaxed">Validador de CPF no portal idaluno e isolamento de matrícula ativa após transferência de escola do estudante.</p>
+                        </div>
+
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-600 text-white uppercase tracking-wider">Prioridade P4</span>
+                                <span class="text-xs font-black text-slate-700">${p4.count} chamados (${p4.pct}%)</span>
+                            </div>
+                            <h5 class="text-xs font-bold text-slate-900">Operacional • Autoatendimento & Secretaria</h5>
+                            <p class="text-[11px] text-slate-600 leading-relaxed">Auto-recuperação de senhas por SMS e direcionamento no formulário para pedidos de histórico escolar à escola física.</p>
+                        </div>
+                    `;
+                }
+
+                // 3. Gráficos Chart.js
+                // Gráfico 1: Nível de Complexidade Técnica
+                if (document.getElementById('chart-fc-complexity-pie')) {
+                    destroyFcChart('chart-fc-complexity-pie');
+                    const ctxPie = document.getElementById('chart-fc-complexity-pie').getContext('2d');
+                    fcCharts['chart-fc-complexity-pie'] = new Chart(ctxPie, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Alta Complexidade (Score 3)', 'Média Complexidade (Score 2)', 'Baixa Complexidade (Score 1)'],
+                            datasets: [{
+                                data: [s.high_critical_complexity_count, s.medium_complexity_count, s.low_complexity_count],
+                                backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6'],
+                                borderWidth: 2,
+                                borderColor: '#ffffff'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11, weight: 'bold' } } }
+                            },
+                            cutout: '65%'
+                        }
+                    });
+                }
+
+                // Gráfico 2: Camadas Arquiteturais
+                if (data.architectural_layers && document.getElementById('chart-fc-complexity-layers')) {
+                    destroyFcChart('chart-fc-complexity-layers');
+                    const ctxLayers = document.getElementById('chart-fc-complexity-layers').getContext('2d');
+                    fcCharts['chart-fc-complexity-layers'] = new Chart(ctxLayers, {
+                        type: 'bar',
+                        data: {
+                            labels: data.architectural_layers.map(l => l.name.replace(' / ', '\n')),
+                            datasets: [{
+                                label: 'Volume de Chamados',
+                                data: data.architectural_layers.map(l => l.count),
+                                backgroundColor: data.architectural_layers.map(l => l.color || '#6366f1'),
+                                borderRadius: 6
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                x: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } },
+                                y: { grid: { display: false }, ticks: { font: { size: 10 } } }
+                            }
+                        }
+                    });
+                }
+
+                // 4. Tabela Matriz de Causas-Raiz & Recomendações
+                const tbody = document.getElementById('fc-complexity-tbody');
+                if (tbody && data.cause_matrix) {
+                    tbody.innerHTML = data.cause_matrix.map(c => {
+                        let sevBadge = '';
+                        if (c.severity === 'Crítica') {
+                            sevBadge = '<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-200"><i class="fa-solid fa-circle text-rose-600 text-[6px]"></i> Crítica</span>';
+                        } else if (c.severity === 'Alta') {
+                            sevBadge = '<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">Alta</span>';
+                        } else if (c.severity === 'Média') {
+                            sevBadge = '<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-800 border border-blue-200">Média</span>';
+                        } else {
+                            sevBadge = '<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-700 border border-slate-200">Baixa</span>';
+                        }
+
+                        let compBadge = '';
+                        if (c.complexity === 'Alta') {
+                            compBadge = '<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-600 text-white shadow-xs">Alta (Score 3)</span>';
+                        } else if (c.complexity === 'Média') {
+                            compBadge = '<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white shadow-xs">Média (Score 2)</span>';
+                        } else {
+                            compBadge = '<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500 text-white shadow-xs">Baixa (Score 1)</span>';
+                        }
+
+                        const mantisHtml = (c.mantis_list && c.mantis_list.length > 0)
+                            ? c.mantis_list.map(m => `
+                                <button onclick="filterSupportByMantis('${escapeHtml(m.code)}')" class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-900 font-bold text-[10px] transition cursor-pointer" title="Filtrar chamados com este código Mantis">
+                                    <i class="fa-solid fa-code-branch text-purple-600"></i> ${escapeHtml(m.code)} <span class="bg-purple-200 text-purple-950 px-1 py-0.2 rounded-full text-[9px] font-black">${m.count}</span>
+                                </button>
+                            `).join(' ')
+                            : '<span class="text-slate-400 text-[11px] italic">Sem chamado vinculado</span>';
+
+                        return `
+                            <tr class="hover:bg-slate-50 transition border-b border-slate-100 group">
+                                <td class="p-3.5 align-top">
+                                    <div class="flex items-start gap-2.5">
+                                        <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white shrink-0 mt-0.5 shadow-xs" style="background-color: ${c.color}">
+                                            <i class="fa-solid ${c.icon} text-xs"></i>
+                                        </div>
+                                        <div>
+                                            <span class="font-black text-slate-900 text-xs block">${escapeHtml(c.name)}</span>
+                                            <span class="text-[11px] text-slate-500 font-normal leading-tight block mt-0.5">${escapeHtml(c.resolution_scope)}</span>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td class="p-3.5 text-center align-middle">
+                                    <span class="font-black text-slate-900 text-sm block">${c.total_count}</span>
+                                    <span class="text-[11px] text-slate-500 font-semibold">${c.percentage}%</span>
+                                    <div class="w-16 bg-slate-100 h-1.5 rounded-full overflow-hidden mx-auto mt-1">
+                                        <div class="h-full rounded-full" style="width: ${c.percentage}%; background-color: ${c.color}"></div>
+                                    </div>
+                                </td>
+
+                                <td class="p-3.5 text-center align-middle">
+                                    ${sevBadge}
+                                </td>
+
+                                <td class="p-3.5 text-center align-middle">
+                                    ${compBadge}
+                                </td>
+
+                                <td class="p-3.5 align-top">
+                                    <span class="font-bold text-slate-800 text-[11px] block">${escapeHtml(c.architectural_layer)}</span>
+                                </td>
+
+                                <td class="p-3.5 align-top">
+                                    <div class="flex flex-wrap gap-1">
+                                        ${mantisHtml}
+                                    </div>
+                                </td>
+
+                                <td class="p-3.5 align-top">
+                                    <div class="space-y-1">
+                                        <p class="text-[11px] text-slate-700 leading-relaxed font-semibold">
+                                            👉 ${escapeHtml(c.recommendation)}
+                                        </p>
+                                        <p class="text-[10px] text-slate-500 leading-normal italic">
+                                            ${escapeHtml(c.engineering_details || '')}
+                                        </p>
+                                    </div>
+                                </td>
+
+                                <td class="p-3.5 text-center align-middle">
+                                    <button onclick="filterSupportByRootCause('${c.id}')" class="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] rounded-lg shadow-xs transition flex items-center gap-1 mx-auto" title="Filtrar chamados desta causa na lista">
+                                        <i class="fa-solid fa-filter"></i> Ver Chamados
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+
+                // 5. Roadmap
+                const roadmapEl = document.getElementById('fc-roadmap-container');
+                if (roadmapEl && data.recommendations_roadmap) {
+                    roadmapEl.innerHTML = data.recommendations_roadmap.map(r => `
+                        <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-2.5">
+                            <div class="flex items-center justify-between">
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black border ${r.badge_color}">${r.priority}</span>
+                                <span class="text-[10px] font-mono text-slate-500 font-bold">${escapeHtml(r.target)}</span>
+                            </div>
+                            <h4 class="text-xs font-bold text-slate-900 leading-snug">${escapeHtml(r.title)}</h4>
+                            <p class="text-[11px] text-slate-600 leading-relaxed">${escapeHtml(r.action)}</p>
+                            <div class="pt-1 border-t border-slate-200/60 text-[11px] font-bold text-emerald-700 flex items-center gap-1">
+                                <i class="fa-solid fa-chart-line text-emerald-600"></i>
+                                <span>${escapeHtml(r.impact)}</span>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+
+                // 6. Amostras Reais (Acordeão)
+                const samplesEl = document.getElementById('fc-samples-accordion');
+                if (samplesEl && data.cause_matrix) {
+                    samplesEl.innerHTML = data.cause_matrix.slice(0, 6).map((c, idx) => `
+                        <div class="border border-slate-200 rounded-xl overflow-hidden bg-white">
+                            <button onclick="toggleAccordion('fc-sample-panel-${idx}')" class="w-full p-3.5 bg-slate-50 hover:bg-slate-100 flex items-center justify-between text-left transition font-bold text-xs text-slate-800">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="w-2.5 h-2.5 rounded-full" style="background-color: ${c.color}"></span>
+                                    <span>${escapeHtml(c.name)}</span>
+                                    <span class="px-2 py-0.2 bg-slate-200 text-slate-700 rounded-full text-[10px] font-black">${c.total_count} chamados</span>
+                                </div>
+                                <i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i>
+                            </button>
+                            <div id="fc-sample-panel-${idx}" class="p-4 space-y-3 ${idx === 0 ? '' : 'hidden'} border-t border-slate-200">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                    ${(c.sample_tickets || []).map(st => `
+                                        <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
+                                            <div class="flex items-center justify-between text-[11px]">
+                                                <strong class="text-slate-900 font-bold">${escapeHtml(st.student_name)}</strong>
+                                                <span class="text-slate-400 text-[10px]">${escapeHtml(st.date)}</span>
+                                            </div>
+                                            <div class="text-[10px] text-slate-500 space-y-0.5">
+                                                <div class="truncate">🏫 ${escapeHtml(st.school)}</div>
+                                                ${st.city && st.city !== 'Não informada' ? `<div>📍 ${escapeHtml(st.city)}</div>` : ''}
+                                            </div>
+                                            <p class="text-xs text-slate-700 italic bg-white p-2 rounded border border-slate-200/80 leading-relaxed font-medium">
+                                                "${escapeHtml(st.description_snippet)}"
+                                            </p>
+                                            ${st.internal_analysis ? `
+                                                <div class="text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-1 rounded border border-purple-200">
+                                                    🔍 ${escapeHtml(st.internal_analysis)}
+                                                </div>
+                                            ` : ''}
+                                            <button onclick="focusSupportTicket('${st.id}')" class="w-full mt-1 px-2 py-1 bg-white hover:bg-blue-50 text-blue-600 font-bold text-[10px] rounded border border-blue-200 transition flex items-center justify-center gap-1">
+                                                <i class="fa-solid fa-eye"></i> Ver no Atendimento
+                                            </button>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+
+            } catch (err) {
+                console.error('Erro ao carregar complexidade do Fale Conosco:', err);
+            }
+        }
+
+        function filterSupportByRootCause(rcId) {
+            switchSupportSubTab('list');
+            const rcSelect = document.getElementById('filter-support-root-cause');
+            if (rcSelect) rcSelect.value = rcId;
+            const searchInput = document.getElementById('filter-support-search');
+            if (searchInput) searchInput.value = '';
+            const catSelect = document.getElementById('filter-support-category');
+            if (catSelect) catSelect.value = 'todos';
+            const mantisChk = document.getElementById('filter-support-mantis');
+            if (mantisChk) mantisChk.checked = false;
+            currentSupportOffset = 0;
+            loadSupportTickets(0);
+        }
+
+        function filterSupportByMantis(mantisCode) {
+            switchSupportSubTab('list');
+            const searchInput = document.getElementById('filter-support-search');
+            if (searchInput) searchInput.value = mantisCode;
+            const rcSelect = document.getElementById('filter-support-root-cause');
+            if (rcSelect) rcSelect.value = 'todos';
+            const catSelect = document.getElementById('filter-support-category');
+            if (catSelect) catSelect.value = 'todos';
+            const mantisChk = document.getElementById('filter-support-mantis');
+            if (mantisChk) mantisChk.checked = false;
+            currentSupportOffset = 0;
+            loadSupportTickets(0);
+        }
+
+        async function focusSupportTicket(ticketId) {
+            switchSupportSubTab('list');
+            const searchInput = document.getElementById('filter-support-search');
+            if (searchInput) searchInput.value = ticketId;
+            const rcSelect = document.getElementById('filter-support-root-cause');
+            if (rcSelect) rcSelect.value = 'todos';
+            const catSelect = document.getElementById('filter-support-category');
+            if (catSelect) catSelect.value = 'todos';
+            const statusSelect = document.getElementById('filter-support-status');
+            if (statusSelect) statusSelect.value = 'todos';
+            const userTypeSelect = document.getElementById('filter-support-user-type');
+            if (userTypeSelect) userTypeSelect.value = 'todos';
+            const mantisChk = document.getElementById('filter-support-mantis');
+            if (mantisChk) mantisChk.checked = false;
+
+            currentSupportOffset = 0;
+            await loadSupportTickets(0);
+
+            setTimeout(() => {
+                const card = document.getElementById('ticket-card-' + ticketId);
+                if (card) {
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    card.classList.add('ring-4', 'ring-blue-500', 'ring-offset-2', 'bg-blue-50/30', 'transition-all', 'duration-500');
+                    setTimeout(() => {
+                        card.classList.remove('ring-4', 'ring-blue-500', 'ring-offset-2', 'bg-blue-50/30');
+                    }, 4500);
+                }
+            }, 350);
+        }
+
+        function toggleAccordion(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.toggle('hidden');
         }
 
         function filterSupportByWord(word) {
@@ -6058,6 +6750,7 @@ async function uploadPlayConsoleCsv(input) {
             const status = document.getElementById('filter-support-status')?.value || '';
             const userType = document.getElementById('filter-support-user-type')?.value || '';
             const category = document.getElementById('filter-support-category')?.value || '';
+            const rootCauseId = document.getElementById('filter-support-root-cause')?.value || '';
             const hasMantis = document.getElementById('filter-support-mantis')?.checked || false;
 
             container.innerHTML = `
@@ -6074,6 +6767,9 @@ async function uploadPlayConsoleCsv(input) {
                     limit: supportPageSize,
                     offset: currentSupportOffset
                 });
+                if (rootCauseId && rootCauseId !== 'todos') {
+                    params.append('root_cause_id', rootCauseId);
+                }
                 const res = await fetch(`/api/support-tickets?${params.toString()}`);
                 const data = await res.json();
                 const tickets = data.tickets || [];
@@ -6121,6 +6817,25 @@ async function uploadPlayConsoleCsv(input) {
 
                     const categoryBadge = `<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-800 border border-indigo-200">${escapeHtml(t.category || 'Geral')}</span>`;
 
+                    const fcRcMap = {
+                        oauth_gov_br: { name: "OAuth Gov.br", color: "bg-rose-50 text-rose-800 border-rose-200" },
+                        token_jwt_sessao: { name: "Token JWT", color: "bg-red-50 text-red-800 border-red-200" },
+                        ded_notas_boletim: { name: "DED / Notas", color: "bg-amber-50 text-amber-900 border-amber-200" },
+                        crash_loop_inicial: { name: "App Não Abre", color: "bg-orange-50 text-orange-800 border-orange-200" },
+                        login_generico_bloqueio: { name: "Bloqueio Acesso", color: "bg-indigo-50 text-indigo-800 border-indigo-200" },
+                        recuperacao_senha_idaluno: { name: "Senha / idaluno", color: "bg-purple-50 text-purple-800 border-purple-200" },
+                        inconsistencia_cpf_ded: { name: "CPF / DED", color: "bg-rose-50 text-rose-900 border-rose-200" },
+                        troca_escola_matricula: { name: "Troca Escola", color: "bg-sky-50 text-sky-800 border-sky-200" },
+                        demandas_secretaria_n1: { name: "Secretaria Escolar", color: "bg-slate-100 text-slate-700 border-slate-200" },
+                        compatibilidade_dispositivo: { name: "Compatibilidade", color: "bg-teal-50 text-teal-800 border-teal-200" },
+                        pe_de_meia_mec: { name: "Pé-de-Meia (MEC)", color: "bg-emerald-50 text-emerald-800 border-emerald-200" },
+                        outros_suporte: { name: "Geral", color: "bg-slate-50 text-slate-600 border-slate-200" }
+                    };
+                    const rcInfo = fcRcMap[t.root_cause_id];
+                    const rcBadge = rcInfo 
+                        ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${rcInfo.color}"><i class="fa-solid fa-microchip text-[10px]"></i> ${rcInfo.name}</span>`
+                        : '';
+
                     const dateFormatted = t.ticket_date ? new Date(t.ticket_date).toLocaleString('pt-BR') : '';
 
                     return `
@@ -6134,6 +6849,7 @@ async function uploadPlayConsoleCsv(input) {
                                     <span class="text-xs text-slate-400">• ${dateFormatted}</span>
                                 </div>
                                 <div class="flex flex-wrap items-center gap-2">
+                                    ${rcBadge}
                                     ${categoryBadge}
                                     ${mantisBadge}
                                     ${statusBadge}

@@ -829,6 +829,7 @@ def api_get_support_tickets(
     status: str = "",
     user_type: str = "",
     category: str = "",
+    root_cause_id: str = "",
     has_mantis: bool = False,
     limit: int = 50,
     offset: int = 0
@@ -840,6 +841,7 @@ def api_get_support_tickets(
             status=status,
             user_type=user_type,
             category=category,
+            root_cause_id=root_cause_id,
             has_mantis=has_mantis,
             limit=limit,
             offset=offset
@@ -868,6 +870,20 @@ def api_get_support_tickets_analytics():
         return get_fale_conosco_analytics()
     except Exception as e:
         logger.error(f"Erro ao gerar analytics do Fale Conosco: {e}")
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+@app.get("/api/support-tickets/complexity")
+def api_get_support_tickets_complexity():
+    """
+    Retorna o diagnóstico de Causas-Raiz & Complexidade Técnica dos 862 Chamados do Fale Conosco,
+    com matriz arquitetural Prodemge/SEE, correlação Mantis e recomendações de engenharia.
+    Isolado 100% das avaliações das lojas móveis.
+    """
+    try:
+        from analytics.fale_conosco_complexity import get_fale_conosco_complexity_diagnostic
+        return get_fale_conosco_complexity_diagnostic()
+    except Exception as e:
+        logger.error(f"Erro ao gerar diagnóstico de complexidade do Fale Conosco: {e}")
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 

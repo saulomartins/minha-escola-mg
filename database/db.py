@@ -296,10 +296,16 @@ def init_db():
         status TEXT,
         internal_analysis TEXT,
         category TEXT,
+        root_cause_id TEXT,
         ai_suggested_reply TEXT,
         created_at TEXT
     );
     """)
+
+    try:
+        cursor.execute("ALTER TABLE support_tickets ADD COLUMN root_cause_id TEXT;")
+    except Exception:
+        pass
 
     # Popula chamados do Fale Conosco na primeira inicialização se tabela estiver vazia
     try:
@@ -345,6 +351,12 @@ def upsert_review(review: Dict[str, Any]) -> bool:
         review['os_version'] = review.get('os_version') or dev_info['os_version']
         review['app_version'] = review.get('app_version') or dev_info['app_version']
         review['device_source'] = review.get('device_source') or dev_info['device_source']
+
+    # Classifica causa-raiz se ainda não estiver preenchida
+    if not review.get('root_cause_id'):
+        from analytics.complexity import classify_text_issue
+        c_res = classify_text_issue(review.get('content', ''), review.get('title', ''), review.get('rating', 3))
+        review['root_cause_id'] = c_res.get('id')
 
     conn = get_connection()
     cursor = conn.cursor()
@@ -521,9 +533,9 @@ def get_reviews(
         query += " AND device_brand = ?"
         params.append(device_brand)
     if search:
-        query += " AND (content LIKE ? OR user_name LIKE ? OR title LIKE ? OR device_model LIKE ?)"
+        query += " AND (id LIKE ? OR content LIKE ? OR user_name LIKE ? OR title LIKE ? OR device_model LIKE ?)"
         term = f"%{search}%"
-        params.extend([term, term, term, term])
+        params.extend([term, term, term, term, term])
         
     query += " ORDER BY review_date DESC"
     
@@ -1331,6 +1343,12 @@ def upsert_support_ticket(ticket: Dict[str, Any]) -> bool:
     conn = get_connection()
     cursor = conn.cursor()
     now_iso = datetime.utcnow().isoformat()
+
+    # Classifica causa-raiz técnica se ainda não estiver preenchida
+    if not ticket.get('root_cause_id'):
+        from analytics.fale_conosco_complexity import classify_fc_ticket
+        c_res = classify_fc_ticket(ticket.get('description', ''), ticket.get('internal_analysis', ''), ticket.get('category', ''))
+        ticket['root_cause_id'] = c_res.get('id')
     
     cursor.execute("SELECT id FROM support_tickets WHERE id = ?", (ticket['id'],))
     existing = cursor.fetchone()
@@ -1341,8 +1359,8 @@ def upsert_support_ticket(ticket: Dict[str, Any]) -> bool:
         INSERT INTO support_tickets (
             id, ticket_date, user_type, student_name, student_cpf, student_id,
             birth_date, contact_email, school_name, description, attachment_url,
-            city, status, internal_analysis, category, ai_suggested_reply, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            city, status, internal_analysis, category, root_cause_id, ai_suggested_reply, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             ticket['id'],
             ticket.get('ticket_date'),
@@ -1359,6 +1377,7 @@ def upsert_support_ticket(ticket: Dict[str, Any]) -> bool:
             ticket.get('status', 'Pendente'),
             ticket.get('internal_analysis', ''),
             ticket.get('category', 'Geral'),
+            ticket.get('root_cause_id'),
             ticket.get('ai_suggested_reply', ''),
             now_iso
         ))
@@ -1379,6 +1398,7 @@ def upsert_support_ticket(ticket: Dict[str, Any]) -> bool:
             status = COALESCE(?, status),
             internal_analysis = COALESCE(?, internal_analysis),
             category = COALESCE(?, category),
+            root_cause_id = COALESCE(?, root_cause_id),
             ai_suggested_reply = COALESCE(?, ai_suggested_reply)
         WHERE id = ?
         """, (
@@ -1396,6 +1416,7 @@ def upsert_support_ticket(ticket: Dict[str, Any]) -> bool:
             ticket.get('status'),
             ticket.get('internal_analysis'),
             ticket.get('category'),
+            ticket.get('root_cause_id'),
             ticket.get('ai_suggested_reply'),
             ticket['id']
         ))
@@ -1409,6 +1430,7 @@ def get_support_tickets(
     status: str = "",
     user_type: str = "",
     category: str = "",
+    root_cause_id: str = "",
     has_mantis: bool = False,
     limit: int = 50,
     offset: int = 0
@@ -1422,8 +1444,8 @@ def get_support_tickets(
     
     if search:
         s = f"%{search}%"
-        query += " AND (student_name LIKE ? OR description LIKE ? OR school_name LIKE ? OR city LIKE ? OR student_cpf LIKE ? OR internal_analysis LIKE ?)"
-        params.extend([s, s, s, s, s, s])
+        query += " AND (id LIKE ? OR student_name LIKE ? OR description LIKE ? OR school_name LIKE ? OR city LIKE ? OR student_cpf LIKE ? OR internal_analysis LIKE ?)"
+        params.extend([s, s, s, s, s, s, s])
         
     if status and status != 'todos':
         query += " AND status = ?"
@@ -1436,6 +1458,10 @@ def get_support_tickets(
     if category and category != 'todos':
         query += " AND category = ?"
         params.append(category)
+
+    if root_cause_id and root_cause_id != 'todos':
+        query += " AND root_cause_id = ?"
+        params.append(root_cause_id)
         
     if has_mantis:
         query += " AND internal_analysis LIKE '%Mantis%'"
