@@ -1276,6 +1276,10 @@ def api_get_settings():
     p8 = settings.get("apple_private_key_p8", "")
     masked["apple_connected"] = bool(k_id and iss and p8)
     
+    support_val = settings.get("support_contact_url") or settings.get("support_email") or "https://forms.cloud.microsoft/r/JmZhSzXtwG"
+    masked["support_email"] = support_val
+    masked["support_contact_url"] = support_val
+
     return masked
 
 @app.post("/api/settings")
@@ -1298,6 +1302,7 @@ def api_update_settings(req: SettingsRequest):
         set_setting("auto_sync_interval", req.auto_sync_interval)
     if req.support_email is not None:
         set_setting("support_email", req.support_email)
+        set_setting("support_contact_url", req.support_email)
     return {"success": True, "message": "Configurações salvas com sucesso!"}
 
 @app.post("/api/settings/test-gemini")

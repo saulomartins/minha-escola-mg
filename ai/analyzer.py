@@ -3,34 +3,52 @@ import json
 import logging
 import re
 from typing import Dict, Any, Optional
+from database.db import get_setting
 
 logger = logging.getLogger(__name__)
 
-OFFICIAL_SUPPORT_FORM = "https://forms.cloud.microsoft/r/JmZhSzXtwG"
-OFFICIAL_SUPPORT_LABEL = "Canal de Suporte Oficial citado pela IA (Formulário Prodemge)"
+DEFAULT_SUPPORT_URL = "https://forms.cloud.microsoft/r/JmZhSzXtwG"
 
-SYSTEM_PROMPT = """Você é o assistente oficial de suporte e atendimento ao usuário do aplicativo "Minha Escola MG" (aplicativo oficial da Secretaria de Estado de Educação de Minas Gerais - SEE/MG e PRODEMGE).
+def get_official_support_url() -> str:
+    """
+    Retorna dinamicamente a URL do campo de configuração
+    'Canal de Suporte Oficial citado pela IA (Formulário Prodemge)'
+    salvo nas configurações do sistema.
+    """
+    try:
+        url = get_setting("support_contact_url") or get_setting("support_email") or DEFAULT_SUPPORT_URL
+        if "@" in url or not url.strip():
+            url = DEFAULT_SUPPORT_URL
+        return url.strip()
+    except Exception:
+        return DEFAULT_SUPPORT_URL
+
+def build_system_prompt(support_url: str) -> str:
+    return f"""Você é o assistente oficial de suporte e atendimento ao usuário do aplicativo "Minha Escola MG" (aplicativo oficial da Secretaria de Estado de Educação de Minas Gerais - SEE/MG e PRODEMGE).
 Sua missão é analisar avaliações e comentários de usuários (estudantes, pais, professores e responsáveis) nas lojas Google Play Store e Apple App Store, categorizar o problema e redigir uma resposta oficial, cordial, prestativa e empática em Português do Brasil.
 
 Diretrizes obrigatórias para as respostas:
 1. Seja sempre educado, acolhedor e profissional.
 2. Cumprimente o usuário pelo nome (se disponível) ou cordialmente ("Olá!", "Olá, estudante/responsável!").
 3. REGRA CRÍTICA DO CANAL DE SUPORTE OFICIAL:
-   - Para TODAS as avaliações com nota de 1 a 3 estrelas (1, 2 ou 3 estrelas): a resposta DEVE OBRIGATORIAMENTE indicar e solicitar que o usuário preencha o Canal de Suporte Oficial citado pela IA (Formulário Prodemge): https://forms.cloud.microsoft/r/JmZhSzXtwG.
-   - Para avaliações de 4 ou 5 estrelas: avalie atentamente o comentário do usuário. Se houver QUALQUER menção ou contexto de problema, dificuldade, falha, erro, lentidão, travamento, tela preta, dificuldade de login/senha, divergência de notas ou faltas (ex: "o app é bom mas trava às vezes", "ótimo, porém não consigo ver o boletim", "gostei mas não entra"), a resposta TAMBÉM DEVE OBRIGATORIAMENTE solicitar que preencha o Canal de Suporte Oficial citado pela IA (Formulário Prodemge): https://forms.cloud.microsoft/r/JmZhSzXtwG.
-   - Se a avaliação for de 4 ou 5 estrelas e contiver apenas elogios sinceros sem nenhum problema relatado, agradeça cordialmente sem necessidade do formulário.
-4. REGRA OBRIGATÓRIA DE CONTATO: NUNCA utilize endereços de e-mail (como saulomartins.costa@gmail.com ou qualquer outro) na resposta. O único canal oficial a ser informado é o Canal de Suporte Oficial citado pela IA (Formulário Prodemge): https://forms.cloud.microsoft/r/JmZhSzXtwG.
-5. Para PROBLEMAS DE ACESSO/LOGIN/SENHA: Oriente a verificar se o cadastro no sistema escolar/Simave/Gov.br está atualizado na secretaria da escola, ou a utilizar a recuperação de senha, e solicite o preenchimento do Canal de Suporte Oficial citado pela IA (Formulário Prodemge): https://forms.cloud.microsoft/r/JmZhSzXtwG.
-6. Para BUGS/TRAVAMENTOS/TELA PRETA: Peça desculpas pelo transtorno, sugira atualizar o aplicativo para a versão mais recente, limpar o cache do app, e solicite o registro no Canal de Suporte Oficial citado pela IA (Formulário Prodemge): https://forms.cloud.microsoft/r/JmZhSzXtwG.
-7. Para PROBLEMAS DE NOTAS/FALTAS NÃO ATUALIZADAS: Explique que o lançamento depende do Diário Escolar Digital (DED) pelos professores. Caso persista a divergência, oriente a procurar a coordenação da escola ou registrar no Canal de Suporte Oficial citado pela IA (Formulário Prodemge): https://forms.cloud.microsoft/r/JmZhSzXtwG.
+   - Para TODAS as avaliações com nota de 1 a 3 estrelas (1, 2 ou 3 estrelas): a resposta DEVE OBRIGATORIAMENTE indicar e solicitar que o usuário utilize exatamente:
+     Canal de Suporte Oficial: 👉 {support_url}
+   - Para avaliações de 4 ou 5 estrelas: avalie atentamente o comentário do usuário. Se houver QUALQUER menção ou contexto de problema, dificuldade, falha, erro, lentidão, travamento, tela preta, dificuldade de login/senha, divergência de notas ou faltas (ex: "o app é bom mas trava às vezes", "ótimo, porém não consigo ver o boletim", "gostei mas não entra"), a resposta TAMBÉM DEVE OBRIGATORIAMENTE solicitar que utilize exatamente:
+     Canal de Suporte Oficial: 👉 {support_url}
+   - Se a avaliação for de 4 ou 5 estrelas e contiver apenas elogios sinceros sem nenhum problema relatado, agradeça cordialmente sem necessidade do canal de suporte.
+4. REGRA OBRIGATÓRIA DE CONTATO: NUNCA utilize endereços de e-mail (como saulomartins.costa@gmail.com ou qualquer outro) na resposta. O único canal oficial a ser informado é exatamente no formato:
+   Canal de Suporte Oficial: 👉 {support_url}
+5. Para PROBLEMAS DE ACESSO/LOGIN/SENHA: Oriente a verificar se o cadastro no sistema escolar/Simave/Gov.br está atualizado na secretaria da escola, ou a utilizar a recuperação de senha, e solicite o preenchimento do Canal de Suporte Oficial: 👉 {support_url}.
+6. Para BUGS/TRAVAMENTOS/TELA PRETA: Peça desculpas pelo transtorno, sugira atualizar o aplicativo para a versão mais recente, limpar o cache do app, e solicite o registro no Canal de Suporte Oficial: 👉 {support_url}.
+7. Para PROBLEMAS DE NOTAS/FALTAS NÃO ATUALIZADAS: Explique que o lançamento depende do Diário Escolar Digital (DED) pelos professores. Caso persista a divergência, oriente a procurar a coordenação da escola ou registrar no Canal de Suporte Oficial: 👉 {support_url}.
 8. Mantenha a resposta concisa (máximo de 3 a 4 frases), ideal para leitura em lojas de aplicativos.
 
 Você DEVE responder SEMPRE em formato JSON com o seguinte formato:
-{
+{{
   "sentiment": "POSITIVO" | "NEUTRO" | "NEGATIVO",
   "category": "Login/Acesso" | "Boletim/Notas" | "Falha Técnica" | "Usabilidade" | "Elogio" | "Outros",
   "suggested_response": "Texto da resposta pronto para ser publicado"
-}
+}}
 """
 
 def has_problem_context(content: str, rating: int) -> bool:
@@ -61,16 +79,30 @@ def has_problem_context(content: str, rating: int) -> bool:
 def ensure_official_support_link(suggested_response: str, content: str, rating: int) -> str:
     """
     Garante que qualquer avaliação de 1 a 3 estrelas OU com qualquer contexto de problema
-    contenham obrigatoriamente a indicação do Canal de Suporte Oficial citado pela IA (Formulário Prodemge).
+    contenham obrigatoriamente a indicação do Canal de Suporte Oficial no formato exato:
+    'Canal de Suporte Oficial: 👉 {support_url}'.
     Garante também a remoção de qualquer menção acidental a e-mails.
     """
+    support_url = get_official_support_url()
     cleaned = re.sub(r'[\w\.-]+@[\w\.-]+\.\w+', '', suggested_response).strip()
     
+    # Substitui formatos legados para o formato padrão exato
+    cleaned = re.sub(
+        r'Canal de Suporte Oficial citado pela IA \(Formulário Prodemge\):\s*(👉\s*)?',
+        'Canal de Suporte Oficial: 👉 ',
+        cleaned
+    )
+    cleaned = re.sub(
+        r'Canal de Suporte Oficial \(Formulário Prodemge\):\s*(👉\s*)?',
+        'Canal de Suporte Oficial: 👉 ',
+        cleaned
+    )
+    
     if has_problem_context(content, rating):
-        if "forms.cloud.microsoft" not in cleaned and "JmZhSzXtwG" not in cleaned:
+        if support_url not in cleaned and "forms.cloud.microsoft" not in cleaned:
             cleaned = (
                 f"{cleaned} Para que possamos analisar e solucionar sua situação, por favor "
-                f"preencha o Canal de Suporte Oficial citado pela IA (Formulário Prodemge): 👉 {OFFICIAL_SUPPORT_FORM}"
+                f"acesse o Canal de Suporte Oficial: 👉 {support_url}"
             )
             
     return cleaned
@@ -78,9 +110,10 @@ def ensure_official_support_link(suggested_response: str, content: str, rating: 
 def heuristic_fallback_analysis(user_name: str, rating: int, content: str) -> Dict[str, Any]:
     """
     Análise heurística quando não há chave do Gemini configurada ou em caso de fallback.
-    Garante sempre a indicação do Canal de Suporte Oficial citado pela IA (Formulário Prodemge)
+    Garante sempre a indicação do Canal de Suporte Oficial: 👉 {support_url}
     para notas de 1 a 3 estrelas ou qualquer menção a problemas.
     """
+    support_url = get_official_support_url()
     content_lower = (content or "").lower()
     name_greeting = f"Olá, {user_name}!" if user_name and "usuário" not in user_name.lower() else "Olá!"
     
@@ -103,7 +136,7 @@ def heuristic_fallback_analysis(user_name: str, rating: int, content: str) -> Di
             f"{name_greeting} Sentimos muito pela dificuldade de acesso. "
             f"Verifique se o seu CPF e dados cadastrais estão atualizados junto à secretaria da sua escola. "
             f"Se a dificuldade persistir, utilize a opção 'Esqueci minha senha' ou solicite suporte pelo "
-            f"Canal de Suporte Oficial citado pela IA (Formulário Prodemge): 👉 {OFFICIAL_SUPPORT_FORM}"
+            f"Canal de Suporte Oficial: 👉 {support_url}"
         )
     elif any(w in content_lower for w in ["nota", "boletim", "falta", "frequência", "frequencia", "bimestre", "ponto"]):
         category = "Boletim/Notas"
@@ -111,14 +144,14 @@ def heuristic_fallback_analysis(user_name: str, rating: int, content: str) -> Di
             f"{name_greeting} Agradecemos pelo seu relato. As notas e frequências exibidas no Minha Escola MG "
             f"dependem da sincronização dos lançamentos feitos pelos professores no Diário Escolar Digital. "
             f"Caso haja divergências não resolvidas pela escola, por favor informe pelo "
-            f"Canal de Suporte Oficial citado pela IA (Formulário Prodemge): 👉 {OFFICIAL_SUPPORT_FORM}"
+            f"Canal de Suporte Oficial: 👉 {support_url}"
         )
     elif any(w in content_lower for w in ["trava", "fecha", "bug", "erro", "carrega", "preta", "lento", "ruim", "péssimo", "atualização"]):
         category = "Falha Técnica"
         response = (
             f"{name_greeting} Lamentamos pelo ocorrido! Recomendamos verificar se o aplicativo está atualizado "
             f"para a versão mais recente na loja e limpar os dados de cache nas configurações do aparelho. "
-            f"Persistindo a falha, pedimos que preencha o Canal de Suporte Oficial citado pela IA (Formulário Prodemge): 👉 {OFFICIAL_SUPPORT_FORM}"
+            f"Persistindo a falha, pedimos que acesse o Canal de Suporte Oficial: 👉 {support_url}"
         )
     elif rating >= 4 and not is_problem:
         category = "Elogio"
@@ -127,15 +160,15 @@ def heuristic_fallback_analysis(user_name: str, rating: int, content: str) -> Di
         category = "Falha Técnica" if any(w in content_lower for w in ["trava", "lento", "bug", "fecha"]) else "Usabilidade"
         response = (
             f"{name_greeting} Muito obrigado pela sua avaliação positiva! Notamos seu relato sobre instabilidade ou dificuldade. "
-            f"Para que nossa equipe técnica possa verificar e solucionar o problema, por favor preencha o "
-            f"Canal de Suporte Oficial citado pela IA (Formulário Prodemge): 👉 {OFFICIAL_SUPPORT_FORM}"
+            f"Para que nossa equipe técnica possa verificar e solucionar o problema, por favor acesse o "
+            f"Canal de Suporte Oficial: 👉 {support_url}"
         )
     else:
         category = "Outros"
         response = (
             f"{name_greeting} Agradecemos por compartilhar sua opinião conosco. "
             f"Para nos ajudar a solucionar qualquer dificuldade ou dúvida no aplicativo, "
-            f"pedimos que preencha o Canal de Suporte Oficial citado pela IA (Formulário Prodemge): 👉 {OFFICIAL_SUPPORT_FORM}"
+            f"pedimos que acesse o Canal de Suporte Oficial: 👉 {support_url}"
         )
         
     return {
@@ -147,9 +180,10 @@ def heuristic_fallback_analysis(user_name: str, rating: int, content: str) -> Di
 def analyze_review(review: Dict[str, Any], api_key: Optional[str] = None) -> Dict[str, Any]:
     """
     Analisa uma avaliação usando o Gemini API (se chave disponível) ou fallback heurístico.
-    Garante o direcionamento ao Canal de Suporte Oficial citado pela IA (Formulário Prodemge)
-    para 1 a 3 estrelas e qualquer contexto de problema.
+    Garante o direcionamento ao Canal de Suporte Oficial no formato exato:
+    'Canal de Suporte Oficial: 👉 {support_url}'
     """
+    support_url = get_official_support_url()
     user_name = review.get("user_name", "Usuário")
     rating = review.get("rating", 3)
     content = review.get("content", "")
@@ -169,8 +203,8 @@ def analyze_review(review: Dict[str, Any], api_key: Optional[str] = None) -> Dic
                 "category": "Outros",
                 "suggested_response": (
                     f"Olá! Sentimos muito que sua experiência não tenha sido 5 estrelas. "
-                    f"Para nos ajudar a solucionar qualquer dificuldade no aplicativo, por favor registre no "
-                    f"Canal de Suporte Oficial citado pela IA (Formulário Prodemge): 👉 {OFFICIAL_SUPPORT_FORM}"
+                    f"Para nos ajudar a solucionar qualquer dificuldade no aplicativo, por favor acesse o "
+                    f"Canal de Suporte Oficial: 👉 {support_url}"
                 )
             }
 
@@ -188,7 +222,8 @@ Nome do usuário: {user_name}
 Nota: {rating} estrelas
 Comentário: "{content}"
 
-DIRETRIZ MANDATÓRIA: Se a nota for de 1 a 3 estrelas OU se o comentário contiver QUALQUER menção a problema, erro, dificuldade, lentidão, tela preta, nota ou login (mesmo em avaliações de 4 ou 5 estrelas), a suggested_response DEVE OBRIGATORIAMENTE direcionar o usuário para o Canal de Suporte Oficial citado pela IA (Formulário Prodemge): https://forms.cloud.microsoft/r/JmZhSzXtwG.
+DIRETRIZ MANDATÓRIA: Se a nota for de 1 a 3 estrelas OU se o comentário contiver QUALQUER menção a problema, erro, dificuldade, lentidão, tela preta, nota ou login (mesmo em avaliações de 4 ou 5 estrelas), a suggested_response DEVE OBRIGATORIAMENTE direcionar o usuário exatamente para:
+Canal de Suporte Oficial: 👉 {support_url}
 
 Retorne o JSON estrito com sentiment, category e suggested_response."""
 
@@ -196,7 +231,7 @@ Retorne o JSON estrito com sentiment, category e suggested_response."""
             model="gemini-2.5-flash",
             contents=prompt,
             config={
-                "system_instruction": SYSTEM_PROMPT,
+                "system_instruction": build_system_prompt(support_url),
                 "response_mime_type": "application/json"
             }
         )

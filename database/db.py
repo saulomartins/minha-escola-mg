@@ -122,6 +122,20 @@ def ensure_support_channel_in_pending_reviews(cursor=None):
         from ai.analyzer import has_problem_context
         from ai.auto_reply_templates import generate_auto_reply_for_review
         
+        # Atualiza respostas legadas para a nomenclatura solicitada: "Canal de Suporte Oficial: 👉 {url}"
+        cursor.execute("""
+            UPDATE reviews 
+            SET ai_suggested_response = REPLACE(
+                REPLACE(ai_suggested_response, 
+                    'Canal de Suporte Oficial citado pela IA (Formulário Prodemge):', 
+                    'Canal de Suporte Oficial:'
+                ),
+                'Canal de Suporte Oficial (Formulário Prodemge):', 
+                'Canal de Suporte Oficial:'
+            )
+            WHERE ai_suggested_response LIKE '%Canal de Suporte Oficial%'
+        """)
+
         cursor.execute("SELECT * FROM reviews WHERE status != 'respondida'")
         rows = [dict(r) for r in cursor.fetchall()]
         
