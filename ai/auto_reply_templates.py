@@ -1,7 +1,7 @@
 import re
 from typing import Dict, Any, List, Optional
 from database.db import get_connection, get_setting
-from ai.analyzer import has_problem_context
+from ai.analyzer import has_problem_context, strip_support_link
 
 # Configuração e descrição detalhada de cada causa-raiz com templates para todas as estrelas
 OFFICIAL_SUPPORT_FORM = "https://forms.cloud.microsoft/r/JmZhSzXtwG"
@@ -210,6 +210,9 @@ def generate_auto_reply_for_review(review: Dict[str, Any], root_cause_id: Option
             f"{formatted} Para que possamos analisar e solucionar sua situação, por favor acesse o "
             f"Canal de Suporte Oficial: 👉 {canal_contato}"
         )
+    elif not is_problem and rating >= 4:
+        # Se for 4 ou 5 estrelas sem menção de problema/dificuldade, NUNCA exibe link de formulário
+        formatted = strip_support_link(formatted)
 
     # Substitui formatos legados para o formato novo padrão
     formatted = re.sub(

@@ -139,7 +139,9 @@ def ensure_support_channel_in_pending_reviews(cursor=None):
         """)
 
         cursor.execute("SELECT * FROM reviews WHERE status != 'respondida'")
-        rows = [dict(r) for r in cursor.fetchall()]
+        raw_rows = cursor.fetchall()
+        cols = [col[0] for col in cursor.description]
+        rows = [dict(r) if hasattr(r, 'keys') else dict(zip(cols, r)) for r in raw_rows]
         
         for r in rows:
             rating = r.get("rating", 3)
@@ -149,6 +151,14 @@ def ensure_support_channel_in_pending_reviews(cursor=None):
             if has_problem_context(content, rating):
                 if "forms.cloud.microsoft" not in current_resp and "JmZhSzXtwG" not in current_resp:
                     new_resp = generate_auto_reply_for_review(r)
+                    cursor.execute("""
+                        UPDATE reviews SET ai_suggested_response = ? WHERE id = ?
+                    """, (new_resp, r["id"]))
+            else:
+                # 4 ou 5 estrelas sem menção de problemas/dificuldades: se contiver link do formulário, remove!
+                if "forms.cloud.microsoft" in current_resp or "Canal de Suporte Oficial" in current_resp or "JmZhSzXtwG" in current_resp:
+                    from ai.analyzer import strip_support_link
+                    new_resp = strip_support_link(current_resp)
                     cursor.execute("""
                         UPDATE reviews SET ai_suggested_response = ? WHERE id = ?
                     """, (new_resp, r["id"]))
