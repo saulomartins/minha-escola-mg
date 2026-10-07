@@ -25,11 +25,15 @@ from database.db import (
     get_setting, set_setting, get_all_settings, get_connection,
     list_users, get_user_by_id, get_user_by_email, upsert_user,
     update_user_status, update_user_role, delete_user, SUPER_ADMIN_EMAIL,
-    bulk_import_users, get_users_env_string
+    bulk_import_users, get_users_env_string,
+    create_access_token, get_access_token_by_token, get_access_token_by_id,
+    record_access_token_usage, list_access_tokens, toggle_access_token_status,
+    delete_access_token
 )
 from auth.google_auth import (
     get_google_client_id, create_session_token, decode_session_token,
-    authenticate_google_user, dev_login_admin, SESSION_COOKIE_NAME
+    authenticate_google_user, dev_login_admin, SESSION_COOKIE_NAME,
+    create_guest_session_token, SESSION_DURATION_DAYS
 )
 from analytics.device_detector import detect_device_and_os
 from collector.play_console_importer import import_play_console_csv
@@ -132,6 +136,17 @@ class UserStatusRequest(BaseModel):
 class UserRoleRequest(BaseModel):
     role: str
 
+class TokenLoginRequest(BaseModel):
+    token: str
+
+class CreateTokenRequest(BaseModel):
+    label: str
+    token: Optional[str] = None
+    expires_in_days: Optional[int] = None
+
+class ToggleTokenStatusRequest(BaseModel):
+    is_active: bool
+
 class UpdateReviewDeviceRequest(BaseModel):
     device_brand: Optional[str] = None
     device_model: Optional[str] = None
@@ -149,6 +164,35 @@ def get_current_user_from_request(request: Request) -> Optional[Dict[str, Any]]:
     payload = decode_session_token(token)
     if not payload:
         return None
+
+    # 1. Usuário Convidado via Token de Acesso
+    if payload.get("is_token_guest"):
+        token_str = payload.get("token_str")
+        if not token_str:
+            return None
+        token_db = get_access_token_by_token(token_str)
+        if not token_db or not token_db.get("is_active"):
+            return None
+        if token_db.get("expires_at"):
+            try:
+                exp_dt = datetime.fromisoformat(token_db["expires_at"])
+                if datetime.utcnow() > exp_dt:
+                    return None
+            except Exception:
+                pass
+        return {
+            "id": f"token_{token_db['id']}",
+            "email": f"convidado_{token_db['token'].lower()}@token.local",
+            "name": token_db.get("label") or "Convidado por Token",
+            "role": "viewer",
+            "picture": "",
+            "is_token_guest": True,
+            "token_id": token_db["id"],
+            "token_str": token_db["token"],
+            "status": "approved"
+        }
+
+    # 2. Usuário Autenticado via Conta Google
     user_id = payload.get("sub")
     user_db = None
     if user_id:
@@ -159,10 +203,11 @@ def get_current_user_from_request(request: Request) -> Optional[Dict[str, Any]]:
     if not user_db and payload.get("email"):
         user_db = get_user_by_email(payload["email"])
 
-    # Se for o super admin, sempre garante acesso admin ativo
-    if payload.get("email", "").lower() == SUPER_ADMIN_EMAIL.lower():
+    user_email = (payload.get("email") or "").lower()
+    # Se for o super admin ou mgminhaescola@gmail.com, sempre garante acesso admin ativo
+    if user_email in [SUPER_ADMIN_EMAIL.lower(), "mgminhaescola@gmail.com"]:
         if not user_db:
-            user_db = upsert_user(SUPER_ADMIN_EMAIL, name="Saulo Martins Costa", role="admin", status="approved", added_by="system")
+            user_db = upsert_user(user_email, name="Administrador", role="admin", status="approved", added_by="system")
         else:
             user_db["role"] = "admin"
             user_db["status"] = "approved"
@@ -175,9 +220,76 @@ def require_admin(request: Request) -> Dict[str, Any]:
     user = get_current_user_from_request(request)
     if not user:
         raise HTTPException(status_code=401, detail="Sessão não autenticada. Faça login com sua conta Google.")
-    if user.get("role") != "admin":
+    if user.get("role") != "admin" or user.get("is_token_guest"):
         raise HTTPException(status_code=403, detail="Acesso restrito ao Administrador do Sistema.")
     return user
+
+def require_auth(request: Request) -> Dict[str, Any]:
+    user = get_current_user_from_request(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Acesso restrito. Faça login ou informe um token de acesso válido.")
+    return user
+
+@app.middleware("http")
+async def auth_gate_middleware(request: Request, call_next):
+    """Barreira de acesso: protege o dashboard e APIs contra acessos públicos anônimos."""
+    path = request.url.path
+
+    # Rotas públicas que não exigem login prévio
+    if (
+        path in [
+            "/login",
+            "/api/auth/google",
+            "/api/auth/token-login",
+            "/api/auth/dev-login",
+            "/logout",
+            "/favicon.ico"
+        ]
+        or path.startswith("/static")
+    ):
+        return await call_next(request)
+
+    # 1. Validação de token direto na URL (ex: /?access_token=SEE-2026 ou /?token=...)
+    token_param = request.query_params.get("access_token") or request.query_params.get("token")
+    if token_param:
+        token_obj = get_access_token_by_token(token_param.strip())
+        if token_obj and token_obj.get("is_active"):
+            is_expired = False
+            if token_obj.get("expires_at"):
+                try:
+                    exp_dt = datetime.fromisoformat(token_obj["expires_at"])
+                    if datetime.utcnow() > exp_dt:
+                        is_expired = True
+                except Exception:
+                    pass
+            if not is_expired:
+                record_access_token_usage(token_obj["id"])
+                session_tok = create_guest_session_token(token_obj)
+                res = RedirectResponse(url="/", status_code=302)
+                res.set_cookie(
+                    key=SESSION_COOKIE_NAME,
+                    value=session_tok,
+                    httponly=True,
+                    max_age=SESSION_DURATION_DAYS * 86400,
+                    samesite="lax",
+                    secure=False
+                )
+                return res
+
+    # 2. Validação da sessão do usuário
+    user = get_current_user_from_request(request)
+    request.state.user = user
+
+    if not user:
+        if path.startswith("/api/"):
+            return JSONResponse(
+                status_code=401,
+                content={"error": "Acesso restrito. Informe um token de acesso válido ou faça login."}
+            )
+        # Redireciona visitantes não autenticados para a tela de login
+        return RedirectResponse(url="/login", status_code=302)
+
+    return await call_next(request)
 
 # ==============================================================================
 # ROTAS DE AUTENTICAÇÃO (GOOGLE SIGN-IN)
@@ -262,22 +374,59 @@ async def api_auth_dev_login():
     )
     return res
 
+@app.post("/api/auth/token-login")
+async def api_auth_token_login(req: TokenLoginRequest):
+    """Autentica um visitante utilizando um token de acesso compartilhado."""
+    token_str = (req.token or "").strip()
+    if not token_str:
+        raise HTTPException(status_code=400, detail="Informe o token de acesso.")
+    
+    token_obj = get_access_token_by_token(token_str)
+    if not token_obj:
+        raise HTTPException(status_code=401, detail="Token de acesso incorreto ou não encontrado.")
+    
+    if not token_obj.get("is_active"):
+        raise HTTPException(status_code=403, detail="Este token de acesso foi desativado pelo administrador.")
+        
+    if token_obj.get("expires_at"):
+        try:
+            exp_dt = datetime.fromisoformat(token_obj["expires_at"])
+            if datetime.utcnow() > exp_dt:
+                raise HTTPException(status_code=403, detail="Este token de acesso expirou.")
+        except Exception:
+            pass
+
+    record_access_token_usage(token_obj["id"])
+    session_tok = create_guest_session_token(token_obj)
+    
+    res = JSONResponse({
+        "status": "ok",
+        "label": token_obj.get("label"),
+        "role": "viewer"
+    })
+    res.set_cookie(
+        key=SESSION_COOKIE_NAME,
+        value=session_tok,
+        httponly=True,
+        max_age=SESSION_DURATION_DAYS * 86400,
+        samesite="lax",
+        secure=False
+    )
+    return res
+
 @app.get("/logout")
 async def logout():
-    """Acesso livre: redireciona para a página inicial"""
-    res = RedirectResponse(url="/", status_code=302)
+    """Encerra a sessão e redireciona para a tela de login"""
+    res = RedirectResponse(url="/login", status_code=302)
     res.delete_cookie(SESSION_COOKIE_NAME)
     return res
 
 @app.get("/api/auth/me")
 async def api_auth_me(request: Request):
-    """Retorna os dados do usuário atual ou visitante de acesso livre"""
-    user = get_current_user_from_request(request) or {
-        "email": "acesso.livre@prodemge.gov.br",
-        "name": "Acesso Livre",
-        "role": "viewer",
-        "picture": ""
-    }
+    """Retorna os dados do usuário autenticado atual"""
+    user = get_current_user_from_request(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Não autenticado.")
     return user
 
 # ==============================================================================
@@ -386,17 +535,52 @@ async def api_admin_delete_user(user_id: int, request: Request):
     return {"status": "ok"}
 
 # ==============================================================================
+# GESTÃO DE TOKENS DE ACESSO (ADMIN EXCLUSIVE)
+# ==============================================================================
+
+@app.get("/api/admin/tokens")
+def api_admin_list_tokens(request: Request):
+    """Lista todos os tokens de acesso de convidados."""
+    require_admin(request)
+    return list_access_tokens()
+
+@app.post("/api/admin/tokens")
+def api_admin_create_token(req: CreateTokenRequest, request: Request):
+    """Cria uma nova chave ou token de acesso de convidado."""
+    admin = require_admin(request)
+    if not req.label or not req.label.strip():
+        raise HTTPException(status_code=400, detail="O nome/identificação do token é obrigatório.")
+    new_token = create_access_token(
+        label=req.label,
+        token_code=req.token,
+        created_by=admin.get("email") or "admin",
+        expires_days=req.expires_in_days
+    )
+    return new_token
+
+@app.post("/api/admin/tokens/{token_id}/status")
+def api_admin_toggle_token_status(token_id: str, req: ToggleTokenStatusRequest, request: Request):
+    """Ativa ou desativa um token de acesso de convidado."""
+    require_admin(request)
+    toggle_access_token_status(token_id, req.is_active)
+    return {"status": "ok", "token_id": token_id, "is_active": req.is_active}
+
+@app.delete("/api/admin/tokens/{token_id}")
+def api_admin_delete_token(token_id: str, request: Request):
+    """Exclui permanentemente um token de acesso."""
+    require_admin(request)
+    delete_access_token(token_id)
+    return {"status": "ok", "deleted": token_id}
+
+# ==============================================================================
 # PÁGINA PRINCIPAL DO SISTEMA
 # ==============================================================================
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    user = get_current_user_from_request(request) or {
-        "email": "acesso.livre@prodemge.gov.br",
-        "name": "Acesso Livre",
-        "role": "viewer",
-        "picture": ""
-    }
+    user = get_current_user_from_request(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
     return templates.TemplateResponse(
         request=request,
         name="index.html",

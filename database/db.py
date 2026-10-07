@@ -1,7 +1,9 @@
 import sqlite3
 import os
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
+import hashlib
+import secrets
 from typing import List, Dict, Any, Optional
 
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "reviews.db")
@@ -306,6 +308,43 @@ def init_db():
         cursor.execute("ALTER TABLE support_tickets ADD COLUMN root_cause_id TEXT;")
     except Exception:
         pass
+
+    # Tabela de Tokens de Acesso de Convidados
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS access_tokens (
+        id TEXT PRIMARY KEY,
+        token TEXT UNIQUE NOT NULL,
+        label TEXT NOT NULL,
+        created_by TEXT,
+        created_at TEXT NOT NULL,
+        expires_at TEXT,
+        is_active INTEGER DEFAULT 1,
+        last_used_at TEXT,
+        usage_count INTEGER DEFAULT 0
+    );
+    """)
+
+    # Cria token padrão inicial caso a tabela esteja vazia
+    try:
+        cursor.execute("SELECT COUNT(*) FROM access_tokens")
+        if cursor.fetchone()[0] == 0:
+            cursor.execute("""
+            INSERT INTO access_tokens (
+                id, token, label, created_by, created_at, expires_at, is_active, last_used_at, usage_count
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                "tok_default_initial",
+                "MINHAESCOLA-SEE-2026",
+                "Acesso Geral SEE / Prodemge",
+                "mgminhaescola@gmail.com",
+                now_iso,
+                None,
+                1,
+                None,
+                0
+            ))
+    except Exception as e:
+        print(f"Erro ao inicializar token padrão: {e}")
 
     # Popula chamados do Fale Conosco na primeira inicialização se tabela estiver vazia
     try:
@@ -1777,5 +1816,105 @@ def get_fale_conosco_analytics() -> Dict[str, Any]:
         "keywords": [{"word": k, "count": v} for k, v in keywords.most_common(20)],
         "top_repeat_students": top_repeat[:10]
     }
+
+
+# ==============================================================================
+# GESTÃO DE TOKENS DE ACESSO (CONVIDADOS & GESTORES)
+# ==============================================================================
+
+def create_access_token(
+    label: str,
+    token_code: Optional[str] = None,
+    created_by: str = "mgminhaescola@gmail.com",
+    expires_days: Optional[int] = None
+) -> Dict[str, Any]:
+    """Cria um novo token de acesso para visitantes/convidados."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    now = datetime.utcnow()
+    now_iso = now.isoformat()
+    
+    if not token_code or not token_code.strip():
+        token_code = "SEE-" + secrets.token_hex(4).upper()
+    else:
+        token_code = token_code.strip().upper().replace(" ", "-")
+        
+    token_id = "tok_" + hashlib.md5(f"{token_code}_{now_iso}".encode('utf-8')).hexdigest()[:12]
+    
+    expires_at = None
+    if expires_days and expires_days > 0:
+        exp_dt = now + timedelta(days=expires_days)
+        expires_at = exp_dt.isoformat()
+        
+    cursor.execute("""
+    INSERT INTO access_tokens (id, token, label, created_by, created_at, expires_at, is_active, last_used_at, usage_count)
+    VALUES (?, ?, ?, ?, ?, ?, 1, NULL, 0)
+    """, (token_id, token_code, label.strip(), created_by, now_iso, expires_at))
+    conn.commit()
+    
+    cursor.execute("SELECT * FROM access_tokens WHERE id = ?", (token_id,))
+    row = dict(cursor.fetchone())
+    conn.close()
+    return row
+
+def get_access_token_by_token(token_str: str) -> Optional[Dict[str, Any]]:
+    """Busca token pelo código exato (case-insensitive)."""
+    if not token_str:
+        return None
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM access_tokens WHERE UPPER(TRIM(token)) = ?", (token_str.strip().upper(),))
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def get_access_token_by_id(token_id: str) -> Optional[Dict[str, Any]]:
+    """Busca token pelo ID primário."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM access_tokens WHERE id = ?", (token_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def record_access_token_usage(token_id: str):
+    """Incrementa contador de uso e atualiza timestamp de último acesso."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    now_iso = datetime.utcnow().isoformat()
+    cursor.execute("""
+    UPDATE access_tokens 
+    SET usage_count = usage_count + 1, last_used_at = ? 
+    WHERE id = ?
+    """, (now_iso, token_id))
+    conn.commit()
+    conn.close()
+
+def list_access_tokens() -> List[Dict[str, Any]]:
+    """Lista todos os tokens cadastrados, ordenados por data de criação."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM access_tokens ORDER BY created_at DESC")
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return rows
+
+def toggle_access_token_status(token_id: str, is_active: bool) -> bool:
+    """Ativa ou desativa um token de acesso."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE access_tokens SET is_active = ? WHERE id = ?", (1 if is_active else 0, token_id))
+    conn.commit()
+    conn.close()
+    return True
+
+def delete_access_token(token_id: str) -> bool:
+    """Remove permanentemente um token de acesso."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM access_tokens WHERE id = ?", (token_id,))
+    conn.commit()
+    conn.close()
+    return True
 
 

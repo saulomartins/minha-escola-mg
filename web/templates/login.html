@@ -212,7 +212,35 @@
             <div id="alert-content"></div>
         </div>
 
-        <!-- Botão Google Oficial (Google Identity Services) -->
+        <!-- Opção 1: Acesso por Token (Convidados / Gestores) -->
+        <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(59, 130, 246, 0.35); border-radius: 14px; padding: 22px 20px; margin-bottom: 24px; text-align: left; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                <span style="font-size: 1.15rem;">🔑</span>
+                <strong style="color: #ffffff; font-size: 0.95rem;">Acesso via Token</strong>
+                <span style="background: rgba(16, 185, 129, 0.2); color: #6ee7b7; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 9999px; margin-left: auto; border: 1px solid rgba(16, 185, 129, 0.3);">Sem Cadastro</span>
+            </div>
+            <p style="color: #94a3b8; font-size: 0.82rem; margin-bottom: 14px; line-height: 1.45;">
+                Recebeu uma chave ou código de visualização do gestor? Insira abaixo para acessar o painel diretamente:
+            </p>
+            <div style="display: flex; gap: 10px; flex-direction: column;">
+                <input type="text" id="input-token" placeholder="Ex: MINHAESCOLA-SEE-2026" 
+                       style="width: 100%; padding: 12px 14px; background: rgba(30, 41, 59, 0.9); border: 1px solid #334155; border-radius: 8px; color: #ffffff; font-size: 0.92rem; font-weight: 600; letter-spacing: 0.05em; outline: none; transition: border 0.2s;"
+                       onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#334155'"
+                       onkeypress="if(event.key === 'Enter') submitTokenLogin()">
+                <button onclick="submitTokenLogin()" id="btn-submit-token"
+                        style="width: 100%; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; border: none; border-radius: 8px; padding: 12px; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <span>Entrar no Painel com Token</span> →
+                </button>
+            </div>
+        </div>
+
+        <div style="display: flex; align-items: center; margin: 20px 0; color: #64748b; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;">
+            <div style="flex: 1; height: 1px; background: #334155;"></div>
+            <span style="padding: 0 12px;">ou Acesso Administrativo</span>
+            <div style="flex: 1; height: 1px; background: #334155;"></div>
+        </div>
+
+        <!-- Opção 2: Botão Google Oficial (Google Identity Services) -->
         {% if google_client_id %}
         <div class="auth-box">
             <div id="g_id_onload"
@@ -243,22 +271,16 @@
         {% if not google_client_id %}
         <!-- Botão de Acesso Direto como Administrador (Visível apenas se o Google Client ID não estiver configurado) -->
         <div class="dev-container">
-            <p><strong>Administrador Geral Registrado:</strong><br><code>saulomartins.costa@gmail.com</code></p>
+            <p><strong>Administrador Geral Registrado:</strong><br><code>saulomartins.costa@gmail.com / mgminhaescola@gmail.com</code></p>
             <button class="btn-dev" onclick="devLogin()">
                 👑 Entrar como Administrador Geral
             </button>
         </div>
         {% endif %}
 
-        <div style="margin: 20px 0 10px 0;">
-            <a href="/" style="color: #93c5fd; text-decoration: none; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
-                ← Voltar ao Painel (Modo Visualização Pública)
-            </a>
-        </div>
-
         <div class="notice-box">
             <strong>🔒 Política de Acesso e Privacidade:</strong><br>
-            Este sistema contém dados analíticos institucionais. O acesso é restrito e monitorado. Somente contas Gmail previamente cadastradas ou autorizadas pelo Administrador possuem permissão de entrada.
+            Este sistema contém dados analíticos institucionais e chamados de suporte. O acesso público é restrito. É obrigatório apresentar um Token de Acesso válido ou autenticar-se com a conta Google de administrador.
         </div>
 
         <div class="footer-note">
@@ -267,6 +289,44 @@
     </div>
 
     <script>
+        // Login com Token de Acesso Compartilhado
+        async function submitTokenLogin() {
+            const tokenInput = document.getElementById("input-token");
+            const tokenVal = (tokenInput ? tokenInput.value : "").trim();
+            if (!tokenVal) {
+                showAlert("Por favor, digite o Token de Acesso.", "warning");
+                return;
+            }
+
+            const btn = document.getElementById("btn-submit-token");
+            if (btn) {
+                btn.disabled = true;
+                btn.innerText = "Validando Token...";
+            }
+
+            try {
+                const res = await fetch("/api/auth/token-login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ token: tokenVal })
+                });
+                const data = await res.json();
+                if (res.ok && data.status === "ok") {
+                    showAlert(`✅ Token validado! Bem-vindo(a), <strong>${data.label || 'Convidado'}</strong>. Entrando...`, "info");
+                    window.location.href = "/";
+                } else {
+                    showAlert(`❌ ${data.detail || data.error || "Token de acesso incorreto ou expirado."}`, "danger");
+                }
+            } catch (err) {
+                showAlert("Erro ao conectar com o servidor: " + err.message, "danger");
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = "<span>Entrar no Painel com Token</span> →";
+                }
+            }
+        }
+
         // Callback executado pelo Google Identity Services após login bem-sucedido
         async function handleGoogleLogin(response) {
             const credential = response.credential;
@@ -331,6 +391,22 @@
             content.innerHTML = htmlMessage;
             box.style.display = "block";
         }
+
+        // Auto-check se a URL veio com parâmetro de token
+        window.addEventListener("DOMContentLoaded", () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const tok = urlParams.get("access_token") || urlParams.get("token");
+            if (tok) {
+                const input = document.getElementById("input-token");
+                if (input) {
+                    input.value = tok;
+                    submitTokenLogin();
+                }
+            }
+            if (urlParams.get("error") === "token_invalido") {
+                showAlert("O link com token utilizado é inválido, expirou ou foi revogado.", "danger");
+            }
+        });
     </script>
 </body>
 </html>

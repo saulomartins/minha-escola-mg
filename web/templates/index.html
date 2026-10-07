@@ -121,6 +121,11 @@
                 <button onclick="analyzeAllPending()" id="btn-analyze" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow transition flex items-center gap-2">
                     <i class="fa-solid fa-wand-magic-sparkles"></i> Analisar com IA
                 </button>
+                {% if current_user and (current_user.email.lower() == 'mgminhaescola@gmail.com' or current_user.email.lower() == 'saulomartins.costa@gmail.com' or current_user.role == 'admin') and not current_user.is_token_guest %}
+                <button onclick="openTokensModal()" class="bg-amber-600 hover:bg-amber-500 text-white text-sm font-semibold px-3 py-2 rounded-lg shadow transition flex items-center gap-2 border border-amber-500/80" title="Gerenciar Chaves e Links de Acesso Seguro para Convidados">
+                    <i class="fa-solid fa-key"></i> Tokens de Acesso
+                </button>
+                {% endif %}
                 <button onclick="openSettingsModal()" class="bg-slate-700 hover:bg-slate-600 text-white text-sm font-semibold px-3 py-2 rounded-lg shadow transition flex items-center gap-2">
                     <i class="fa-solid fa-gear"></i> Configurações & Conexões
                 </button>
@@ -142,7 +147,23 @@
                         <span class="hidden sm:inline">Sair</span>
                     </a>
                 </div>
-                {% elif current_user and current_user.email != 'acesso.livre@prodemge.gov.br' %}
+                {% elif current_user and current_user.is_token_guest %}
+                <div class="flex items-center gap-2 pl-2 border-l border-indigo-700 ml-1">
+                    <div class="flex items-center gap-2 bg-indigo-950/80 px-3 py-1.5 rounded-lg border border-cyan-500/60 text-xs shadow-sm">
+                        <div class="w-6 h-6 rounded-full bg-cyan-600 flex items-center justify-center font-bold text-white text-[11px] shadow-sm">
+                            <i class="fa-solid fa-key text-[10px]"></i>
+                        </div>
+                        <div class="text-left hidden sm:block">
+                            <p class="font-bold leading-tight text-cyan-200 truncate max-w-[150px]">{{ current_user.name }}</p>
+                            <p class="text-[10px] text-cyan-400 font-semibold flex items-center gap-1"><i class="fa-solid fa-circle text-[7px] text-emerald-400"></i> Convidado via Token</p>
+                        </div>
+                    </div>
+                    <a href="/logout" class="bg-rose-900/80 hover:bg-rose-800 text-rose-200 hover:text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 border border-rose-700/60 shadow-sm" title="Sair do painel">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                        <span class="hidden sm:inline">Sair</span>
+                    </a>
+                </div>
+                {% elif current_user %}
                 <div class="flex items-center gap-2 pl-2 border-l border-indigo-700 ml-1">
                     <div class="flex items-center gap-2 bg-indigo-950/70 px-3 py-1.5 rounded-lg border border-indigo-700/60 text-xs">
                         <div class="w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center font-bold text-white uppercase text-[10px] shadow-sm">
@@ -150,27 +171,12 @@
                         </div>
                         <div class="text-left hidden sm:block">
                             <p class="font-bold leading-tight text-slate-100 max-w-[140px] truncate">{{ current_user.name or current_user.email }}</p>
-                            <p class="text-[10px] text-indigo-300">Leitor</p>
+                            <p class="text-[10px] text-indigo-300">{{ 'Administrador' if current_user.role == 'admin' else 'Leitor' }}</p>
                         </div>
                     </div>
                     <a href="/logout" class="bg-rose-900/80 hover:bg-rose-800 text-rose-200 hover:text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 border border-rose-700/60 shadow-sm" title="Sair do sistema">
                         <i class="fa-solid fa-arrow-right-from-bracket"></i>
                         <span class="hidden sm:inline">Sair</span>
-                    </a>
-                </div>
-                {% else %}
-                <div class="flex items-center gap-2 pl-2 border-l border-indigo-700 ml-1">
-                    <div class="flex items-center gap-2 bg-emerald-950/70 px-3 py-1.5 rounded-lg border border-emerald-500/50 text-xs">
-                        <div class="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center font-bold text-white text-[10px] shadow-sm">
-                            <i class="fa-solid fa-lock-open text-[10px]"></i>
-                        </div>
-                        <div class="text-left hidden sm:block">
-                            <p class="font-bold leading-tight text-emerald-100">Acesso Livre</p>
-                            <p class="text-[10px] text-emerald-300 font-semibold">Visualização</p>
-                        </div>
-                    </div>
-                    <a href="/login" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 border border-indigo-400 shadow-sm" title="Entrar com a conta mgminhaescola@gmail.com para publicar respostas">
-                        <i class="fa-solid fa-arrow-right-to-bracket"></i> Entrar
                     </a>
                 </div>
                 {% endif %}
@@ -7169,5 +7175,286 @@ async function uploadPlayConsoleCsv(input) {
         </div>
     </div>
 
+    <!-- Modal Gestão de Tokens de Acesso -->
+    <div id="modal-tokens" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full p-6 space-y-5 my-8 border border-slate-200">
+            <!-- Cabeçalho -->
+            <div class="flex justify-between items-center border-b border-slate-100 pb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-lg font-bold shadow-sm border border-amber-200">
+                        <i class="fa-solid fa-key"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-black text-slate-900">Chaves & Tokens de Acesso para Convidados</h3>
+                        <p class="text-xs text-slate-500">Compartilhe links diretos ou códigos para liberar o painel sem exigir login com Google.</p>
+                    </div>
+                </div>
+                <button onclick="closeTokensModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold p-1 rounded-lg hover:bg-slate-100 transition">&times;</button>
+            </div>
+
+            <!-- Card de Criação de Novo Token -->
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                <div class="flex items-center justify-between">
+                    <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-plus-circle text-amber-600"></i> Gerar Novo Token / Link de Acesso
+                    </h4>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Nome / Identificação *</label>
+                        <input type="text" id="token-new-label" placeholder="Ex: Diretoria SEE, Equipe TI..." class="w-full text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 font-medium">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Código Personalizado (Opcional)</label>
+                        <input type="text" id="token-new-code" placeholder="Ex: SEE-GESTAO-2026" class="w-full text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 font-mono uppercase">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Validade do Token</label>
+                        <select id="token-new-expires" class="w-full text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 font-medium">
+                            <option value="0">Sem Expiração (Permanente)</option>
+                            <option value="7">Expira em 7 dias</option>
+                            <option value="30">Expira em 30 dias</option>
+                            <option value="90">Expira em 90 dias</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex justify-end pt-1">
+                    <button onclick="submitCreateToken()" id="btn-create-token" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-lg shadow-sm transition flex items-center gap-2">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Gerar Chave de Acesso
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tabela de Tokens Existentes -->
+            <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                    <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-list-check text-slate-500"></i> Tokens Ativos & Histórico
+                    </h4>
+                    <button onclick="loadTokensList()" class="text-xs text-amber-700 hover:text-amber-800 font-semibold flex items-center gap-1 hover:underline">
+                        <i class="fa-solid fa-arrows-rotate text-[11px]"></i> Atualizar Lista
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto border border-slate-200 rounded-xl max-h-72 overflow-y-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 sticky top-0">
+                            <tr>
+                                <th class="p-3">Identificação</th>
+                                <th class="p-3">Código & Link Direto</th>
+                                <th class="p-3 text-center">Usos</th>
+                                <th class="p-3">Validade</th>
+                                <th class="p-3 text-center">Status</th>
+                                <th class="p-3 text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tokens-table-tbody" class="divide-y divide-slate-100 bg-white">
+                            <tr>
+                                <td colspan="6" class="p-4 text-center text-slate-400">Carregando tokens...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Rodapé com Botão Fechar -->
+            <div class="flex justify-between items-center pt-3 border-t border-slate-100 text-xs text-slate-500">
+                <span class="flex items-center gap-1.5">
+                    <i class="fa-solid fa-shield-halved text-emerald-600"></i>
+                    Acesso de convidado é somente leitura (sem permissão de alterar dados ou publicar).
+                </span>
+                <button onclick="closeTokensModal()" class="px-4 py-2 font-bold text-slate-600 hover:bg-slate-100 rounded-lg transition">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openTokensModal() {
+            document.getElementById('modal-tokens')?.classList.remove('hidden');
+            loadTokensList();
+        }
+
+        function closeTokensModal() {
+            document.getElementById('modal-tokens')?.classList.add('hidden');
+        }
+
+        async function loadTokensList() {
+            const tbody = document.getElementById('tokens-table-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Carregando tokens...</td></tr>';
+
+            try {
+                const res = await fetch('/api/admin/tokens');
+                if (!res.ok) {
+                    if (res.status === 403 || res.status === 401) {
+                        tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-rose-500 font-bold">Apenas administradores podem gerenciar tokens.</td></tr>';
+                        return;
+                    }
+                    throw new Error('Falha ao carregar lista de tokens');
+                }
+                const tokens = await res.json();
+                if (!tokens || tokens.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-500 italic">Nenhum token criado até o momento.</td></tr>';
+                    return;
+                }
+
+                const baseUrl = window.location.origin;
+
+                tbody.innerHTML = tokens.map(t => {
+                    const directLink = `${baseUrl}/?access_token=${encodeURIComponent(t.token)}`;
+                    const isExpired = t.expires_at && new Date(t.expires_at) < new Date();
+                    
+                    let statusBadge = '';
+                    if (!t.is_active) {
+                        statusBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">Revogado</span>';
+                    } else if (isExpired) {
+                        statusBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">Expirado</span>';
+                    } else {
+                        statusBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Ativo</span>';
+                    }
+
+                    const expText = t.expires_at ? new Date(t.expires_at).toLocaleDateString('pt-BR') : 'Permanente';
+                    const lastUsed = t.last_used_at ? new Date(t.last_used_at).toLocaleDateString('pt-BR') + ' às ' + new Date(t.last_used_at).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}) : 'Nunca usado';
+
+                    return `
+                        <tr class="hover:bg-slate-50 transition">
+                            <td class="p-3 align-middle font-bold text-slate-800">
+                                <div>${escapeHtml(t.label)}</div>
+                                <div class="text-[10px] text-slate-400 font-normal">Criado em: ${new Date(t.created_at).toLocaleDateString('pt-BR')}</div>
+                            </td>
+                            <td class="p-3 align-middle">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="font-mono text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 select-all">${escapeHtml(t.token)}</span>
+                                    <button onclick="copyDirectTokenLink('${escapeHtml(directLink)}')" class="px-2 py-0.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 rounded text-[10px] font-bold transition flex items-center gap-1 cursor-pointer" title="Copiar link direto pronto para enviar pelo WhatsApp/E-mail">
+                                        <i class="fa-solid fa-link text-[10px]"></i> Copiar Link
+                                    </button>
+                                </div>
+                            </td>
+                            <td class="p-3 align-middle text-center">
+                                <span class="font-bold text-slate-700">${t.usage_count}</span>
+                                <div class="text-[10px] text-slate-400" title="${lastUsed}">Último: ${t.last_used_at ? new Date(t.last_used_at).toLocaleDateString('pt-BR') : '-'}</div>
+                            </td>
+                            <td class="p-3 align-middle text-slate-600 font-medium">
+                                ${expText}
+                            </td>
+                            <td class="p-3 align-middle text-center">
+                                ${statusBadge}
+                            </td>
+                            <td class="p-3 align-middle text-center">
+                                <div class="flex items-center justify-center gap-1">
+                                    <button onclick="toggleTokenActive('${t.id}', ${t.is_active ? 0 : 1})" class="p-1.5 rounded hover:bg-slate-100 text-xs transition cursor-pointer ${t.is_active ? 'text-amber-600 hover:text-amber-800' : 'text-emerald-600 hover:text-emerald-800'}" title="${t.is_active ? 'Desativar / Revogar acesso' : 'Reativar token'}">
+                                        <i class="fa-solid ${t.is_active ? 'fa-ban' : 'fa-circle-check'}"></i>
+                                    </button>
+                                    <button onclick="deleteTokenItem('${t.id}')" class="p-1.5 rounded hover:bg-slate-100 text-xs text-rose-500 hover:text-rose-700 transition cursor-pointer" title="Excluir token permanentemente">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-rose-500">Erro: ${escapeHtml(err.message)}</td></tr>`;
+            }
+        }
+
+        async function submitCreateToken() {
+            const labelInput = document.getElementById('token-new-label');
+            const codeInput = document.getElementById('token-new-code');
+            const expSelect = document.getElementById('token-new-expires');
+
+            const label = (labelInput?.value || '').trim();
+            if (!label) {
+                showAlert('Por favor, informe a identificação/nome de quem receberá o token.', 'warning');
+                return;
+            }
+
+            const tokenCode = (codeInput?.value || '').trim();
+            const expDays = parseInt(expSelect?.value || '0', 10);
+
+            const btn = document.getElementById('btn-create-token');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Gerando...';
+            }
+
+            try {
+                const res = await fetch('/api/admin/tokens', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        label: label,
+                        token: tokenCode || null,
+                        expires_in_days: expDays > 0 ? expDays : null
+                    })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    showAlert(`Chave de acesso <strong>${data.token}</strong> gerada com sucesso para <strong>${data.label}</strong>!`);
+                    if (labelInput) labelInput.value = '';
+                    if (codeInput) codeInput.value = '';
+                    await loadTokensList();
+                } else {
+                    const err = await res.json();
+                    showAlert(err.detail || 'Erro ao criar token.', 'error');
+                }
+            } catch (err) {
+                showAlert('Erro de conexão: ' + err.message, 'error');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Gerar Chave de Acesso';
+                }
+            }
+        }
+
+        async function toggleTokenActive(tokenId, newStatus) {
+            try {
+                const res = await fetch(`/api/admin/tokens/${tokenId}/status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ is_active: !!newStatus })
+                });
+                if (res.ok) {
+                    showAlert(`Status do token atualizado para ${newStatus ? 'Ativo' : 'Revogado'}.`);
+                    await loadTokensList();
+                } else {
+                    showAlert('Falha ao atualizar token.', 'error');
+                }
+            } catch (err) {
+                showAlert('Erro: ' + err.message, 'error');
+            }
+        }
+
+        async function deleteTokenItem(tokenId) {
+            if (!confirm('Deseja realmente excluir este token de acesso? O link deixará de funcionar imediatamente.')) {
+                return;
+            }
+            try {
+                const res = await fetch(`/api/admin/tokens/${tokenId}`, { method: 'DELETE' });
+                if (res.ok) {
+                    showAlert('Token de acesso excluído com sucesso.');
+                    await loadTokensList();
+                } else {
+                    showAlert('Falha ao excluir token.', 'error');
+                }
+            } catch (err) {
+                showAlert('Erro: ' + err.message, 'error');
+            }
+        }
+
+        function copyDirectTokenLink(url) {
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(url).then(() => {
+                    showAlert('Link de acesso direto copiado! Você pode colar e enviar por WhatsApp ou E-mail.');
+                }).catch(() => {
+                    prompt('Copie o link abaixo:', url);
+                });
+            } else {
+                prompt('Copie o link abaixo:', url);
+            }
+        }
+    </script>
 </body>
 </html>
