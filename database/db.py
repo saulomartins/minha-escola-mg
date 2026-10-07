@@ -1350,8 +1350,25 @@ def upsert_support_ticket(ticket: Dict[str, Any]) -> bool:
         c_res = classify_fc_ticket(ticket.get('description', ''), ticket.get('internal_analysis', ''), ticket.get('category', ''))
         ticket['root_cause_id'] = c_res.get('id')
     
-    cursor.execute("SELECT id FROM support_tickets WHERE id = ?", (ticket['id'],))
-    existing = cursor.fetchone()
+    t_id = ticket.get('id')
+    t_cpf = (ticket.get('student_cpf') or '').strip()
+    t_date = (ticket.get('ticket_date') or '').strip()
+
+    # 1. Busca por ID direto
+    existing = None
+    if t_id:
+        cursor.execute("SELECT id FROM support_tickets WHERE id = ?", (t_id,))
+        existing = cursor.fetchone()
+        
+    # 2. Validação por CPF + Carimbo de data/hora (Regra de Negócio):
+    # Se o chamado tiver o mesmo CPF e o mesmo Carimbo exato, é a mesma submissão (não duplica).
+    # Se o CPF for o mesmo mas a data/hora for diferente, é uma nova necessidade de ajuda!
+    if not existing and t_cpf and t_date and len(t_cpf) >= 5:
+        cursor.execute("SELECT id FROM support_tickets WHERE student_cpf = ? AND ticket_date = ?", (t_cpf, t_date))
+        existing = cursor.fetchone()
+        if existing:
+            ticket['id'] = existing['id'] if isinstance(existing, sqlite3.Row) else existing[0]
+
     is_new = existing is None
     
     if is_new:
@@ -1476,6 +1493,21 @@ def get_support_tickets(
     
     cursor.execute(query, params)
     tickets = [dict(r) for r in cursor.fetchall()]
+
+    # Identifica reincidência / múltiplos chamados do mesmo aluno por CPF
+    if tickets:
+        cpfs = list({t.get('student_cpf') for t in tickets if t.get('student_cpf') and len(t.get('student_cpf')) >= 5})
+        cpf_counts = {}
+        if cpfs:
+            placeholders = ','.join(['?'] * len(cpfs))
+            cursor.execute(f"SELECT student_cpf, COUNT(*) as cnt FROM support_tickets WHERE student_cpf IN ({placeholders}) GROUP BY student_cpf", cpfs)
+            for row in cursor.fetchall():
+                cpf_counts[row['student_cpf']] = row['cnt']
+
+        for t in tickets:
+            c = t.get('student_cpf')
+            t['student_tickets_count'] = cpf_counts.get(c, 1) if c else 1
+
     conn.close()
     
     return {

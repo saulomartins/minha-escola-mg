@@ -6844,7 +6844,18 @@ async function uploadPlayConsoleCsv(input) {
                                 <div class="flex items-center gap-2.5 flex-wrap">
                                     ${userTypeBadge}
                                     <span class="text-sm font-bold text-slate-900">${escapeHtml(t.student_name || 'Usuário')}</span>
-                                    ${t.student_cpf ? `<span class="text-xs text-slate-500 font-mono">CPF: ${escapeHtml(t.student_cpf)}</span>` : ''}
+                                    ${t.student_cpf ? `
+                                        <span class="text-xs text-slate-500 font-mono bg-slate-100 px-2 py-0.5 rounded border border-slate-200">CPF: ${escapeHtml(t.student_cpf)}</span>
+                                        ${(t.student_tickets_count && t.student_tickets_count > 1) ? `
+                                            <button onclick="filterSupportByWord('${escapeHtml(t.student_cpf)}')" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 hover:bg-amber-200 transition cursor-pointer" title="Este aluno abriu ${t.student_tickets_count} chamados em datas/horas diferentes. Clique para ver todo o histórico!">
+                                                <i class="fa-solid fa-clock-rotate-left text-amber-600"></i> ${t.student_tickets_count} chamados (Reincidente)
+                                            </button>
+                                        ` : `
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-500 border border-slate-200" title="Primeiro chamado deste aluno">
+                                                <i class="fa-solid fa-user-check text-slate-400"></i> 1º chamado
+                                            </span>
+                                        `}
+                                    ` : ''}
                                     ${t.student_id ? `<span class="text-xs text-slate-500 font-mono">• ID: ${escapeHtml(t.student_id)}</span>` : ''}
                                     <span class="text-xs text-slate-400">• ${dateFormatted}</span>
                                 </div>

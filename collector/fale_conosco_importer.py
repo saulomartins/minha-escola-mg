@@ -65,6 +65,30 @@ def clean_cell_value(val: Any) -> str:
         s = s[:-2]
     return s
 
+def normalize_ticket_date(dt_str: Any) -> str:
+    """Padroniza carimbo de data/hora para o formato canônico YYYY-MM-DD HH:MM:SS."""
+    if not dt_str:
+        return ""
+    if isinstance(dt_str, datetime):
+        return dt_str.strftime("%Y-%m-%d %H:%M:%S")
+    s = str(dt_str).strip()
+    if len(s) > 19 and '.' in s:
+        s = s.split('.')[0]
+    for fmt in [
+        "%Y-%m-%d %H:%M:%S",
+        "%d/%m/%Y %H:%M:%S",
+        "%Y/%m/%d %H:%M:%S",
+        "%d/%m/%Y %H:%M",
+        "%Y-%m-%d %H:%M",
+        "%Y-%m-%dT%H:%M:%S",
+        "%d/%m/%Y"
+    ]:
+        try:
+            return datetime.strptime(s, fmt).strftime("%Y-%m-%d %H:%M:%S")
+        except (ValueError, TypeError):
+            continue
+    return s
+
 def import_fale_conosco_file(file_path_or_bytes: Union[str, bytes], filename: str = "") -> Dict[str, Any]:
     """Importa chamados do Fale Conosco a partir de Excel (.xlsx) ou CSV."""
     is_xlsx = filename.lower().endswith('.xlsx') or (isinstance(file_path_or_bytes, str) and file_path_or_bytes.lower().endswith('.xlsx'))
@@ -193,9 +217,8 @@ def import_fale_conosco_file(file_path_or_bytes: Union[str, bytes], filename: st
         status = get_val('status', 'Pendente')
         analysis = get_val('analysis')
 
-        # Formata data se vier com microssegundos
-        if len(ticket_date) > 19 and '.' in ticket_date:
-            ticket_date = ticket_date.split('.')[0]
+        # Formata e padroniza data/hora (compatível com ISO e formatos brasileiros)
+        ticket_date = normalize_ticket_date(ticket_date)
 
         # Formata data de nascimento removendo 00:00:00 se houver
         if ' 00:00:00' in birth_date:
