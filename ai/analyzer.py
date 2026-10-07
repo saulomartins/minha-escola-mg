@@ -31,11 +31,10 @@ Diretrizes obrigatórias para as respostas:
 1. Seja sempre educado, acolhedor e profissional.
 2. Cumprimente o usuário pelo nome (se disponível) ou cordialmente ("Olá!", "Olá, estudante/responsável!").
 3. REGRA CRÍTICA DO CANAL DE SUPORTE OFICIAL:
+   - REGRA ABSOLUTA PARA 5 ESTRELAS: Para TODAS as avaliações com nota 5 estrelas, NUNCA inclua link de formulário nem mencione "Canal de Suporte Oficial". Apenas agradeça de forma calorosa, cordial e prestativa pela avaliação e pela nota máxima no Minha Escola MG!
    - Para TODAS as avaliações com nota de 1 a 3 estrelas (1, 2 ou 3 estrelas): a resposta DEVE OBRIGATORIAMENTE indicar e solicitar que o usuário utilize exatamente:
      Canal de Suporte Oficial: 👉 {support_url}
-   - Para avaliações de 4 ou 5 estrelas: avalie atentamente o comentário do usuário. Se houver QUALQUER menção ou contexto de problema, dificuldade, falha, erro, lentidão, travamento, tela preta, dificuldade de login/senha, divergência de notas ou faltas (ex: "o app é bom mas trava às vezes", "ótimo, porém não consigo ver o boletim", "gostei mas não entra"), a resposta TAMBÉM DEVE OBRIGATORIAMENTE solicitar que utilize exatamente:
-     Canal de Suporte Oficial: 👉 {support_url}
-   - REGRA PARA 5 ESTRELAS (E 4 ESTRELAS) SEM PROBLEMAS: Se a avaliação for de 5 estrelas e contiver APENAS elogios sinceros sem nenhum problema ou dificuldade relatada, NUNCA inclua o link do formulário nem mencione "Canal de Suporte Oficial". Agradeça cordialmente pelo carinho e apoio do estudante ou responsável!
+   - Para avaliações de 4 estrelas: se contiver menção ou contexto de problema, falha ou lentidão, solicite o Canal de Suporte Oficial: 👉 {support_url}. Se for apenas elogio, agradeça cordialmente sem incluir o canal de suporte.
 4. REGRA OBRIGATÓRIA DE CONTATO: NUNCA utilize endereços de e-mail (como saulomartins.costa@gmail.com ou qualquer outro) na resposta. O único canal oficial a ser informado quando houver problema/dificuldade é exatamente no formato:
    Canal de Suporte Oficial: 👉 {support_url}
 5. Para PROBLEMAS DE ACESSO/LOGIN/SENHA: Oriente a verificar se o cadastro no sistema escolar/Simave/Gov.br está atualizado na secretaria da escola, ou a utilizar a recuperação de senha, e solicite o preenchimento do Canal de Suporte Oficial: 👉 {support_url}.
@@ -55,7 +54,12 @@ def has_problem_context(content: str, rating: int) -> bool:
     """
     Avalia se a avaliação tem nota de 1 a 3 estrelas OU se contém qualquer contexto
     de problema, erro, falha, lentidão, bug ou dificuldade no texto do usuário.
+    REGRA ABSOLUTA: Para avaliações de 5 estrelas, NUNCA considera problema para fins
+    de inclusão do formulário de suporte (5 estrelas nunca recebe link de formulário).
     """
+    if rating >= 5:
+        return False
+
     if rating <= 3:
         return True
 
@@ -63,7 +67,7 @@ def has_problem_context(content: str, rating: int) -> bool:
     if not text:
         return False
 
-    # Conjunções adversativas indicando que mesmo com 4 ou 5 estrelas há uma ressalva/dificuldade
+    # Conjunções adversativas indicando que mesmo com 4 estrelas há uma ressalva/dificuldade
     if re.search(r'\b(mas|porém|porem|contudo|entretanto|todavia)\b', text):
         return True
 
@@ -74,7 +78,7 @@ def has_problem_context(content: str, rating: int) -> bool:
         "tela preta", "tela branca", "não consigo", "nao consigo", "dificuldade", 
         "dificil", "difícil", "confuso", "complicado", "senha", "esqueci", "recuperar", 
         "bloquead", "nota sumiu", "não aparece", "nao aparece", "não carrega", "nao carrega",
-        "não atualiza", "nao atualiza", "divergência", "divergencia", "ajuda", "socorro", 
+        "não atualiza", "nao atualiza", "divergência", "divergencia", "socorro", 
         "arrumem", "consertem", "corrijam", "piorou", "ruim", "péssimo", "pessimo", "odiei", 
         "horrível", "horrivel", "desinstalando", "instável", "instavel", "não funciona", 
         "nao funciona", "cai toda hora", "carregando infinito", "faltou", "faltando", 
@@ -86,9 +90,9 @@ def has_problem_context(content: str, rating: int) -> bool:
 
 def strip_support_link(text: str) -> str:
     """
-    Remove sentenças ou trechos que direcionam para o canal de suporte oficial
-    quando a avaliação for 5 estrelas (ou 4 estrelas) sem contexto de problema/dificuldade.
-    Garante uma resposta cordial, limpa e positiva de agradecimento.
+    Remove sentenças ou trechos que direcionam para o canal de suporte oficial,
+    formulários e avisos residuais de instabilidade quando a avaliação for 5 estrelas.
+    Garante uma resposta cordial, limpa e calorosa de agradecimento.
     """
     if not text:
         return ""
@@ -107,13 +111,23 @@ def strip_support_link(text: str) -> str:
         if not chunk_clean:
             continue
             
-        # Verifica se esta frase é sobre canal de suporte / formulário
+        lower_chunk = chunk_clean.lower()
+        # Verifica se esta frase é sobre suporte, formulário ou aviso de problema residual
         is_support_phrase = (
-            "canal de suporte" in chunk_clean.lower() or
-            "forms.cloud.microsoft" in chunk_clean.lower() or
-            "forms.office.com" in chunk_clean.lower() or
-            "suporte oficial" in chunk_clean.lower() or
-            "jmzhszxtwg" in chunk_clean.lower()
+            "canal de suporte" in lower_chunk or
+            "forms.cloud.microsoft" in lower_chunk or
+            "forms.office.com" in lower_chunk or
+            "suporte oficial" in lower_chunk or
+            "jmzhszxtwg" in lower_chunk or
+            "notamos que você mencionou" in lower_chunk or
+            "notamos que voce mencionou" in lower_chunk or
+            "instabilidade ou dificuldade" in lower_chunk or
+            "equipe técnica possa verificar" in lower_chunk or
+            "equipe tecnica possa verificar" in lower_chunk or
+            "para que possamos analisar e solucionar" in lower_chunk or
+            "caso esteja enfrentando qualquer instabilidade" in lower_chunk or
+            "se estiver enfrentando qualquer" in lower_chunk or
+            "se houver alguma dificuldade técnica" in lower_chunk
         )
         
         if not is_support_phrase:
@@ -137,8 +151,8 @@ def ensure_official_support_link(suggested_response: str, content: str, rating: 
     contenham obrigatoriamente a indicação do Canal de Suporte Oficial no formato exato:
     'Canal de Suporte Oficial: 👉 {support_url}'.
     
-    Para avaliações de 5 estrelas (ou 4 estrelas) contendo apenas elogios sem relato de dificuldades,
-    REMOVE qualquer link de suporte ou menção ao formulário, mantendo apenas o agradecimento.
+    REGRA ABSOLUTA PARA 5 ESTRELAS: Para comentários com 5 estrelas, NUNCA coloca o formulário
+    nem o link nem o canal de suporte. Apenas agradece pelo retorno positivo.
     """
     support_url = get_official_support_url()
     cleaned = re.sub(r'[\w\.-]+@[\w\.-]+\.\w+', '', suggested_response).strip()
@@ -155,17 +169,20 @@ def ensure_official_support_link(suggested_response: str, content: str, rating: 
         cleaned
     )
     
+    if rating >= 5:
+        # REGRA ABSOLUTA: 5 estrelas NUNCA recebe link de suporte ou formulário
+        return strip_support_link(cleaned)
+    
     is_problem = has_problem_context(content, rating)
     
     if is_problem:
-        # Se for 1-3 estrelas OU 4-5 estrelas COM relato de problema, GARANTE o link
+        # Se for 1-3 estrelas OU 4 estrelas COM relato de problema, GARANTE o link
         if support_url not in cleaned and "forms.cloud.microsoft" not in cleaned:
             cleaned = (
                 f"{cleaned} Para que possamos analisar e solucionar sua situação, por favor "
                 f"acesse o Canal de Suporte Oficial: 👉 {support_url}"
             )
     else:
-        # Se for 5 estrelas (ou 4 estrelas) SEM problema, REMOVE qualquer link de formulário
         cleaned = strip_support_link(cleaned)
             
     return cleaned
@@ -173,12 +190,23 @@ def ensure_official_support_link(suggested_response: str, content: str, rating: 
 def heuristic_fallback_analysis(user_name: str, rating: int, content: str) -> Dict[str, Any]:
     """
     Análise heurística quando não há chave do Gemini configurada ou em caso de fallback.
-    Garante sempre a indicação do Canal de Suporte Oficial: 👉 {support_url}
-    para notas de 1 a 3 estrelas ou qualquer menção a problemas.
+    REGRA ABSOLUTA: Para avaliações de 5 estrelas, SEMPRE retorna agradecimento positivo sem formulário.
     """
     support_url = get_official_support_url()
     content_lower = (content or "").lower()
     name_greeting = f"Olá, {user_name}!" if user_name and "usuário" not in user_name.lower() else "Olá!"
+    
+    # REGRA ABSOLUTA: 5 estrelas é sempre elogio caloroso sem link
+    if rating >= 5:
+        return {
+            "sentiment": "POSITIVO",
+            "category": "Elogio",
+            "suggested_response": (
+                f"{name_greeting} Ficamos muito felizes com a sua avaliação de 5 estrelas no Minha Escola MG! "
+                f"Nosso compromisso diário é facilitar a rotina de toda a comunidade escolar mineira. "
+                f"Muito obrigado pelo carinho e conte sempre conosco!"
+            )
+        }
     
     is_problem = has_problem_context(content, rating)
     
@@ -286,9 +314,9 @@ Nota: {rating} estrelas
 Comentário: "{content}"
 
 DIRETRIZ MANDATÓRIA:
-1. Se a nota for de 1 a 3 estrelas OU se o comentário contiver QUALQUER menção a problema, erro, dificuldade, lentidão, tela preta, nota ou login (mesmo em avaliações de 4 ou 5 estrelas), a suggested_response DEVE OBRIGATORIAMENTE direcionar o usuário exatamente para:
+1. Para comentários com nota de 5 estrelas: NUNCA inclua o link do formulário nem a frase "Canal de Suporte Oficial". Apenas agradeça calorosamente pelo apoio, carinho e nota máxima.
+2. Para notas de 1 a 3 estrelas (ou 4 estrelas com relato de problema/dificuldade), a suggested_response DEVE OBRIGATORIAMENTE direcionar o usuário para:
 Canal de Suporte Oficial: 👉 {support_url}
-2. Se a nota for 5 estrelas (ou 4 estrelas) e for APENAS elogio sem nenhum relato de problema ou dificuldade, NUNCA inclua o link do formulário nem a frase "Canal de Suporte Oficial". Apenas agradeça cordialmente pelo retorno positivo.
 
 Retorne o JSON estrito com sentiment, category e suggested_response."""
 

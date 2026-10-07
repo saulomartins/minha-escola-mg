@@ -148,14 +148,22 @@ def ensure_support_channel_in_pending_reviews(cursor=None):
             content = r.get("content", "")
             current_resp = r.get("ai_suggested_response") or ""
             
-            if has_problem_context(content, rating):
+            if rating >= 5:
+                # REGRA ABSOLUTA: 5 estrelas NUNCA deve ter formulário nem canal de suporte
+                if "forms.cloud.microsoft" in current_resp or "Canal de Suporte Oficial" in current_resp or "JmZhSzXtwG" in current_resp:
+                    from ai.analyzer import strip_support_link
+                    new_resp = strip_support_link(current_resp)
+                    cursor.execute("""
+                        UPDATE reviews SET ai_suggested_response = ? WHERE id = ?
+                    """, (new_resp, r["id"]))
+            elif has_problem_context(content, rating):
                 if "forms.cloud.microsoft" not in current_resp and "JmZhSzXtwG" not in current_resp:
                     new_resp = generate_auto_reply_for_review(r)
                     cursor.execute("""
                         UPDATE reviews SET ai_suggested_response = ? WHERE id = ?
                     """, (new_resp, r["id"]))
             else:
-                # 4 ou 5 estrelas sem menção de problemas/dificuldades: se contiver link do formulário, remove!
+                # 4 estrelas sem problema: se contiver link do formulário, remove!
                 if "forms.cloud.microsoft" in current_resp or "Canal de Suporte Oficial" in current_resp or "JmZhSzXtwG" in current_resp:
                     from ai.analyzer import strip_support_link
                     new_resp = strip_support_link(current_resp)

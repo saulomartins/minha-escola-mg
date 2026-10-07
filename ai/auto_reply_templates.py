@@ -178,14 +178,18 @@ def generate_auto_reply_for_review(review: Dict[str, Any], root_cause_id: Option
     cfg = PROBLEM_TEMPLATES_CONFIG.get(root_cause_id, PROBLEM_TEMPLATES_CONFIG["outros_problemas"])
 
     # Seleciona o template pelo nível de estrelas e pelo contexto de problema
-    if rating <= 2:
+    # REGRA ABSOLUTA: 5 estrelas SEMPRE recebe resposta positiva de agradecimento sem canal de suporte!
+    if rating >= 5:
+        is_problem = False
+        template = cfg["templates"]["positive"]
+    elif rating <= 2:
         template = cfg["templates"]["critical"]
     elif rating == 3:
         template = cfg["templates"]["moderate"]
     else:
-        # 4 ou 5 estrelas
+        # 4 estrelas
         if is_problem:
-            # Usuário deu nota alta, mas relatou erro, bug, lentidão ou problema
+            # Usuário deu 4 estrelas, mas relatou erro, bug, lentidão ou problema
             template = (
                 cfg["templates"]["positive"] + 
                 " Notamos que você mencionou uma instabilidade ou dificuldade. "
@@ -204,14 +208,16 @@ def generate_auto_reply_for_review(review: Dict[str, Any], root_cause_id: Option
     )
 
     # Verificação estrita de segurança:
-    # Se for 1 a 3 estrelas OU se houver contexto de problema, GARANTE que o canal oficial está no texto final!
-    if (rating <= 3 or is_problem) and (canal_contato not in formatted and "forms.cloud.microsoft" not in formatted):
+    if rating >= 5:
+        # REGRA ABSOLUTA: 5 estrelas NUNCA exibe canal de suporte nem link
+        formatted = strip_support_link(formatted)
+    elif (rating <= 3 or is_problem) and (canal_contato not in formatted and "forms.cloud.microsoft" not in formatted):
         formatted = (
             f"{formatted} Para que possamos analisar e solucionar sua situação, por favor acesse o "
             f"Canal de Suporte Oficial: 👉 {canal_contato}"
         )
     elif not is_problem and rating >= 4:
-        # Se for 4 ou 5 estrelas sem menção de problema/dificuldade, NUNCA exibe link de formulário
+        # Se for 4 estrelas sem menção de problema/dificuldade, NUNCA exibe link de formulário
         formatted = strip_support_link(formatted)
 
     # Substitui formatos legados para o formato novo padrão
