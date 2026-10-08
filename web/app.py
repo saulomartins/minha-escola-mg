@@ -108,6 +108,7 @@ class SettingsRequest(BaseModel):
     auto_reply_5_stars_only: Optional[str] = None
     auto_sync_interval: Optional[str] = None
     support_email: Optional[str] = None
+    apple_downloads_custom: Optional[str] = None
 
 class TestKeyRequest(BaseModel):
     key: Optional[str] = None
@@ -1639,6 +1640,8 @@ def api_update_settings(req: SettingsRequest):
     if req.support_email is not None:
         set_setting("support_email", req.support_email)
         set_setting("support_contact_url", req.support_email)
+    if req.apple_downloads_custom is not None:
+        set_setting("apple_downloads_custom", req.apple_downloads_custom.strip())
     return {"success": True, "message": "Configurações salvas com sucesso!"}
 
 @app.post("/api/settings/test-gemini")

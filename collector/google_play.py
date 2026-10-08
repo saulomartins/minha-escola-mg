@@ -18,7 +18,9 @@ def get_google_play_metadata() -> Dict[str, Any]:
             "ratings_count": data.get("ratings", 0),
             "reviews_count": data.get("reviews", 0),
             "icon": data.get("icon", ""),
-            "installs": data.get("installs", "1.000.000+"),
+            "installs": data.get("installs", "100.000+"),
+            "min_installs": data.get("minInstalls", 100000),
+            "real_installs": data.get("realInstalls", 393026),
             "version": data.get("version", ""),
             "histogram": data.get("histogram", [141, 46, 56, 312, 2744])
         }

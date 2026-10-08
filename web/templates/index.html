@@ -236,7 +236,9 @@
                         <h3 class="text-3xl font-extrabold text-slate-900" id="stat-google-avg">-</h3>
                         <div class="flex text-sm" id="stat-google-stars"></div>
                     </div>
-                    <p class="text-xs text-slate-400 mt-1" id="stat-google-sub">3.305 notas oficiais • 1M+ downloads</p>
+                    <div class="mt-1" id="stat-google-sub">
+                        <span class="text-xs text-slate-400">Carregando métricas...</span>
+                    </div>
                 </div>
                 <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center text-xl">
                     <i class="fa-solid fa-star"></i>
@@ -253,7 +255,9 @@
                         <h3 class="text-3xl font-extrabold text-slate-900" id="stat-apple-avg">-</h3>
                         <div class="flex text-sm" id="stat-apple-stars"></div>
                     </div>
-                    <p class="text-xs text-slate-400 mt-1" id="stat-apple-sub">1.581 notas oficiais na App Store</p>
+                    <div class="mt-1" id="stat-apple-sub">
+                        <span class="text-xs text-slate-400">Carregando métricas...</span>
+                    </div>
                 </div>
                 <div class="w-12 h-12 bg-slate-100 text-slate-700 rounded-full flex items-center justify-center text-xl">
                     <i class="fa-solid fa-mobile-screen"></i>
@@ -279,6 +283,84 @@
                 </div>
                 <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center text-xl">
                     <i class="fa-solid fa-chart-pie"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Painel de Alcance & Downloads por Loja -->
+        <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white rounded-2xl p-5 shadow-lg border border-slate-700/60 mb-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-700/60 pb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center text-lg shadow-inner">
+                        <i class="fa-solid fa-cloud-arrow-down"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-base font-extrabold text-white">Downloads & Instalações por Loja</h3>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Atualizado</span>
+                        </div>
+                        <p class="text-xs text-slate-300 mt-0.5">Distribuição consolidada do aplicativo Minha Escola MG entre plataformas mobile</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 bg-slate-800/90 px-4 py-2 rounded-xl border border-slate-700/80">
+                    <span class="text-xs text-slate-400 font-medium">Total Consolidado:</span>
+                    <span class="text-base sm:text-lg font-black text-white" id="text-downloads-total-combined">-</span>
+                </div>
+            </div>
+
+            <!-- Barra Comparativa Proporcional -->
+            <div class="mt-4 space-y-2">
+                <div class="flex justify-between text-xs font-semibold">
+                    <span class="text-emerald-400 flex items-center gap-1.5">
+                        <i class="fa-brands fa-google-play"></i> Android (Google Play): <b id="text-downloads-google-pct" class="text-white">-</b>
+                    </span>
+                    <span class="text-sky-300 flex items-center gap-1.5">
+                        <i class="fa-brands fa-apple"></i> iOS (Apple App Store): <b id="text-downloads-apple-pct" class="text-white">-</b>
+                    </span>
+                </div>
+                <div class="w-full h-3.5 bg-slate-700/60 rounded-full overflow-hidden flex shadow-inner p-0.5">
+                    <div id="bar-downloads-google" class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-l-full transition-all duration-700" style="width: 66%;"></div>
+                    <div id="bar-downloads-apple" class="h-full bg-gradient-to-r from-sky-400 to-indigo-400 rounded-r-full transition-all duration-700" style="width: 34%;"></div>
+                </div>
+            </div>
+
+            <!-- Detalhes de Cada Loja em Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-700/60 text-xs">
+                <!-- Coluna Google Play -->
+                <div class="bg-slate-800/50 rounded-xl p-3.5 border border-slate-700/50 flex items-center justify-between">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-brands fa-google-play text-emerald-400 text-base"></i>
+                            <span class="font-bold text-white text-sm">Google Play Store</span>
+                            <span class="text-[10px] font-bold px-1.5 py-0.5 bg-emerald-500/20 text-emerald-300 rounded border border-emerald-500/30" id="badge-google-range">100k+</span>
+                        </div>
+                        <p class="text-slate-400 text-[11px]" id="text-google-subdesc">Instalações registradas na Google Play</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xl font-black text-white" id="text-downloads-google-count">-</div>
+                        <div class="text-[10px] text-slate-400">instalações reais</div>
+                    </div>
+                </div>
+
+                <!-- Coluna Apple Store -->
+                <div class="bg-slate-800/50 rounded-xl p-3.5 border border-slate-700/50 flex items-center justify-between">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-brands fa-apple text-sky-300 text-base"></i>
+                            <span class="font-bold text-white text-sm">Apple App Store</span>
+                            <span id="badge-apple-download-type"></span>
+                        </div>
+                        <p class="text-slate-400 text-[11px]">
+                            Apple mantém downloads privados •
+                            <button onclick="openSettingsModal(); switchTab('stores');" class="text-sky-300 underline font-semibold hover:text-sky-200 cursor-pointer">
+                                Configurar oficial
+                            </button>
+                        </p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xl font-black text-white" id="text-downloads-apple-count">-</div>
+                        <div class="text-[10px] text-slate-400">downloads no iOS</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2325,6 +2407,25 @@
                     </div>
                     <div id="apple-test-result" class="hidden text-xs font-semibold"></div>
                 </div>
+
+                <!-- Configuração de Downloads Apple App Store -->
+                <div class="border border-indigo-100 rounded-xl p-4 space-y-2 bg-indigo-50/60">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-cloud-arrow-down text-indigo-600 text-sm"></i>
+                        <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider">
+                            Downloads Oficiais Apple App Store (App Store Connect)
+                        </h4>
+                    </div>
+                    <p class="text-[11px] text-slate-600 leading-relaxed">
+                        Como a Apple não disponibiliza downloads de forma pública na App Store, o sistema calcula uma estimativa proporcional com base nas avaliações. Se a equipe Prodemge/SEE tiver o número oficial de unidades do <b>App Store Connect</b>, informe abaixo:
+                    </p>
+                    <div class="flex items-center gap-2 pt-1">
+                        <input type="number" id="input-apple-downloads" placeholder="Ex: 250000 (deixe em branco para usar estimativa automática)" class="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 font-medium">
+                        <button type="button" onclick="clearAppleDownloadsCustom()" class="px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 bg-white border border-slate-200 rounded-lg hover:bg-slate-100 transition cursor-pointer" title="Limpar e voltar para estimativa automática">
+                            Usar Estimativa
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <!-- Conteúdo da Tab 3: Automação -->
@@ -3336,18 +3437,80 @@
                 document.getElementById('stat-google-total').innerText = `${data.google_total} de texto`;
                 document.getElementById('stat-apple-total').innerText = `${data.apple_total} de texto`;
                 
-                const gScore = data.google_official_score || 4.7;
+                const gScore = data.google_official_score || 4.4;
                 document.getElementById('stat-google-avg').innerText = gScore.toFixed(1);
                 document.getElementById('stat-google-stars').innerHTML = renderStars(Math.round(gScore));
-                document.getElementById('stat-google-sub').innerText = `${(data.google_ratings_count || 3305).toLocaleString('pt-BR')} notas oficiais • 1M+ downloads`;
 
-                
-                const aScore = data.apple_official_score || 4.2;
+                const aScore = data.apple_official_score || 4.3;
                 document.getElementById('stat-apple-avg').innerText = aScore.toFixed(1);
                 document.getElementById('stat-apple-stars').innerHTML = renderStars(Math.round(aScore));
-                document.getElementById('stat-apple-sub').innerText = `${(data.apple_ratings_count || 1581).toLocaleString('pt-BR')} notas oficiais na App Store`;
 
-                
+                // Processamento dos Dados Detalhados de Downloads por Loja
+                if (data.downloads) {
+                    const gDown = data.downloads.google;
+                    const aDown = data.downloads.apple;
+                    const totalCombined = data.downloads.total_combined;
+
+                    // 1. Atualiza Card Google Play
+                    const gSubEl = document.getElementById('stat-google-sub');
+                    if (gSubEl) {
+                        gSubEl.innerHTML = `
+                            <div class="flex items-center gap-1.5 font-bold text-slate-800 text-xs">
+                                <i class="fa-solid fa-download text-emerald-600"></i> ${(gDown.real_installs).toLocaleString('pt-BR')}
+                                <span class="text-[10px] font-semibold px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded font-mono" title="Faixa pública na Play Store">${gDown.public_range}</span>
+                            </div>
+                            <div class="text-[11px] text-slate-400 mt-0.5">${(gDown.ratings_count).toLocaleString('pt-BR')} notas • ${gDown.percentage}% da base</div>
+                        `;
+                    }
+
+                    // 2. Atualiza Card Apple Store
+                    const aSubEl = document.getElementById('stat-apple-sub');
+                    const aBadge = aDown.is_estimated ? 
+                        `<span class="text-[10px] font-semibold px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded font-mono cursor-pointer hover:bg-amber-200" onclick="openSettingsModal(); switchTab('stores');" title="Estimativa via proporção de notas. Clique para definir o valor oficial do App Store Connect.">Estimado</span>` : 
+                        `<span class="text-[10px] font-semibold px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded font-mono" title="Valor oficial configurado do App Store Connect">Oficial Connect</span>`;
+                    if (aSubEl) {
+                        aSubEl.innerHTML = `
+                            <div class="flex items-center gap-1.5 font-bold text-slate-800 text-xs">
+                                <i class="fa-solid fa-download text-slate-700"></i> ${(aDown.downloads).toLocaleString('pt-BR')}
+                                ${aBadge}
+                            </div>
+                            <div class="text-[11px] text-slate-400 mt-0.5">${(aDown.ratings_count).toLocaleString('pt-BR')} notas • ${aDown.percentage}% da base</div>
+                        `;
+                    }
+
+                    // 3. Atualiza Seção Dedicada de Downloads por Loja
+                    const totalCombinedEl = document.getElementById('text-downloads-total-combined');
+                    if (totalCombinedEl) totalCombinedEl.innerText = `${(totalCombined).toLocaleString('pt-BR')} downloads`;
+
+                    const gPctEl = document.getElementById('text-downloads-google-pct');
+                    if (gPctEl) gPctEl.innerText = `${gDown.percentage}% (${(gDown.real_installs).toLocaleString('pt-BR')})`;
+
+                    const aPctEl = document.getElementById('text-downloads-apple-pct');
+                    if (aPctEl) aPctEl.innerText = `${aDown.percentage}% (${(aDown.downloads).toLocaleString('pt-BR')})`;
+
+                    const gBar = document.getElementById('bar-downloads-google');
+                    if (gBar) gBar.style.width = `${gDown.percentage}%`;
+
+                    const aBar = document.getElementById('bar-downloads-apple');
+                    if (aBar) aBar.style.width = `${aDown.percentage}%`;
+
+                    const gCountEl = document.getElementById('text-downloads-google-count');
+                    if (gCountEl) gCountEl.innerText = (gDown.real_installs).toLocaleString('pt-BR');
+
+                    const aCountEl = document.getElementById('text-downloads-apple-count');
+                    if (aCountEl) aCountEl.innerText = (aDown.downloads).toLocaleString('pt-BR');
+
+                    const gRangeBadge = document.getElementById('badge-google-range');
+                    if (gRangeBadge) gRangeBadge.innerText = gDown.public_range;
+
+                    const aTypeBadge = document.getElementById('badge-apple-download-type');
+                    if (aTypeBadge) {
+                        aTypeBadge.innerHTML = aDown.is_estimated ?
+                            `<span class="text-[10px] font-bold px-1.5 py-0.5 bg-amber-500/20 text-amber-300 rounded border border-amber-500/30" title="Calculado matematicamente com base na proporção de avaliações">Estimado via notas</span>` :
+                            `<span class="text-[10px] font-bold px-1.5 py-0.5 bg-sky-500/20 text-sky-300 rounded border border-sky-500/30" title="Informado oficialmente via App Store Connect">Oficial Connect</span>`;
+                    }
+                }
+
                 document.getElementById('stat-sentiment-pos').innerText = data.sentiments['POSITIVO'] || 0;
                 document.getElementById('stat-sentiment-neu').innerText = data.sentiments['NEUTRO'] || 0;
                 document.getElementById('stat-sentiment-neg').innerText = data.sentiments['NEGATIVO'] || 0;
@@ -4207,6 +4370,8 @@
                     if (data.apple_key_id) document.getElementById('input-apple-key-id').value = data.apple_key_id;
                     if (data.apple_issuer_id) document.getElementById('input-apple-issuer-id').value = data.apple_issuer_id;
                     if (data.apple_private_key_p8) document.getElementById('input-apple-p8').value = data.apple_private_key_p8;
+                    const appleDownInput = document.getElementById('input-apple-downloads');
+                    if (appleDownInput) appleDownInput.value = data.apple_downloads_custom || '';
 
                     document.getElementById('check-auto-publish-direct').checked = data.auto_publish_direct === 'true';
                     document.getElementById('check-auto-5stars').checked = data.auto_reply_5_stars_only === 'true';
@@ -4218,6 +4383,12 @@
 
         function closeSettingsModal() {
             document.getElementById('modal-settings').classList.add('hidden');
+        }
+
+        function clearAppleDownloadsCustom() {
+            const el = document.getElementById('input-apple-downloads');
+            if (el) el.value = '';
+            showAlert("Campo limpo. Clique em 'Salvar Todas as Configurações' para voltar ao cálculo automático.");
         }
 
         async function testGeminiConnection() {
@@ -4307,6 +4478,7 @@
             const appleKeyId = document.getElementById('input-apple-key-id').value.trim();
             const appleIssuerId = document.getElementById('input-apple-issuer-id').value.trim();
             const appleP8 = document.getElementById('input-apple-p8').value.trim();
+            const appleDownloads = (document.getElementById('input-apple-downloads')?.value || '').trim();
 
             const autoPublish = document.getElementById('check-auto-publish-direct').checked ? 'true' : 'false';
             const auto5stars = document.getElementById('check-auto-5stars').checked ? 'true' : 'false';
@@ -4323,6 +4495,7 @@
                         apple_key_id: appleKeyId,
                         apple_issuer_id: appleIssuerId,
                         apple_private_key_p8: appleP8,
+                        apple_downloads_custom: appleDownloads,
                         auto_publish_direct: autoPublish,
                         auto_reply_5_stars_only: auto5stars,
                         auto_sync_interval: autoSyncInterval
@@ -4330,6 +4503,7 @@
                 });
                 closeSettingsModal();
                 showAlert("Configurações salvas com sucesso!");
+                await loadStats();
             } catch (err) {
                 showAlert("Erro ao salvar configurações.", "error");
             }

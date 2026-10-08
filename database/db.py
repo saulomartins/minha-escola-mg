@@ -675,8 +675,8 @@ def get_stats() -> Dict[str, Any]:
     brand_dist = {row['device_brand']: row['count'] for row in cursor.fetchall()}
 
     # Metadados oficiais das lojas em tempo real
-    apple_official_score = 4.2
-    apple_ratings_count = 1581
+    apple_official_score = 4.3
+    apple_ratings_count = 2356
     try:
         from collector.apple_store import get_apple_store_metadata
         a_meta = get_apple_store_metadata()
@@ -687,9 +687,11 @@ def get_stats() -> Dict[str, Any]:
     except Exception:
         pass
 
-    google_official_score = 4.7
-    google_ratings_count = 3305
+    google_official_score = 4.4
+    google_ratings_count = 3268
     google_hist = {"1": 141, "2": 46, "3": 56, "4": 312, "5": 2744}
+    google_installs = "100.000+"
+    google_real_installs = 393026
     try:
         from collector.google_play import get_google_play_metadata
         g_meta = get_google_play_metadata()
@@ -697,11 +699,54 @@ def get_stats() -> Dict[str, Any]:
             google_official_score = float(g_meta["score"])
         if g_meta.get("ratings_count"):
             google_ratings_count = int(g_meta["ratings_count"])
+        if g_meta.get("installs"):
+            google_installs = str(g_meta["installs"])
+        if g_meta.get("real_installs"):
+            google_real_installs = int(g_meta["real_installs"])
         if g_meta.get("histogram") and len(g_meta["histogram"]) >= 5:
             h = g_meta["histogram"]
             google_hist = {"1": h[0], "2": h[1], "3": h[2], "4": h[3], "5": h[4]}
     except Exception:
         pass
+
+    # Lógica de Downloads por Loja
+    apple_custom = get_setting("apple_downloads_custom", "")
+    apple_downloads = 0
+    apple_is_estimated = True
+
+    if apple_custom and str(apple_custom).strip().isdigit() and int(str(apple_custom).strip()) > 0:
+        apple_downloads = int(str(apple_custom).strip())
+        apple_is_estimated = False
+    else:
+        # Estimativa proporcional baseada na taxa de notas do Google Play
+        if google_real_installs > 0 and google_ratings_count > 0:
+            rating_rate = google_ratings_count / google_real_installs
+            apple_downloads = int(round(apple_ratings_count / rating_rate))
+        else:
+            apple_downloads = int(round(apple_ratings_count * 120))
+        apple_is_estimated = True
+
+    total_downloads_val = google_real_installs + apple_downloads
+    google_pct = round((google_real_installs / total_downloads_val) * 100, 1) if total_downloads_val > 0 else 58.0
+    apple_pct = round((apple_downloads / total_downloads_val) * 100, 1) if total_downloads_val > 0 else 42.0
+
+    downloads_breakdown = {
+        "google": {
+            "public_range": google_installs,
+            "real_installs": google_real_installs,
+            "ratings_count": google_ratings_count,
+            "score": google_official_score,
+            "percentage": google_pct
+        },
+        "apple": {
+            "downloads": apple_downloads,
+            "is_estimated": apple_is_estimated,
+            "ratings_count": apple_ratings_count,
+            "score": apple_official_score,
+            "percentage": apple_pct
+        },
+        "total_combined": total_downloads_val
+    }
 
     conn.close()
     return {
@@ -716,9 +761,12 @@ def get_stats() -> Dict[str, Any]:
         "google_official_histogram": google_hist,
         "apple_official_score": apple_official_score,
         "apple_ratings_count": apple_ratings_count,
-
-
-        "total_downloads": "1.000.000+",
+        "downloads": downloads_breakdown,
+        "total_downloads": f"{total_downloads_val:,}".replace(",", ".") + "+",
+        "google_installs": google_installs,
+        "google_real_installs": google_real_installs,
+        "apple_downloads": apple_downloads,
+        "apple_downloads_is_estimated": apple_is_estimated,
         "developer": "Prodemge - Secretaria de Educação de MG",
         "sentiments": sentiments,
         "categories": categories,
