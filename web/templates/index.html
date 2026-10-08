@@ -363,6 +363,47 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Caixa de Metodologia & Observações dos Dados -->
+            <div class="mt-4 pt-3 border-t border-slate-700/60 text-xs">
+                <details open class="group">
+                    <summary class="flex items-center justify-between text-slate-300 hover:text-white font-bold cursor-pointer transition list-none">
+                        <span class="flex items-center gap-2">
+                            <i class="fa-solid fa-circle-info text-indigo-400"></i>
+                            <span>Metodologia de Coleta & Observações sobre Downloads</span>
+                        </span>
+                        <span class="text-[11px] text-slate-400 group-open:rotate-180 transition-transform">
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </span>
+                    </summary>
+                    <div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-[11px] text-slate-300 leading-relaxed bg-slate-800/70 p-3.5 rounded-xl border border-slate-700/70">
+                        <div class="space-y-1">
+                            <b class="text-white flex items-center gap-1.5 font-bold">
+                                <i class="fa-brands fa-google-play text-emerald-400"></i> 1. Google Play (Android)
+                            </b>
+                            <p class="text-slate-300">
+                                Coletado em tempo real dos metadados oficiais da Google Play. Exibe a faixa pública comercial (<b>100.000+</b>) e a contagem real de instalações brutas registradas no backend do Google (<b>~393.026</b>).
+                            </p>
+                        </div>
+                        <div class="space-y-1">
+                            <b class="text-white flex items-center gap-1.5 font-bold">
+                                <i class="fa-brands fa-apple text-sky-300"></i> 2. Apple App Store (iOS)
+                            </b>
+                            <p class="text-slate-300">
+                                A Apple mantém downloads estritamente confidenciais. O sistema calcula a projeção (<b>~201 mil</b>) com base na taxa de avaliação das <b>2.356 notas</b> oficiais públicas, ou utiliza o valor oficial do App Store Connect configurado.
+                            </p>
+                        </div>
+                        <div class="space-y-1">
+                            <b class="text-white flex items-center gap-1.5 font-bold">
+                                <i class="fa-solid fa-rotate text-amber-400"></i> 3. Downloads Repetidos & Base Ativa
+                            </b>
+                            <p class="text-slate-300">
+                                Estes dados representam <b>instalações acumuladas históricas</b> (incluem trocas de celular, restaurações e reinstalações anuais). A <b>base de celulares ativos simultâneos</b> nos bolsos dos estudantes costuma representar entre <b>50% e 70%</b> desse total.
+                            </p>
+                        </div>
+                    </div>
+                </details>
+            </div>
         </div>
 
         <!-- Seletor de Visão Principal (Comentários vs Diagnóstico de Aparelhos/SO vs Complexidade vs Temporal) -->
