@@ -8,6 +8,7 @@ from typing import List, Dict, Any, Optional
 
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "reviews.db")
 SEED_USERS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "seed_users.json")
+SEED_TOKENS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "seed_tokens.json")
 
 
 def get_connection():
@@ -342,27 +343,11 @@ def init_db():
     );
     """)
 
-    # Cria token padrão inicial caso a tabela esteja vazia
+    # Carrega e sincroniza tokens de acesso persistentes (seed_tokens.json e GUEST_ACCESS_TOKEN)
     try:
-        cursor.execute("SELECT COUNT(*) FROM access_tokens")
-        if cursor.fetchone()[0] == 0:
-            cursor.execute("""
-            INSERT INTO access_tokens (
-                id, token, label, created_by, created_at, expires_at, is_active, last_used_at, usage_count
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                "tok_default_initial",
-                "MINHAESCOLA-SEE-2026",
-                "Acesso Geral SEE / Prodemge",
-                "mgminhaescola@gmail.com",
-                now_iso,
-                None,
-                1,
-                None,
-                0
-            ))
+        load_seed_tokens_into_cursor(cursor, now_iso)
     except Exception as e:
-        print(f"Erro ao inicializar token padrão: {e}")
+        print(f"Erro ao inicializar tokens de acesso: {e}")
 
     # Popula chamados do Fale Conosco na primeira inicialização se tabela estiver vazia
     try:
@@ -1840,6 +1825,140 @@ def get_fale_conosco_analytics() -> Dict[str, Any]:
 # GESTÃO DE TOKENS DE ACESSO (CONVIDADOS & GESTORES)
 # ==============================================================================
 
+def sync_seed_tokens():
+    """Salva os tokens no arquivo seed_tokens.json para garantir que persistam entre reinicializações."""
+    try:
+        tokens = list_access_tokens()
+        safe_tokens = [
+            {
+                "id": t["id"],
+                "token": t["token"],
+                "label": t["label"],
+                "created_by": t.get("created_by", "mgminhaescola@gmail.com"),
+                "created_at": t["created_at"],
+                "expires_at": t.get("expires_at"),
+                "is_active": int(t.get("is_active", 1)),
+                "last_used_at": t.get("last_used_at"),
+                "usage_count": int(t.get("usage_count", 0))
+            }
+            for t in tokens
+        ]
+        with open(SEED_TOKENS_PATH, "w", encoding="utf-8") as f:
+            json.dump(safe_tokens, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        print(f"Aviso ao sincronizar seed_tokens.json: {e}")
+
+def get_tokens_env_string() -> str:
+    """Gera a string pronta para colar no Render Dashboard (variável GUEST_ACCESS_TOKEN)."""
+    tokens = list_access_tokens()
+    active_tokens = [t for t in tokens if t.get("is_active")]
+    if not active_tokens:
+        return ""
+    items = [f"{t['token']}:{t['label']}" for t in active_tokens]
+    return ",".join(items)
+
+def load_seed_tokens_into_cursor(cursor, now_iso: str):
+    """
+    Carrega e sincroniza os tokens de acesso a partir de:
+    1. Variável de ambiente GUEST_ACCESS_TOKEN / ACCESS_TOKEN / GUEST_TOKENS (Prioridade máxima no Render)
+    2. Arquivo persistente database/seed_tokens.json
+    3. Fallback inicial apenas se não houver nenhuma chave configurada.
+    """
+    # 1. Carrega de seed_tokens.json se existir
+    if os.path.exists(SEED_TOKENS_PATH):
+        try:
+            with open(SEED_TOKENS_PATH, "r", encoding="utf-8") as f:
+                saved = json.load(f)
+                if isinstance(saved, list) and len(saved) > 0:
+                    cursor.execute("SELECT id, token FROM access_tokens")
+                    current_db_tokens = {r[0]: r[1] for r in cursor.fetchall()}
+                    
+                    saved_ids = set()
+                    for item in saved:
+                        t_id = item.get("id")
+                        t_code = (item.get("token") or "").strip().upper().replace(" ", "-")
+                        t_label = item.get("label", "Token de Acesso").strip()
+                        t_created_by = item.get("created_by", "mgminhaescola@gmail.com")
+                        t_created_at = item.get("created_at", now_iso)
+                        t_expires = item.get("expires_at")
+                        t_active = int(item.get("is_active", 1))
+                        t_last_used = item.get("last_used_at")
+                        t_usage = int(item.get("usage_count", 0))
+                        
+                        if not t_code:
+                            continue
+                            
+                        if not t_id:
+                            t_id = "tok_" + hashlib.md5(f"{t_code}_{t_created_at}".encode('utf-8')).hexdigest()[:12]
+                        saved_ids.add(t_id)
+                        
+                        cursor.execute("SELECT id FROM access_tokens WHERE id = ? OR UPPER(TRIM(token)) = ?", (t_id, t_code))
+                        row = cursor.fetchone()
+                        if not row:
+                            cursor.execute("""
+                            INSERT INTO access_tokens (id, token, label, created_by, created_at, expires_at, is_active, last_used_at, usage_count)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            """, (t_id, t_code, t_label, t_created_by, t_created_at, t_expires, t_active, t_last_used, t_usage))
+                        else:
+                            cursor.execute("""
+                            UPDATE access_tokens
+                            SET token = ?, label = ?, expires_at = ?, is_active = ?, usage_count = MAX(usage_count, ?)
+                            WHERE id = ?
+                            """, (t_code, t_label, t_expires, t_active, t_usage, row[0]))
+                    
+                    # Remove tokens do banco que foram removidos ou trocados no seed_tokens.json
+                    for old_id in current_db_tokens:
+                        if old_id not in saved_ids:
+                            cursor.execute("DELETE FROM access_tokens WHERE id = ?", (old_id,))
+        except Exception as e:
+            print(f"Aviso ao carregar seed_tokens.json: {e}")
+
+    # 2. Carrega da variável de ambiente GUEST_ACCESS_TOKEN / ACCESS_TOKEN / GUEST_TOKENS (Prioridade máxima no Render)
+    env_token = (
+        os.environ.get("GUEST_ACCESS_TOKEN", "").strip() or 
+        os.environ.get("ACCESS_TOKEN", "").strip() or
+        os.environ.get("GUEST_TOKENS", "").strip()
+    )
+    if env_token:
+        try:
+            items = [x.strip() for x in env_token.split(",") if x.strip()]
+            for item in items:
+                if ":" in item:
+                    code_val, label_val = item.split(":", 1)
+                else:
+                    code_val, label_val = item, "Token Oficial (Configurado via Ambiente Render)"
+                code_clean = code_val.strip().upper().replace(" ", "-")
+                if not code_clean:
+                    continue
+                cursor.execute("SELECT id FROM access_tokens WHERE UPPER(TRIM(token)) = ?", (code_clean,))
+                row = cursor.fetchone()
+                if not row:
+                    tok_id = "tok_env_" + hashlib.md5(code_clean.encode('utf-8')).hexdigest()[:10]
+                    cursor.execute("""
+                    INSERT INTO access_tokens (id, token, label, created_by, created_at, expires_at, is_active, last_used_at, usage_count)
+                    VALUES (?, ?, ?, 'env_var', ?, NULL, 1, NULL, 0)
+                    """, (tok_id, code_clean, label_val.strip(), now_iso))
+                else:
+                    cursor.execute("UPDATE access_tokens SET is_active = 1, label = ? WHERE id = ?", (label_val.strip(), row[0]))
+        except Exception as e:
+            print(f"Aviso ao processar GUEST_ACCESS_TOKEN env: {e}")
+
+    # 3. Fallback: apenas se não tem seed_tokens.json, não tem env_token, e a tabela está vazia
+    cursor.execute("SELECT COUNT(*) FROM access_tokens")
+    if cursor.fetchone()[0] == 0:
+        cursor.execute("""
+        INSERT INTO access_tokens (
+            id, token, label, created_by, created_at, expires_at, is_active, last_used_at, usage_count
+        ) VALUES (?, ?, ?, ?, ?, ?, 1, NULL, 0)
+        """, (
+            "tok_default_initial",
+            "MINHAESCOLA-SEE-2026",
+            "Acesso Geral SEE / Prodemge",
+            "mgminhaescola@gmail.com",
+            now_iso,
+            None
+        ))
+
 def create_access_token(
     label: str,
     token_code: Optional[str] = None,
@@ -1873,7 +1992,60 @@ def create_access_token(
     cursor.execute("SELECT * FROM access_tokens WHERE id = ?", (token_id,))
     row = dict(cursor.fetchone())
     conn.close()
+    
+    sync_seed_tokens()
     return row
+
+def update_access_token(
+    token_id: str,
+    new_token: Optional[str] = None,
+    new_label: Optional[str] = None,
+    expires_in_days: Optional[int] = None
+) -> Optional[Dict[str, Any]]:
+    """Atualiza o código, nome/identificação ou validade de um token de acesso existente."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM access_tokens WHERE id = ?", (token_id,))
+    existing = cursor.fetchone()
+    if not existing:
+        conn.close()
+        return None
+
+    curr_token = existing["token"]
+    curr_label = existing["label"]
+    curr_expires = existing["expires_at"]
+
+    if new_token and new_token.strip():
+        new_token_clean = new_token.strip().upper().replace(" ", "-")
+        # Verifica se outro token já usa esse código
+        cursor.execute("SELECT id FROM access_tokens WHERE UPPER(TRIM(token)) = ? AND id != ?", (new_token_clean, token_id))
+        if cursor.fetchone():
+            conn.close()
+            raise ValueError(f"O código de chave '{new_token_clean}' já está em uso por outro token.")
+        curr_token = new_token_clean
+
+    if new_label and new_label.strip():
+        curr_label = new_label.strip()
+
+    if expires_in_days is not None:
+        if expires_in_days > 0:
+            curr_expires = (datetime.utcnow() + timedelta(days=expires_in_days)).isoformat()
+        else:
+            curr_expires = None
+
+    cursor.execute("""
+    UPDATE access_tokens
+    SET token = ?, label = ?, expires_at = ?
+    WHERE id = ?
+    """, (curr_token, curr_label, curr_expires, token_id))
+    conn.commit()
+
+    cursor.execute("SELECT * FROM access_tokens WHERE id = ?", (token_id,))
+    updated_row = dict(cursor.fetchone())
+    conn.close()
+
+    sync_seed_tokens()
+    return updated_row
 
 def get_access_token_by_token(token_str: str) -> Optional[Dict[str, Any]]:
     """Busca token pelo código exato (case-insensitive)."""
@@ -1924,6 +2096,7 @@ def toggle_access_token_status(token_id: str, is_active: bool) -> bool:
     cursor.execute("UPDATE access_tokens SET is_active = ? WHERE id = ?", (1 if is_active else 0, token_id))
     conn.commit()
     conn.close()
+    sync_seed_tokens()
     return True
 
 def delete_access_token(token_id: str) -> bool:
@@ -1933,6 +2106,7 @@ def delete_access_token(token_id: str) -> bool:
     cursor.execute("DELETE FROM access_tokens WHERE id = ?", (token_id,))
     conn.commit()
     conn.close()
+    sync_seed_tokens()
     return True
 
 

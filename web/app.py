@@ -28,7 +28,7 @@ from database.db import (
     bulk_import_users, get_users_env_string,
     create_access_token, get_access_token_by_token, get_access_token_by_id,
     record_access_token_usage, list_access_tokens, toggle_access_token_status,
-    delete_access_token
+    delete_access_token, update_access_token, get_tokens_env_string
 )
 from auth.google_auth import (
     get_google_client_id, create_session_token, decode_session_token,
@@ -141,6 +141,11 @@ class TokenLoginRequest(BaseModel):
 
 class CreateTokenRequest(BaseModel):
     label: str
+    token: Optional[str] = None
+    expires_in_days: Optional[int] = None
+
+class UpdateTokenRequest(BaseModel):
+    label: Optional[str] = None
     token: Optional[str] = None
     expires_in_days: Optional[int] = None
 
@@ -565,12 +570,36 @@ def api_admin_toggle_token_status(token_id: str, req: ToggleTokenStatusRequest, 
     toggle_access_token_status(token_id, req.is_active)
     return {"status": "ok", "token_id": token_id, "is_active": req.is_active}
 
+@app.put("/api/admin/tokens/{token_id}")
+@app.post("/api/admin/tokens/{token_id}")
+def api_admin_update_token(token_id: str, req: UpdateTokenRequest, request: Request):
+    """Atualiza o código da chave, nome/descrição ou prazo de expiração de um token."""
+    require_admin(request)
+    try:
+        updated = update_access_token(
+            token_id=token_id,
+            new_token=req.token,
+            new_label=req.label,
+            expires_in_days=req.expires_in_days
+        )
+        if not updated:
+            raise HTTPException(status_code=404, detail="Token não encontrado.")
+        return updated
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 @app.delete("/api/admin/tokens/{token_id}")
 def api_admin_delete_token(token_id: str, request: Request):
     """Exclui permanentemente um token de acesso."""
     require_admin(request)
     delete_access_token(token_id)
     return {"status": "ok", "deleted": token_id}
+
+@app.get("/api/admin/tokens/env-string")
+def api_admin_tokens_env_string(request: Request):
+    """Retorna a string formatada para configurar a variável de ambiente GUEST_ACCESS_TOKEN no Render."""
+    require_admin(request)
+    return {"env_var_name": "GUEST_ACCESS_TOKEN", "env_value": get_tokens_env_string()}
 
 # ==============================================================================
 # PÁGINA PRINCIPAL DO SISTEMA

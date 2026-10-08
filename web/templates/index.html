@@ -7257,6 +7257,22 @@ async function uploadPlayConsoleCsv(input) {
                 </div>
             </div>
 
+            <!-- Dica de Persistência Render -->
+            <div class="bg-indigo-50/80 border border-indigo-200/90 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div class="flex items-start gap-2.5">
+                    <i class="fa-solid fa-cloud text-indigo-600 mt-0.5 text-sm shrink-0"></i>
+                    <div>
+                        <span class="font-bold text-indigo-950">Persistência Permanente no Render:</span>
+                        <p class="text-slate-600 text-[11px] leading-tight mt-0.5">
+                            As chaves alteradas são salvas automaticamente. Para garantir que nunca resetem mesmo em novos deploys, você também pode fixar na variável <code class="bg-indigo-100 text-indigo-800 px-1 py-0.5 rounded font-mono font-bold">GUEST_ACCESS_TOKEN</code> no Render.
+                        </p>
+                    </div>
+                </div>
+                <button onclick="copyTokensEnvString()" class="shrink-0 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-[11px] flex items-center gap-1.5 shadow-sm transition cursor-pointer" title="Copia o valor pronto para colar na página Environment do Render">
+                    <i class="fa-solid fa-copy"></i> Copiar Variável Render
+                </button>
+            </div>
+
             <!-- Rodapé com Botão Fechar -->
             <div class="flex justify-between items-center pt-3 border-t border-slate-100 text-xs text-slate-500">
                 <span class="flex items-center gap-1.5">
@@ -7264,6 +7280,49 @@ async function uploadPlayConsoleCsv(input) {
                     Acesso de convidado é somente leitura (sem permissão de alterar dados ou publicar).
                 </span>
                 <button onclick="closeTokensModal()" class="px-4 py-2 font-bold text-slate-600 hover:bg-slate-100 rounded-lg transition">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Edição de Token de Acesso -->
+    <div id="modal-edit-token" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-4 my-8 border border-slate-200">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center text-sm font-bold">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </div>
+                    <h3 class="text-sm font-black text-slate-900">Editar Chave / Token de Acesso</h3>
+                </div>
+                <button onclick="closeEditTokenModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+            </div>
+            <input type="hidden" id="edit-token-id">
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 mb-1">Código da Chave (Token) *</label>
+                    <input type="text" id="edit-token-code" class="w-full text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono uppercase font-bold text-indigo-700">
+                    <p class="text-[10px] text-slate-400 mt-0.5">Você pode alterar este código para qualquer palavra-chave que desejar.</p>
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 mb-1">Nome / Identificação *</label>
+                    <input type="text" id="edit-token-label" class="w-full text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-medium">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 mb-1">Alterar Validade</label>
+                    <select id="edit-token-expires" class="w-full text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-medium">
+                        <option value="keep">Manter Validade Atual</option>
+                        <option value="0">Tornar Permanente (Sem Expiração)</option>
+                        <option value="7">Renovar por mais 7 dias</option>
+                        <option value="30">Renovar por mais 30 dias</option>
+                        <option value="90">Renovar por mais 90 dias</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button onclick="closeEditTokenModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition">Cancelar</button>
+                <button onclick="submitEditToken()" id="btn-save-edit-token" class="px-4 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm transition flex items-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-floppy-disk"></i> Salvar Alterações
+                </button>
             </div>
         </div>
     </div>
@@ -7342,6 +7401,9 @@ async function uploadPlayConsoleCsv(input) {
                             </td>
                             <td class="p-3 align-middle text-center">
                                 <div class="flex items-center justify-center gap-1">
+                                    <button onclick="openEditTokenModal('${t.id}', '${escapeHtml(t.token)}', '${escapeHtml(t.label)}', '${t.expires_at || ''}')" class="p-1.5 rounded hover:bg-slate-100 text-xs text-blue-600 hover:text-blue-800 transition cursor-pointer" title="Editar código da chave ou nome">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </button>
                                     <button onclick="toggleTokenActive('${t.id}', ${t.is_active ? 0 : 1})" class="p-1.5 rounded hover:bg-slate-100 text-xs transition cursor-pointer ${t.is_active ? 'text-amber-600 hover:text-amber-800' : 'text-emerald-600 hover:text-emerald-800'}" title="${t.is_active ? 'Desativar / Revogar acesso' : 'Reativar token'}">
                                         <i class="fa-solid ${t.is_active ? 'fa-ban' : 'fa-circle-check'}"></i>
                                     </button>
@@ -7355,6 +7417,102 @@ async function uploadPlayConsoleCsv(input) {
                 }).join('');
             } catch (err) {
                 tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-rose-500">Erro: ${escapeHtml(err.message)}</td></tr>`;
+            }
+        }
+
+        function openEditTokenModal(tokenId, tokenCode, label, expiresAt) {
+            const idInput = document.getElementById('edit-token-id');
+            const codeInput = document.getElementById('edit-token-code');
+            const labelInput = document.getElementById('edit-token-label');
+            const expSelect = document.getElementById('edit-token-expires');
+
+            if (idInput) idInput.value = tokenId;
+            if (codeInput) codeInput.value = tokenCode;
+            if (labelInput) labelInput.value = label;
+            if (expSelect) expSelect.value = 'keep';
+
+            document.getElementById('modal-edit-token')?.classList.remove('hidden');
+        }
+
+        function closeEditTokenModal() {
+            document.getElementById('modal-edit-token')?.classList.add('hidden');
+        }
+
+        async function submitEditToken() {
+            const tokenId = document.getElementById('edit-token-id')?.value;
+            const tokenCode = (document.getElementById('edit-token-code')?.value || '').trim();
+            const label = (document.getElementById('edit-token-label')?.value || '').trim();
+            const expVal = document.getElementById('edit-token-expires')?.value;
+
+            if (!tokenId) return;
+            if (!tokenCode) {
+                showAlert('O código da chave (token) não pode ficar em branco.', 'warning');
+                return;
+            }
+            if (!label) {
+                showAlert('A identificação/nome não pode ficar em branco.', 'warning');
+                return;
+            }
+
+            let expiresDays = null;
+            if (expVal !== 'keep') {
+                expiresDays = parseInt(expVal, 10);
+            }
+
+            const btn = document.getElementById('btn-save-edit-token');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Salvando...';
+            }
+
+            try {
+                const payload = {
+                    token: tokenCode,
+                    label: label
+                };
+                if (expiresDays !== null) {
+                    payload.expires_in_days = expiresDays;
+                }
+
+                const res = await fetch(`/api/admin/tokens/${tokenId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    showAlert('Chave de acesso atualizada com sucesso!');
+                    closeEditTokenModal();
+                    await loadTokensList();
+                } else {
+                    const err = await res.json();
+                    showAlert(err.detail || 'Erro ao atualizar chave.', 'error');
+                }
+            } catch (err) {
+                showAlert('Erro de conexão: ' + err.message, 'error');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salvar Alterações';
+                }
+            }
+        }
+
+        async function copyTokensEnvString() {
+            try {
+                const res = await fetch('/api/admin/tokens/env-string');
+                if (!res.ok) throw new Error('Não foi possível obter a configuração.');
+                const data = await res.json();
+                const textToCopy = `${data.env_var_name}=${data.env_value}`;
+                
+                if (navigator.clipboard) {
+                    await navigator.clipboard.writeText(textToCopy);
+                    showAlert(`Variável copiada para a área de transferência:<br><code class="text-xs bg-slate-800 text-white px-2 py-1 rounded block mt-1 select-all">${escapeHtml(textToCopy)}</code><br>Cole no painel do Render (Environment Variables) se desejar travar permanentemente.`);
+                } else {
+                    prompt('Copie a linha de configuração abaixo:', textToCopy);
+                }
+            } catch (err) {
+                showAlert('Erro ao gerar variável: ' + err.message, 'error');
             }
         }
 
