@@ -364,42 +364,92 @@
                 </div>
             </div>
 
-            <!-- Caixa de Metodologia & Observações dos Dados -->
+            <!-- Caixa de Metodologia, Justificativa & Análise de Downloads Repetidos -->
             <div class="mt-4 pt-3 border-t border-slate-700/60 text-xs">
                 <details open class="group">
-                    <summary class="flex items-center justify-between text-slate-300 hover:text-white font-bold cursor-pointer transition list-none">
+                    <summary class="flex items-center justify-between text-slate-200 hover:text-white font-bold cursor-pointer transition list-none">
                         <span class="flex items-center gap-2">
-                            <i class="fa-solid fa-circle-info text-indigo-400"></i>
-                            <span>Metodologia de Coleta & Observações sobre Downloads</span>
+                            <i class="fa-solid fa-circle-question text-indigo-400 text-sm"></i>
+                            <span>Justificativa Técnica: Origem dos Dados & Por Que Existem Downloads Repetidos</span>
                         </span>
                         <span class="text-[11px] text-slate-400 group-open:rotate-180 transition-transform">
                             <i class="fa-solid fa-chevron-down"></i>
                         </span>
                     </summary>
-                    <div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-[11px] text-slate-300 leading-relaxed bg-slate-800/70 p-3.5 rounded-xl border border-slate-700/70">
-                        <div class="space-y-1">
-                            <b class="text-white flex items-center gap-1.5 font-bold">
-                                <i class="fa-brands fa-google-play text-emerald-400"></i> 1. Google Play (Android)
-                            </b>
-                            <p class="text-slate-300">
-                                Coletado em tempo real dos metadados oficiais da Google Play. Exibe a faixa pública comercial (<b>100.000+</b>) e a contagem real de instalações brutas registradas no backend do Google (<b>~393.026</b>).
-                            </p>
+
+                    <div class="mt-3 space-y-3">
+                        <!-- Grid de Origem dos Dados -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/70 text-[11px] text-slate-300">
+                            <!-- Como pegou Google Play -->
+                            <div class="space-y-1.5">
+                                <div class="flex items-center gap-2 text-white font-bold">
+                                    <i class="fa-brands fa-google-play text-emerald-400 text-sm"></i>
+                                    <span>Como coletamos o Google Play:</span>
+                                </div>
+                                <p class="leading-relaxed text-slate-300">
+                                    Os dados são capturados em tempo real dos metadados estruturados dos servidores do Google Play. Enquanto a interface pública da loja exibe o selo comercial resumido de <b>100.000+</b> (que só atualiza aos 500k), os metadados técnicos internos registram <b>~393.026 instalações acumuladas</b>.
+                                </p>
+                            </div>
+
+                            <!-- Como pegou Apple Store -->
+                            <div class="space-y-1.5">
+                                <div class="flex items-center gap-2 text-white font-bold">
+                                    <i class="fa-brands fa-apple text-sky-300 text-sm"></i>
+                                    <span>Como coletamos a Apple App Store:</span>
+                                </div>
+                                <p class="leading-relaxed text-slate-300">
+                                    Por política de privacidade global, a Apple não expõe números de downloads publicamente (somente no portal privado <i>App Store Connect</i>). O sistema projeta <b>~201 mil downloads</b> aplicando a taxa de engajamento do app sobre as <b>2.356 notas oficiais</b> públicas da loja, com opção de definir o valor oficial nas Configurações.
+                                </p>
+                            </div>
                         </div>
-                        <div class="space-y-1">
-                            <b class="text-white flex items-center gap-1.5 font-bold">
-                                <i class="fa-brands fa-apple text-sky-300"></i> 2. Apple App Store (iOS)
-                            </b>
-                            <p class="text-slate-300">
-                                A Apple mantém downloads estritamente confidenciais. O sistema calcula a projeção (<b>~201 mil</b>) com base na taxa de avaliação das <b>2.356 notas</b> oficiais públicas, ou utiliza o valor oficial do App Store Connect configurado.
+
+                        <!-- Card de Esclarecimento sobre Downloads Repetidos -->
+                        <div class="bg-amber-950/30 border border-amber-500/30 rounded-xl p-3.5 text-[11px] text-amber-200 space-y-2">
+                            <div class="flex items-center gap-2 font-bold text-amber-300 text-xs">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                                <span>Pode existir download repetido? SIM. Entenda por que temos dados repetidos:</span>
+                            </div>
+                            <p class="leading-relaxed text-slate-300">
+                                O número total (~594 mil) representa <b>eventos acumulados de instalação histórica</b> e <b>não deve ser interpretado como quantidade de alunos/CPFs únicos simultâneos</b>. No ecossistema escolar do <i>Minha Escola MG</i>, downloads repetidos ocorrem principalmente por:
                             </p>
-                        </div>
-                        <div class="space-y-1">
-                            <b class="text-white flex items-center gap-1.5 font-bold">
-                                <i class="fa-solid fa-rotate text-amber-400"></i> 3. Downloads Repetidos & Base Ativa
-                            </b>
-                            <p class="text-slate-300">
-                                Estes dados representam <b>instalações acumuladas históricas</b> (incluem trocas de celular, restaurações e reinstalações anuais). A <b>base de celulares ativos simultâneos</b> nos bolsos dos estudantes costuma representar entre <b>50% e 70%</b> desse total.
-                            </p>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 pt-1 text-[11px]">
+                                <div class="bg-slate-900/60 p-2.5 rounded-lg border border-slate-700/60 space-y-1">
+                                    <div class="font-bold text-white flex items-center gap-1.5">
+                                        <i class="fa-solid fa-mobile-screen text-indigo-400"></i> Troca de Aparelho
+                                    </div>
+                                    <p class="text-slate-400 text-[10px] leading-tight">
+                                        Estudantes que trocam ou ganham smartphones novos ao longo dos anos e reinstalam o app.
+                                    </p>
+                                </div>
+                                <div class="bg-slate-900/60 p-2.5 rounded-lg border border-slate-700/60 space-y-1">
+                                    <div class="font-bold text-white flex items-center gap-1.5">
+                                        <i class="fa-solid fa-calendar-check text-emerald-400"></i> Volta às Aulas
+                                    </div>
+                                    <p class="text-slate-400 text-[10px] leading-tight">
+                                        Alunos que desinstalam nas férias de fim de ano para poupar memória e baixam de novo em fevereiro.
+                                    </p>
+                                </div>
+                                <div class="bg-slate-900/60 p-2.5 rounded-lg border border-slate-700/60 space-y-1">
+                                    <div class="font-bold text-white flex items-center gap-1.5">
+                                        <i class="fa-solid fa-broom text-amber-400"></i> Limpeza de Memória
+                                    </div>
+                                    <p class="text-slate-400 text-[10px] leading-tight">
+                                        Aparelhos de entrada formatados ou que removem o app temporariamente até o fechamento de notas.
+                                    </p>
+                                </div>
+                                <div class="bg-slate-900/60 p-2.5 rounded-lg border border-slate-700/60 space-y-1">
+                                    <div class="font-bold text-white flex items-center gap-1.5">
+                                        <i class="fa-solid fa-people-roof text-sky-400"></i> Múltiplos Aparelhos
+                                    </div>
+                                    <p class="text-slate-400 text-[10px] leading-tight">
+                                        Mãe, pai e estudante instalando em celulares separados para acompanhar a mesma rotina escolar.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="pt-1.5 text-[10px] text-slate-400 flex items-center gap-1.5 border-t border-amber-500/20">
+                                <i class="fa-solid fa-chart-pie text-amber-400"></i>
+                                <span><b>Base Ativa Real Estimada:</b> Em aplicativos escolares públicos, a quantidade de celulares com o app instalado ativamente no momento (Active Devices) costuma representar entre <b>50% e 70%</b> do total acumulado (~300k a 400k aparelhos ativos).</span>
+                            </div>
                         </div>
                     </div>
                 </details>
