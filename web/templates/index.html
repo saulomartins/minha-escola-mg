@@ -6812,6 +6812,8 @@ async function uploadPlayConsoleCsv(input) {
                 const data = await res.json();
                 const tickets = data.tickets || [];
                 const total = data.total || 0;
+                window.supportTicketsCache = window.supportTicketsCache || {};
+                tickets.forEach(t => { window.supportTicketsCache[t.id] = t; });
 
                 const pagInfo = document.getElementById('support-pagination-info');
                 if (pagInfo) {
@@ -6919,11 +6921,19 @@ async function uploadPlayConsoleCsv(input) {
                                 ` : ''}
                                 ${t.contact_email ? `
                                     <span class="text-slate-300">•</span>
-                                    <div class="flex items-center gap-1.5 font-medium">
+                                    <div class="flex items-center gap-1.5 font-medium flex-wrap">
                                         <i class="fa-regular fa-envelope text-slate-400"></i>
-                                        <a href="mailto:${escapeHtml(t.contact_email)}" class="text-blue-600 hover:underline">${escapeHtml(t.contact_email)}</a>
+                                        <span class="font-mono text-slate-800 font-bold">${escapeHtml(t.contact_email)}</span>
+                                        <button onclick="openSendEmailModal('${t.id}')" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 transition cursor-pointer" title="Clique para enviar resposta por e-mail para este contato">
+                                            <i class="fa-solid fa-paper-plane text-[10px] text-emerald-600"></i> Responder por E-mail
+                                        </button>
                                     </div>
-                                ` : ''}
+                                ` : `
+                                    <span class="text-slate-300">•</span>
+                                    <div class="flex items-center gap-1.5 text-slate-400 italic">
+                                        <i class="fa-regular fa-envelope"></i> E-mail não informado
+                                    </div>
+                                `}
                             </div>
 
                             <div class="space-y-1">
@@ -6951,15 +6961,16 @@ async function uploadPlayConsoleCsv(input) {
                                     <span class="font-bold text-blue-900 flex items-center gap-1.5">
                                         <i class="fa-solid fa-wand-magic-sparkles text-blue-600"></i> Sugestão de Orientação ao Cidadão (E-mail):
                                     </span>
-                                    <div class="flex gap-2">
-                                        <button onclick="copySupportReply('${t.id}')" title="Copiar texto da resposta para colar no e-mail de retorno" class="px-2.5 py-1 bg-white hover:bg-blue-100 text-blue-800 font-semibold border border-blue-300 rounded shadow-xs transition flex items-center gap-1">
-                                            <i class="fa-regular fa-copy"></i> Copiar Resposta
+                                    <div class="flex gap-2 flex-wrap items-center">
+                                        <button onclick="openSendEmailModal('${t.id}')" title="Enviar resposta oficial por e-mail para o cidadão" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded shadow-xs transition flex items-center gap-1.5 cursor-pointer">
+                                            <i class="fa-solid fa-paper-plane"></i> Enviar por E-mail
                                         </button>
-                                        ${window.isPublisher ? `
-                                            <button onclick="generateSupportReply('${t.id}')" title="Gerar resposta com IA" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded shadow-xs transition flex items-center gap-1">
-                                                <i class="fa-solid fa-robot"></i> Regenerar com IA
-                                            </button>
-                                        ` : ''}
+                                        <button onclick="copySupportReply('${t.id}')" title="Copiar texto da resposta para colar no e-mail de retorno" class="px-2.5 py-1 bg-white hover:bg-blue-100 text-blue-800 font-semibold border border-blue-300 rounded shadow-xs transition flex items-center gap-1 cursor-pointer">
+                                            <i class="fa-regular fa-copy"></i> Copiar
+                                        </button>
+                                        <button onclick="generateSupportReply('${t.id}')" title="Regenerar sugestão personalizada com IA" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded shadow-xs transition flex items-center gap-1 cursor-pointer">
+                                            <i class="fa-solid fa-robot"></i> Regenerar com IA
+                                        </button>
                                     </div>
                                 </div>
                                 <div id="support-reply-box-${t.id}" class="text-xs text-slate-800 italic leading-relaxed whitespace-pre-line bg-white/80 p-2.5 rounded border border-blue-100 font-normal">
@@ -7001,6 +7012,255 @@ async function uploadPlayConsoleCsv(input) {
                 }
             } catch (err) {
                 showAlert("Erro ao conectar com o serviço de IA.", "error");
+            }
+        }
+
+        // Gestão do Envio de E-mails para Chamados do Fale Conosco
+        window.activeEmailTicketId = null;
+
+        function openSendEmailModal(ticketId) {
+            const ticket = window.supportTicketsCache ? window.supportTicketsCache[ticketId] : null;
+            if (!ticket) {
+                showAlert("Carregando informações do chamado...", "info");
+                return;
+            }
+            window.activeEmailTicketId = ticketId;
+
+            // Preenche cabeçalho do chamado
+            const infoContainer = document.getElementById('modal-email-ticket-info');
+            if (infoContainer) {
+                const dateStr = ticket.ticket_date ? new Date(ticket.ticket_date).toLocaleString('pt-BR') : '';
+                infoContainer.innerHTML = `
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${ticket.user_type === 'Responsável' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}">
+                                ${escapeHtml(ticket.user_type || 'Aluno')}
+                            </span>
+                            <span class="text-xs font-bold text-slate-900">${escapeHtml(ticket.student_name || 'Usuário')}</span>
+                            ${ticket.student_cpf ? `<span class="text-[11px] text-slate-500 font-mono">CPF: ${escapeHtml(ticket.student_cpf)}</span>` : ''}
+                        </div>
+                        <span class="text-[11px] text-slate-400 font-mono">#${escapeHtml(ticket.id)} • ${dateStr}</span>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-3 text-[11px] text-slate-600 pt-1">
+                        <span><i class="fa-solid fa-school text-slate-400"></i> Escola: <b>${escapeHtml(ticket.school_name || 'Rede Estadual')}</b></span>
+                        ${ticket.city ? `<span>• Cidade: <b>${escapeHtml(ticket.city)}</b></span>` : ''}
+                        <span>• Categoria: <b class="text-indigo-700">${escapeHtml(ticket.category || 'Geral')}</b></span>
+                    </div>
+                    <p class="text-[11px] text-slate-700 bg-white p-2 rounded border border-slate-200 italic mt-1.5">
+                        <b>Relato do Cidadão:</b> "${escapeHtml(ticket.description || 'Sem descrição')}"
+                    </p>
+                `;
+            }
+
+            // Destinatário
+            const recipientInput = document.getElementById('modal-email-recipient');
+            if (recipientInput) {
+                recipientInput.value = (ticket.contact_email || '').trim();
+                validateModalEmail();
+            }
+
+            // Assunto
+            const subjectInput = document.getElementById('modal-email-subject');
+            if (subjectInput) {
+                subjectInput.value = `[Minha Escola MG] Resposta ao seu Chamado de Suporte - ${ticket.category || 'Atendimento'}`;
+            }
+
+            // Corpo da mensagem
+            const bodyInput = document.getElementById('modal-email-body');
+            const replyBox = document.getElementById(`support-reply-box-${ticketId}`);
+            if (bodyInput) {
+                if (replyBox && replyBox.innerText && !replyBox.innerText.includes('Clique em "Regenerar com IA"')) {
+                    bodyInput.value = replyBox.innerText.trim();
+                } else if (ticket.ai_suggested_reply && ticket.ai_suggested_reply.trim()) {
+                    bodyInput.value = ticket.ai_suggested_reply.trim();
+                } else {
+                    bodyInput.value = `Olá, ${ticket.student_name || 'Estudante'}!\n\nRecebemos sua solicitação enviada pelo canal de suporte do Minha Escola MG.\n\nAtenciosamente,\nEquipe de Suporte Minha Escola MG`;
+                }
+            }
+
+            const modal = document.getElementById('modal-send-support-email');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeSendEmailModal() {
+            const modal = document.getElementById('modal-send-support-email');
+            if (modal) modal.classList.add('hidden');
+            window.activeEmailTicketId = null;
+        }
+
+        function validateModalEmail() {
+            const input = document.getElementById('modal-email-recipient');
+            const badge = document.getElementById('modal-email-validation-badge');
+            const warning = document.getElementById('modal-email-warning');
+            if (!input) return;
+
+            const val = input.value.trim();
+            if (!val) {
+                if (badge) badge.innerHTML = '<span class="text-rose-600 font-bold"><i class="fa-solid fa-circle-xmark"></i> Vazio</span>';
+                if (warning) {
+                    warning.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-1 text-amber-600"></i> Nenhum e-mail foi cadastrado neste chamado. Digite o endereço do cidadão para enviar.';
+                    warning.classList.remove('hidden');
+                }
+            } else if (!val.includes('@') || !val.includes('.')) {
+                if (badge) badge.innerHTML = '<span class="text-amber-600 font-bold"><i class="fa-solid fa-triangle-exclamation"></i> Formato Incompleto</span>';
+                if (warning) {
+                    warning.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1 text-amber-600"></i> O e-mail digitado <b>"${escapeHtml(val)}"</b> não contém '@' ou provedor válido. Corrija o endereço acima antes de prosseguir.`;
+                    warning.classList.remove('hidden');
+                }
+            } else {
+                if (badge) badge.innerHTML = '<span class="text-emerald-600 font-bold"><i class="fa-solid fa-circle-check"></i> E-mail Válido</span>';
+                if (warning) warning.classList.add('hidden');
+            }
+        }
+
+        async function regenerateModalEmailBody() {
+            if (!window.activeEmailTicketId) return;
+            const btn = document.getElementById('btn-modal-regenerate');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Gerando...';
+            }
+            try {
+                const res = await fetch(`/api/support-tickets/${window.activeEmailTicketId}/generate-reply`, { method: 'POST' });
+                const data = await res.json();
+                if (data.success && data.reply) {
+                    const bodyInput = document.getElementById('modal-email-body');
+                    if (bodyInput) bodyInput.value = data.reply;
+                    const replyBox = document.getElementById(`support-reply-box-${window.activeEmailTicketId}`);
+                    if (replyBox) replyBox.innerText = data.reply;
+                    showAlert("Sugestão de resposta oficial regenerada com sucesso!");
+                } else {
+                    showAlert(data.message || "Erro ao regenerar resposta.", "error");
+                }
+            } catch (err) {
+                showAlert("Erro ao conectar ao gerador de IA: " + err, "error");
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Regenerar com IA';
+                }
+            }
+        }
+
+        function copyModalEmailContent() {
+            const body = document.getElementById('modal-email-body')?.value || '';
+            if (!body) {
+                showAlert("Nenhum texto para copiar.", "warning");
+                return;
+            }
+            navigator.clipboard.writeText(body).then(() => {
+                showAlert("Mensagem oficial copiada para a área de transferência!");
+            }).catch(() => {
+                showAlert("Texto copiado!");
+            });
+        }
+
+        async function dispatchEmailViaMailto() {
+            const ticketId = window.activeEmailTicketId;
+            const recipient = document.getElementById('modal-email-recipient')?.value.trim() || '';
+            const subject = document.getElementById('modal-email-subject')?.value.trim() || '';
+            const body = document.getElementById('modal-email-body')?.value || '';
+
+            if (!recipient) {
+                showAlert("Por favor, digite o e-mail do destinatário no campo 'Para'.", "error");
+                document.getElementById('modal-email-recipient')?.focus();
+                return;
+            }
+
+            // Constrói mailto URI
+            const mailtoUrl = `mailto:${encodeURIComponent(recipient)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+            // Dispara abertura no cliente do usuário
+            const tempLink = document.createElement('a');
+            tempLink.href = mailtoUrl;
+            tempLink.target = '_blank';
+            document.body.appendChild(tempLink);
+            tempLink.click();
+            document.body.removeChild(tempLink);
+
+            showAlert("Abrindo seu programa de e-mail (Gmail/Outlook)...");
+
+            // Atualiza status no banco para Respondido
+            try {
+                if (ticketId) {
+                    await fetch(`/api/support-tickets/${ticketId}/mark-replied`, { method: 'POST' });
+                    // Atualiza badge de status no card visual
+                    const card = document.getElementById(`ticket-card-${ticketId}`);
+                    if (card) {
+                        const statusBadge = card.querySelector('.fa-circle-check')?.parentElement;
+                        // Força atualização da lista ou do badge
+                    }
+                    if (window.supportTicketsCache && window.supportTicketsCache[ticketId]) {
+                        window.supportTicketsCache[ticketId].status = 'Respondido por E-mail';
+                    }
+                    showAlert("E-mail acionado! Chamado registrado como 'Respondido por E-mail'.", "success");
+                }
+            } catch (err) {
+                console.warn('Erro ao atualizar status do chamado:', err);
+            }
+
+            setTimeout(closeSendEmailModal, 1200);
+        }
+
+        async function dispatchEmailViaServer() {
+            const ticketId = window.activeEmailTicketId;
+            if (!ticketId) return;
+
+            const recipient = document.getElementById('modal-email-recipient')?.value.trim() || '';
+            const subject = document.getElementById('modal-email-subject')?.value.trim() || '';
+            const body = document.getElementById('modal-email-body')?.value || '';
+
+            if (!recipient || !recipient.includes('@')) {
+                showAlert("Por favor, informe um endereço de e-mail válido com '@' no campo de destinatário.", "error");
+                document.getElementById('modal-email-recipient')?.focus();
+                return;
+            }
+            if (!body.trim()) {
+                showAlert("O corpo da mensagem não pode estar vazio.", "error");
+                return;
+            }
+
+            const btn = document.getElementById('btn-dispatch-server-smtp');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Enviando...';
+            }
+
+            try {
+                const res = await fetch(`/api/support-tickets/${ticketId}/send-email`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        to_email: recipient,
+                        subject: subject,
+                        body: body
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (data.sent_via === 'smtp') {
+                        showAlert(data.message || "E-mail enviado com sucesso via servidor SMTP!", "success");
+                        setTimeout(closeSendEmailModal, 1500);
+                    } else {
+                        // SMTP não configurado no servidor: avisa e aciona mailto
+                        showAlert(data.message || "Servidor SMTP não configurado. Abrindo seu cliente de e-mail...", "info");
+                        dispatchEmailViaMailto();
+                    }
+                    // Atualiza cache local
+                    if (window.supportTicketsCache && window.supportTicketsCache[ticketId]) {
+                        window.supportTicketsCache[ticketId].status = 'Respondido por E-mail';
+                        window.supportTicketsCache[ticketId].ai_suggested_reply = body;
+                    }
+                } else {
+                    showAlert(data.message || "Erro ao processar envio de e-mail.", "error");
+                }
+            } catch (err) {
+                showAlert("Erro ao conectar com o servidor: " + err, "error");
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-1"></i> Enviar pelo Servidor (SMTP)';
+                }
             }
         }
 
@@ -7170,6 +7430,86 @@ async function uploadPlayConsoleCsv(input) {
                 <button onclick="submitEditDevice()" id="btn-save-edit-device" class="px-4 py-2 text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white rounded-xl shadow transition flex items-center gap-1.5">
                     <i class="fa-solid fa-floppy-disk"></i> Salvar Dados do Aparelho
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Enviar Resposta por E-mail ao Cidadão -->
+    <div id="modal-send-support-email" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-200 overflow-hidden flex flex-col max-h-[92vh] my-8">
+            <!-- Header do Modal -->
+            <div class="px-6 py-4 bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-emerald-400 text-lg border border-white/10">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white leading-tight">Enviar Resposta ao Cidadão por E-mail</h3>
+                        <p class="text-xs text-blue-200">Canal Fale Conosco • Minha Escola MG (SEE/MG & Prodemge)</p>
+                    </div>
+                </div>
+                <button onclick="closeSendEmailModal()" class="text-white/70 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition text-lg">&times;</button>
+            </div>
+
+            <!-- Corpo do Modal -->
+            <div class="p-6 overflow-y-auto space-y-4 text-xs">
+                <!-- Informações do Chamado -->
+                <div id="modal-email-ticket-info" class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
+                    <!-- Preenchido via JavaScript -->
+                </div>
+
+                <!-- Campo Destinatário (Para) -->
+                <div class="space-y-1.5">
+                    <div class="flex justify-between items-center">
+                        <label class="font-bold text-slate-700 flex items-center gap-1.5">
+                            <i class="fa-solid fa-at text-blue-600"></i> Destinatário (E-mail para contato do cidadão):
+                        </label>
+                        <span id="modal-email-validation-badge" class="text-[11px] font-semibold"></span>
+                    </div>
+                    <input type="email" id="modal-email-recipient" oninput="validateModalEmail()" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm font-mono text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-hidden" placeholder="exemplo@email.com">
+                    <p id="modal-email-warning" class="text-[11px] text-amber-800 bg-amber-50 p-2.5 rounded-lg border border-amber-200 hidden leading-relaxed">
+                        <i class="fa-solid fa-triangle-exclamation mr-1 text-amber-600"></i> <b>Atenção:</b> O e-mail cadastrado no formulário parece incompleto ou com erro de digitação. Você pode corrigi-lo no campo acima antes de enviar.
+                    </p>
+                </div>
+
+                <!-- Campo Assunto -->
+                <div class="space-y-1.5">
+                    <label class="font-bold text-slate-700 flex items-center gap-1.5">
+                        <i class="fa-solid fa-heading text-blue-600"></i> Assunto da Mensagem:
+                    </label>
+                    <input type="text" id="modal-email-subject" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm text-slate-900 font-semibold focus:ring-2 focus:ring-blue-500 focus:outline-hidden">
+                </div>
+
+                <!-- Mensagem Oficial -->
+                <div class="space-y-1.5">
+                    <div class="flex justify-between items-center">
+                        <label class="font-bold text-slate-700 flex items-center gap-1.5">
+                            <i class="fa-solid fa-comment-dots text-blue-600"></i> Orientações Oficiais (Sugestão da IA - Editável):
+                        </label>
+                        <button onclick="regenerateModalEmailBody()" id="btn-modal-regenerate" class="text-blue-600 hover:text-blue-800 font-semibold text-[11px] flex items-center gap-1 cursor-pointer">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Regenerar com IA
+                        </button>
+                    </div>
+                    <textarea id="modal-email-body" rows="9" class="w-full p-3.5 rounded-lg border border-slate-300 text-xs text-slate-800 leading-relaxed font-sans focus:ring-2 focus:ring-blue-500 focus:outline-hidden resize-y"></textarea>
+                </div>
+            </div>
+
+            <!-- Rodapé e Ações -->
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
+                <button onclick="closeSendEmailModal()" class="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 font-semibold text-xs hover:bg-slate-100 transition cursor-pointer">
+                    Cancelar
+                </button>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button onclick="copyModalEmailContent()" class="px-3 py-2 bg-white border border-slate-300 text-slate-700 font-semibold rounded-lg text-xs hover:bg-slate-100 transition flex items-center gap-1.5 cursor-pointer">
+                        <i class="fa-regular fa-copy"></i> Copiar Texto
+                    </button>
+                    <button onclick="dispatchEmailViaMailto()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs shadow-sm transition flex items-center gap-1.5 cursor-pointer" title="Abre no seu aplicativo de e-mail (Gmail/Outlook) e marca o chamado como respondido">
+                        <i class="fa-solid fa-envelope-open-text"></i> Abrir no Meu E-mail (Gmail/Outlook)
+                    </button>
+                    <button onclick="dispatchEmailViaServer()" id="btn-dispatch-server-smtp" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs shadow-sm transition flex items-center gap-1.5 cursor-pointer" title="Envia diretamente pelos servidores da aplicação se SMTP estiver ativo">
+                        <i class="fa-solid fa-paper-plane"></i> Enviar pelo Servidor (SMTP)
+                    </button>
+                </div>
             </div>
         </div>
     </div>

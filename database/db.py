@@ -1532,6 +1532,24 @@ def upsert_support_ticket(ticket: Dict[str, Any]) -> bool:
     return is_new
 
 
+def update_support_ticket_reply(ticket_id: str, reply: str) -> bool:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE support_tickets SET ai_suggested_reply = ? WHERE id = ?", (reply, ticket_id))
+    conn.commit()
+    conn.close()
+    return True
+
+
+def mark_support_ticket_replied(ticket_id: str, sent_to: Optional[str] = None) -> bool:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE support_tickets SET status = 'Respondido por E-mail' WHERE id = ?", (ticket_id,))
+    conn.commit()
+    conn.close()
+    return True
+
+
 def get_support_tickets(
     search: str = "",
     status: str = "",

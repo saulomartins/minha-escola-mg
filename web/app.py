@@ -93,6 +93,11 @@ TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
 # Modelos Pydantic
+class SupportEmailRequest(BaseModel):
+    to_email: str
+    subject: str
+    body: str
+
 class ReplyRequest(BaseModel):
     review_id: str
     response_text: str
@@ -109,6 +114,11 @@ class SettingsRequest(BaseModel):
     auto_sync_interval: Optional[str] = None
     support_email: Optional[str] = None
     apple_downloads_custom: Optional[str] = None
+    smtp_host: Optional[str] = None
+    smtp_port: Optional[str] = None
+    smtp_user: Optional[str] = None
+    smtp_password: Optional[str] = None
+    smtp_from_email: Optional[str] = None
 
 class TestKeyRequest(BaseModel):
     key: Optional[str] = None
@@ -1118,11 +1128,9 @@ async def api_import_support_tickets(file: UploadFile = File(...)):
 
 @app.post("/api/support-tickets/{ticket_id}/generate-reply")
 def api_generate_support_ticket_reply(ticket_id: str, request: Request):
-    user = getattr(request.state, "user", None)
-    if not user or user.get("email", "").lower() != SUPER_ADMIN_EMAIL.lower():
-        raise HTTPException(status_code=403, detail="Apenas o administrador oficial tem permissão para gerar respostas.")
     try:
-        from database.db import get_connection, upsert_support_ticket
+        from database.db import get_connection, update_support_ticket_reply, get_setting
+        from ai.fale_conosco_reply import generate_fale_conosco_reply
         conn = get_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM support_tickets WHERE id = ?", (ticket_id,))
@@ -1132,24 +1140,100 @@ def api_generate_support_ticket_reply(ticket_id: str, request: Request):
             raise HTTPException(status_code=404, detail="Chamado não encontrado")
         
         ticket = dict(row)
-        desc = ticket.get('description', '')
-        cat = ticket.get('category', '')
-        student_name = ticket.get('student_name', 'Estudante')
+        gemini_key = get_setting("gemini_api_key", "") or os.environ.get("GEMINI_API_KEY", "")
+        reply = generate_fale_conosco_reply(ticket, api_key=gemini_key)
         
-        if "token" in cat.lower() or "token" in desc.lower():
-            reply = f"Olá, {student_name}!\n\nIdentificamos o erro de token de autenticação no aplicativo Minha Escola MG (Mantis 0198268). Nossa equipe técnica da Prodemge já atuou na infraestrutura de autenticação. Por favor, limpe o cache do aplicativo em Configurações > Aplicativos > Minha Escola MG > Armazenamento > Limpar Cache e tente entrar novamente via Conta Gov.br ou e-mail institucional.\n\nAtenciosamente,\nEquipe de Suporte Minha Escola MG"
-        elif "gov" in cat.lower() or "seg.id" in desc.lower():
-            reply = f"Olá, {student_name}!\n\nEm relação à dificuldade de acesso via Gov.br / SEG.ID (Mantis 0198289), orientamos que certifique-se de que o CPF do estudante ou do responsável esteja devidamente vinculado no cadastro escolar da rede estadual. Caso continue sendo redirecionado para criação de conta, sugerimos acessar pelo navegador em idaluno.educacao.mg.gov.br para verificar o e-mail educacional.\n\nAtenciosamente,\nEquipe de Suporte Minha Escola MG"
-        elif "escola" in cat.lower() or "troca" in cat.lower():
-            reply = f"Olá, {student_name}!\n\nSobre a atualização de vínculo para sua nova escola estadual (Mantis 0198728), a sincronização entre o sistema DED da secretaria escolar e o aplicativo ocorre periodicamente. Solicitamos que confirme na secretaria da sua nova escola se sua matrícula já foi finalizada no sistema. Após a confirmação da escola, deslogue do aplicativo e faça um novo login para atualizar sua turma.\n\nAtenciosamente,\nEquipe de Suporte Minha Escola MG"
-        else:
-            reply = f"Olá, {student_name}!\n\nRecebemos sua solicitação enviada pelo Fale Conosco do Minha Escola MG. Em relação ao seu relato: \"{desc[:100]}...\", orientamos que caso se trate de consulta de notas, faltas ou emissão de histórico escolar, esses lançamentos dependem diretamente do registro da secretaria da sua escola. Para dúvidas cadastrais, procure a secretaria escolar. Para problemas técnicos no app, mantenha o aplicativo sempre atualizado na versão mais recente da loja.\n\nAtenciosamente,\nEquipe de Suporte Minha Escola MG"
-            
-        ticket['ai_suggested_reply'] = reply
-        upsert_support_ticket(ticket)
+        update_support_ticket_reply(ticket_id, reply)
         return {"success": True, "reply": reply}
     except Exception as e:
         logger.error(f"Erro ao gerar resposta para chamado {ticket_id}: {e}")
+        return JSONResponse(status_code=500, content={"success": False, "message": str(e)})
+
+
+@app.post("/api/support-tickets/{ticket_id}/send-email")
+def api_send_support_ticket_email(ticket_id: str, req: SupportEmailRequest, request: Request):
+    try:
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+        from database.db import mark_support_ticket_replied, update_support_ticket_reply, get_setting
+
+        to_email = (req.to_email or "").strip()
+        if not to_email or "@" not in to_email:
+            raise HTTPException(status_code=400, detail="Por favor, informe um endereço de e-mail válido com '@'.")
+
+        subject = (req.subject or "").strip() or "[Minha Escola MG] Atendimento ao Chamado"
+        body = (req.body or "").strip()
+        if not body:
+            raise HTTPException(status_code=400, detail="O corpo da mensagem não pode ser vazio.")
+
+        # Atualiza a resposta do chamado no banco de dados e marca como respondido
+        update_support_ticket_reply(ticket_id, body)
+        mark_support_ticket_replied(ticket_id, to_email)
+
+        smtp_host = os.environ.get("SMTP_HOST") or get_setting("smtp_host", "")
+        smtp_port_val = os.environ.get("SMTP_PORT") or get_setting("smtp_port", "587")
+        smtp_port = int(smtp_port_val) if str(smtp_port_val).isdigit() else 587
+        smtp_user = os.environ.get("SMTP_USER") or get_setting("smtp_user", "")
+        smtp_pass = os.environ.get("SMTP_PASSWORD") or get_setting("smtp_password", "")
+        smtp_from = os.environ.get("SMTP_FROM_EMAIL") or get_setting("smtp_from_email", "") or smtp_user or "suporte.minhaescola@educacao.mg.gov.br"
+
+        if smtp_host:
+            try:
+                msg = MIMEMultipart()
+                msg['From'] = smtp_from
+                msg['To'] = to_email
+                msg['Subject'] = subject
+                msg.attach(MIMEText(body, 'plain', 'utf-8'))
+
+                if smtp_port == 465:
+                    server = smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=12)
+                else:
+                    server = smtplib.SMTP(smtp_host, smtp_port, timeout=12)
+                    server.starttls()
+
+                if smtp_user and smtp_pass:
+                    server.login(smtp_user, smtp_pass)
+
+                server.sendmail(smtp_from, [to_email], msg.as_string())
+                server.quit()
+                return {
+                    "success": True,
+                    "sent_via": "smtp",
+                    "smtp_configured": True,
+                    "message": f"E-mail oficial enviado com sucesso para {to_email}!"
+                }
+            except Exception as smtp_err:
+                logger.warning(f"Erro no envio via SMTP direto: {smtp_err}")
+                return {
+                    "success": True,
+                    "sent_via": "client_fallback",
+                    "smtp_configured": False,
+                    "message": f"O chamado foi atualizado para 'Respondido por E-mail'. Envio SMTP indisponível ({str(smtp_err)}). O cliente de e-mail será aberto para envio."
+                }
+
+        # Sem SMTP configurado no servidor: atualizou no banco e orienta uso do cliente local
+        return {
+            "success": True,
+            "sent_via": "client",
+            "smtp_configured": False,
+            "message": "Status do chamado atualizado para 'Respondido por E-mail'. Abrindo seu cliente de e-mail (Gmail/Outlook)..."
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao processar envio de e-mail para chamado {ticket_id}: {e}")
+        return JSONResponse(status_code=500, content={"success": False, "message": str(e)})
+
+
+@app.post("/api/support-tickets/{ticket_id}/mark-replied")
+def api_mark_support_ticket_replied(ticket_id: str, request: Request):
+    try:
+        from database.db import mark_support_ticket_replied
+        mark_support_ticket_replied(ticket_id)
+        return {"success": True, "message": "Chamado marcado como respondido com sucesso!"}
+    except Exception as e:
+        logger.error(f"Erro ao marcar chamado como respondido: {e}")
         return JSONResponse(status_code=500, content={"success": False, "message": str(e)})
 
 def run_sync_and_auto_analyze():
@@ -1646,6 +1730,16 @@ def api_update_settings(req: SettingsRequest):
         set_setting("support_contact_url", req.support_email)
     if req.apple_downloads_custom is not None:
         set_setting("apple_downloads_custom", req.apple_downloads_custom.strip())
+    if req.smtp_host is not None:
+        set_setting("smtp_host", req.smtp_host.strip())
+    if req.smtp_port is not None:
+        set_setting("smtp_port", req.smtp_port.strip())
+    if req.smtp_user is not None:
+        set_setting("smtp_user", req.smtp_user.strip())
+    if req.smtp_password is not None and req.smtp_password.strip() != "":
+        set_setting("smtp_password", req.smtp_password.strip())
+    if req.smtp_from_email is not None:
+        set_setting("smtp_from_email", req.smtp_from_email.strip())
     return {"success": True, "message": "Configurações salvas com sucesso!"}
 
 @app.post("/api/settings/test-gemini")

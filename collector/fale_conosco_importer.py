@@ -7,6 +7,8 @@ from typing import Dict, Any, List, Union
 import openpyxl
 
 from database.db import upsert_support_ticket
+from analytics.fale_conosco_complexity import classify_fc_ticket
+from ai.fale_conosco_reply import generate_fale_conosco_reply
 
 def classify_ticket_category(description: str, analysis: str = "") -> str:
     """Classifica a categoria do chamado com base no relato e análise interna."""
@@ -227,6 +229,8 @@ def import_fale_conosco_file(file_path_or_bytes: Union[str, bytes], filename: st
         hash_seed = f"{ticket_date}_{student_cpf}_{student_name}_{description[:30]}"
         ticket_id = "fc_" + hashlib.md5(hash_seed.encode('utf-8')).hexdigest()[:16]
         category = classify_ticket_category(description, analysis)
+        rc_info = classify_fc_ticket(description, analysis, category)
+        root_cause_id = rc_info.get("id", "outros_suporte")
 
         ticket = {
             'id': ticket_id,
@@ -243,8 +247,12 @@ def import_fale_conosco_file(file_path_or_bytes: Union[str, bytes], filename: st
             'city': city,
             'status': status if status else 'Pendente',
             'internal_analysis': analysis,
-            'category': category
+            'category': category,
+            'root_cause_id': root_cause_id
         }
+
+        # Gera sugestão de resposta inteligente oficial
+        ticket['ai_suggested_reply'] = generate_fale_conosco_reply(ticket)
 
         is_new = upsert_support_ticket(ticket)
         if is_new:
