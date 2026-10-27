@@ -7,6 +7,19 @@ from ai.analyzer import has_problem_context, strip_support_link
 OFFICIAL_SUPPORT_FORM = "https://forms.cloud.microsoft/r/JmZhSzXtwG"
 
 PROBLEM_TEMPLATES_CONFIG = {
+    "login_sessao_recorrente": {
+        "id": "login_sessao_recorrente",
+        "name": "Instabilidade de Login, Conexão e Sessão",
+        "description": "Usuários que enfrentam múltiplas tentativas para conseguir logar, aplicativo que desloga sozinho, tela de login em loop ou falhas de conexão/autenticação.",
+        "keywords": ["login", "logar", "faça login", "tentativas", "desloga", "desconecta", "toda hora sai", "toda vez pede login", "não entra", "não consigo entrar", "não consigo acessar", "erro ao entrar", "erro de login", "não passa da tela de login", "trava no login", "sessão expirada", "token", "não autentica"],
+        "severity": "Crítica",
+        "complexity": "Média",
+        "templates": {
+            "critical": "Olá, {nome}! Lamentamos muito pelo transtorno com a instabilidade de login no Minha Escola MG. Nossa equipe técnica da Prodemge está atuando na infraestrutura para estabilizar as sessões e evitar desconexões. Como procedimento imediato, por favor limpe o cache do aplicativo em Configurações > Aplicativos > Minha Escola MG > Armazenamento > Limpar Cache e tente novamente. Caso a dificuldade persista, acione o Canal de Suporte Oficial: 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! Agradecemos pelo seu relato. Já estamos cientes da instabilidade no acesso e atuando para otimizar o processo de login do Minha Escola MG. Recomendamos manter o app sempre atualizado na versão mais recente da {loja}. Se precisar de auxílio adicional, conte conosco no Canal de Suporte Oficial: 👉 {canal_contato}",
+            "positive": "Olá, {nome}! Muito obrigado pela avaliação de {estrelas} estrelas no Minha Escola MG! Continuamos trabalhando para garantir um acesso rápido e seguro a todos os estudantes e responsáveis."
+        }
+    },
     "gov_br_cpf": {
         "id": "gov_br_cpf",
         "name": "Falha no Gov.br e Vínculo de CPF",

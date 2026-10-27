@@ -1,11 +1,51 @@
+import re
+import unicodedata
 from typing import Dict, List, Any
 from database.db import get_connection
 
+def norm(text: str) -> str:
+    if not text:
+        return ""
+    n = unicodedata.normalize('NFKD', text).encode('ASCII', 'ignore').decode('utf-8')
+    return n.lower().strip()
+
 ROOT_CAUSES_CONFIG = [
+    {
+        "id": "login_sessao_recorrente",
+        "name": "Instabilidade de Login, Conexão e Sessão",
+        "keywords": [
+            "login", "logar", "fazer login", "faca login", "faz login", "tentativas",
+            "tentativa", "tentando entrar", "tentar entrar", "desloga", "deslogando", "deslogou",
+            "deslogar", "desconecta", "desconectando", "desconectou", "desconectar", "sai toda hora",
+            "toda hora sai", "sai da conta", "toda vez pede login", "pede login toda", "toda vez tem que fazer login",
+            "toda vez que entro", "coloco a conta", "nao entra", "nao consigo entrar",
+            "nao consigo acessar", "nao da pra acessar", "sem acesso", "perdi o acesso",
+            "erro ao entrar", "erro ao acessar", "erro de login", "erro ao logar",
+            "nao passa da tela de login", "trava no login", "bug no login", "problemas para conectar",
+            "nao conecta", "impossivel fazer login", "sessao expirada", "sessao expirou", "token",
+            "nao autentica", "tela de login", "bloqueou meu acesso", "acessar minha conta",
+            "entrar no aplicativo", "entrar no app", "nem entrar", "nao consigo nem entrar",
+            "nao abre a conta", "nao reconhece a conta", "tentar logar", "tentativas ate o app",
+            "bloqueou", "bloqueada", "bloqueio", "nao entra de primeira", "so entra quando quer",
+            "para entrar", "pra entrar", "ao entrar", "senha e usuario", "usuario e senha", "minha conta",
+            "dificil de abrir", "nao abre de jeito nenhum", "conectar", "conexao", "autenticacao",
+            "erro de autenticacao", "fora do ar"
+        ],
+        "severity": "Crítica",
+        "severity_color": "#dc2626", # red
+        "complexity": "Média",
+        "complexity_score": 2,
+        "recommendation": "Persistir token de refresh de forma segura (AccountManager/Keychain), aumentar tolerância a timeout no gateway Prodemge e tratar desconexões com reconexão automática silenciosa sem deslogar o usuário."
+    },
     {
         "id": "gov_br_cpf",
         "name": "Falha no Gov.br e Vínculo de CPF",
-        "keywords": ["gov.br", "gov", "cpf", "conta gov", "vincular", "vínculo", "não reconhece cpf", "nao reconhece cpf", "dados inválidos", "dados invalidos", "cpf incorreto", "erro de autenticação", "login gov", "gov br"],
+        "keywords": [
+            "gov.br", "gov", "conta gov", "login gov", "gov br",
+            "cpf", "vincular cpf", "vinculo de cpf", "nao reconhece cpf",
+            "cpf nao encontrado", "cpf incorreto", "dados divergentes", "dados invalidos",
+            "dataprev", "simade"
+        ],
         "severity": "Crítica",
         "severity_color": "#dc2626", # red
         "complexity": "Alta",
@@ -15,7 +55,11 @@ ROOT_CAUSES_CONFIG = [
     {
         "id": "senha_recuperacao",
         "name": "Recuperação de Senha e Redefinição",
-        "keywords": ["esqueci a senha", "esqueci minha senha", "redefinir", "recuperar senha", "recuperar", "código", "codigo", "trocar senha", "senha invalida", "senha inválida", "não envia email", "nao envia email", "email não chega", "e-mail não chega", "senha", "senhas", "bloqueada", "bloqueou", "não consigo entrar", "nao consigo entrar", "não entra", "nao entra", "não consigo acessar", "nao consigo acessar", "erro ao entrar"],
+        "keywords": [
+            "esqueci a senha", "esqueci minha senha", "redefinir senha", "recuperar senha",
+            "trocar senha", "mudar senha", "id do aluno", "idaluno", "senha temporaria",
+            "redefinicao", "codigo de recuperacao", "redefinir a senha"
+        ],
         "severity": "Alta",
         "severity_color": "#ea580c", # orange
         "complexity": "Média",
@@ -25,7 +69,11 @@ ROOT_CAUSES_CONFIG = [
     {
         "id": "boletim_notas",
         "name": "Boletim em Branco e Notas Ausentes",
-        "keywords": ["nota", "notas", "boletim", "bimestre", "não carrega nota", "nao carrega nota", "boletim em branco", "nota zerada", "não aparece nota", "nao aparece nota", "nota sumiu", "lançamento de notas", "ver as notas", "sem nota", "notas não aparecem"],
+        "keywords": [
+            "nota", "notas", "boletim", "bimestre", "nao carrega nota", "boletim em branco",
+            "nota zerada", "nao aparece nota", "nota sumiu", "lancamento de notas", "ver as notas",
+            "sem nota", "notas nao aparecem", "quadro de notas", "ver notas", "consultar nota"
+        ],
         "severity": "Alta",
         "severity_color": "#ea580c",
         "complexity": "Alta",
@@ -35,7 +83,11 @@ ROOT_CAUSES_CONFIG = [
     {
         "id": "faltas_frequencia",
         "name": "Faltas e Frequência Divergentes",
-        "keywords": ["falta", "faltas", "frequência", "frequencia", "presença", "presenca", "falta errada", "computou falta", "sem presença", "marcou falta"],
+        "keywords": [
+            "falta", "faltas", "frequencia", "presenca", "falta errada", "computou falta",
+            "sem presenca", "marcou falta", "quadro de faltas", "abono de falta",
+            "dias que eu fui", "dias de aula"
+        ],
         "severity": "Média",
         "severity_color": "#eab308", # yellow
         "complexity": "Média",
@@ -45,7 +97,11 @@ ROOT_CAUSES_CONFIG = [
     {
         "id": "crash_fechamento",
         "name": "Crash e Fechamento Inesperado",
-        "keywords": ["fecha sozinho", "fechando sozinho", "fechando", "fecha", "sai do app", "crash", "trava ao abrir", "nem abre", "parou de funcionar", "app parou", "não abre", "nao abre", "fica saindo", "sai da conta"],
+        "keywords": [
+            "fecha sozinho", "fechando sozinho", "fechando", "fecha", "sai do app", "crash",
+            "trava ao abrir", "nem abre", "parou de funcionar", "app parou", "nao abre",
+            "fica fechando", "fecha do nada", "aplicativo fecha", "falha ao abrir"
+        ],
         "severity": "Crítica",
         "severity_color": "#dc2626",
         "complexity": "Alta",
@@ -55,7 +111,13 @@ ROOT_CAUSES_CONFIG = [
     {
         "id": "lentidao_tela_preta",
         "name": "Lentidão Extrema e Tela Preta",
-        "keywords": ["tela preta", "tela branca", "lento", "lentidão", "lentidao", "travando", "trava", "carregando infinito", "roda roda", "não passa da tela", "nao passa da tela", "atualização piorou", "atualizacao piorou", "ruim", "péssimo", "pessimo", "odiei", "horrível", "horrivel", "uma porcaria"],
+        "keywords": [
+            "tela preta", "tela branca", "lento", "lentidao", "travando", "trava",
+            "carregando infinito", "roda roda", "nao passa da tela", "atualizacao piorou",
+            "carregamento infinito", "demora demais", "congelando", "congela", "fica carregando",
+            "demora para carregar", "demora pra carregar", "nunca carrega", "demora pra atualizar",
+            "fica rodando", "carregar e nunca carrega"
+        ],
         "severity": "Alta",
         "severity_color": "#ea580c",
         "complexity": "Média",
@@ -65,7 +127,10 @@ ROOT_CAUSES_CONFIG = [
     {
         "id": "acesso_responsaveis",
         "name": "Acesso dos Pais / Múltiplos Alunos",
-        "keywords": ["responsável", "responsavel", "pais", "mãe", "mae", "pai", "filho", "filhos", "ver meu filho", "dependente", "outro filho", "dois filhos"],
+        "keywords": [
+            "responsavel", "pais", "mae", "pai", "filho", "filhos", "ver meu filho",
+            "dependente", "outro filho", "dois filhos", "duas filhas", "minha filha"
+        ],
         "severity": "Média",
         "severity_color": "#eab308",
         "complexity": "Média",
@@ -75,7 +140,10 @@ ROOT_CAUSES_CONFIG = [
     {
         "id": "elogios_satisfacao",
         "name": "Elogios e Avaliações Positivas",
-        "keywords": ["ótimo", "otimo", "muito bom", "excelente", "parabéns", "parabens", "ajuda muito", "fácil", "facil", "gostei", "adorei", "perfeito", "bom", "top", "maravilha", "prático", "pratico", "nota 10"],
+        "keywords": [
+            "otimo", "muito bom", "excelente", "parabens", "ajuda muito", "facil", "gostei",
+            "adorei", "perfeito", "bom", "top", "maravilha", "pratico", "nota 10"
+        ],
         "severity": "Baixa",
         "severity_color": "#16a34a", # green
         "complexity": "Baixa",
@@ -85,9 +153,10 @@ ROOT_CAUSES_CONFIG = [
 ]
 
 def classify_text_issue(content: str, title: str = "", rating: int = 3) -> Dict[str, Any]:
-    text = f"{title} {content}".lower().strip()
-    
-    # Se for avaliação sem texto (apenas estrelas)
+    raw_text = f"{title or ''} {content or ''}".strip()
+    text = norm(raw_text)
+
+    # Avaliação sem texto (apenas nota de estrelas)
     if not text:
         if rating >= 4:
             return next(c for c in ROOT_CAUSES_CONFIG if c["id"] == "elogios_satisfacao")
@@ -102,19 +171,70 @@ def classify_text_issue(content: str, title: str = "", rating: int = 3) -> Dict[
                 "recommendation": "Responder convidando o usuário a detalhar a experiência pelo canal oficial de suporte."
             }
 
-    # Se tiver nota alta (4 ou 5) e nenhum termo negativo forte, classifica como elogio
-    if rating >= 4 and not any(w in text for w in ["mas", "porém", "porem", "trava", "fecha", "erro", "ruim", "péssimo", "pessimo", "não", "nao"]):
+    # Elogios puros de 4 ou 5 estrelas sem termos negativos
+    if rating >= 4 and not any(w in text for w in ["mas", "porem", "trava", "fecha", "erro", "ruim", "pessimo", "nao", "bug", "problema", "odiei", "horrivel", "bomba", "defeito"]):
         return next(c for c in ROOT_CAUSES_CONFIG if c["id"] == "elogios_satisfacao")
 
-    # Busca casamento de palavras-chave nas causas de problemas (priorizando ordem)
-    for cfg in ROOT_CAUSES_CONFIG:
-        if cfg["id"] == "elogios_satisfacao":
-            continue
-        for kw in cfg["keywords"]:
-            if kw in text:
-                return cfg
+    # 1. Gov.br e CPF
+    gov_cfg = next(c for c in ROOT_CAUSES_CONFIG if c["id"] == "gov_br_cpf")
+    if any(k in text for k in gov_cfg["keywords"]):
+        return gov_cfg
 
-    # Se sobrou nota baixa
+    # 2. Recuperação de Senha / ID do Aluno
+    senha_cfg = next(c for c in ROOT_CAUSES_CONFIG if c["id"] == "senha_recuperacao")
+    if any(k in text for k in senha_cfg["keywords"]):
+        return senha_cfg
+
+    # 3. Boletim e Notas
+    boletim_cfg = next(c for c in ROOT_CAUSES_CONFIG if c["id"] == "boletim_notas")
+    if any(k in text for k in boletim_cfg["keywords"]):
+        return boletim_cfg
+
+    # 4. Faltas e Frequência
+    faltas_cfg = next(c for c in ROOT_CAUSES_CONFIG if c["id"] == "faltas_frequencia")
+    if any(k in text for k in faltas_cfg["keywords"]):
+        return faltas_cfg
+
+    # 5. Instabilidade de Login, Conexão e Sessão Recorrente (Prioridade máxima sobre palavras genéricas)
+    login_cfg = next(c for c in ROOT_CAUSES_CONFIG if c["id"] == "login_sessao_recorrente")
+    login_regexes = [
+        r"login", r"logar", r"tentativ", r"deslog", r"desconect",
+        r"toda\s*(hora|vez).*(sai|pede|tem\s*que)",
+        r"(sai|caiu|desfez).*(da\s*conta|o\s*login)",
+        r"(nao|nem|nunca|sem|dificil|impossivel).*(consig|consegu|da\s*pra|passa\s*da).*(acess|entr|log|autentic|abrir|conect)",
+        r"(erro|falha|bug|problema).*(ao|de|no|para|pra)?\s*(entr|acess|log|autentic|conect|abrir)",
+        r"erro\s*(interno|de\s*sessao|de\s*token)",
+        r"(sessao|token).*(expir|invalid)",
+        r"(usuario|email).*(e|ou)\s*senha",
+        r"senha.*(invalida|incorreta|nao\s*confere)",
+        r"codigo.*(nunca|nao|sms|email)",
+        r"(fora\s*do\s*ar|fora\s*de\s*ar)",
+        r"(nao|nunca).*(entra|conecta|autentica)",
+        r"(tentar|tento|tentando|tentei).*(entrar|acessar|logar|abrir)",
+        r"(bloqueou|bloqueada|bloqueado).*(conta|acesso|login)",
+        r"acessar\s*(minha|a)?\s*conta",
+        r"so\s*abre\s*quando\s*quer"
+    ]
+    for pat in login_regexes:
+        if re.search(pat, text):
+            return login_cfg
+
+    # 6. Crash e Fechamento Inesperado
+    crash_cfg = next(c for c in ROOT_CAUSES_CONFIG if c["id"] == "crash_fechamento")
+    if any(k in text for k in crash_cfg["keywords"]):
+        return crash_cfg
+
+    # 7. Acesso Pais e Responsáveis
+    resp_cfg = next(c for c in ROOT_CAUSES_CONFIG if c["id"] == "acesso_responsaveis")
+    if any(k in text for k in resp_cfg["keywords"]):
+        return resp_cfg
+
+    # 8. Lentidão, Travamento e Tela Preta
+    lent_cfg = next(c for c in ROOT_CAUSES_CONFIG if c["id"] == "lentidao_tela_preta")
+    if any(k in text for k in lent_cfg["keywords"]):
+        return lent_cfg
+
+    # Se sobrou nota baixa (1 ou 2 estrelas)
     if rating <= 2:
         return {
             "id": "outros_problemas",

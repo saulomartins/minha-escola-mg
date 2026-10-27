@@ -334,6 +334,7 @@
                     <div class="md:col-span-1 lg:col-span-1">
                         <select id="filter-root-cause" onchange="loadReviews()" class="w-full py-2 px-3 bg-indigo-50/60 border border-indigo-200 text-indigo-950 font-medium rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                             <option value="todos">🎯 Todas as Causas-Raiz</option>
+                            <option value="login_sessao_recorrente">🔐 Instabilidade de Login, Conexão e Sessão</option>
                             <option value="gov_br_cpf">🏛️ Falha no Gov.br e Vínculo de CPF</option>
                             <option value="senha_recuperacao">🔑 Recuperação de Senha e Redefinição</option>
                             <option value="lentidao_tela_preta">⏳ Lentidão Extrema e Tela Preta</option>
@@ -3394,6 +3395,7 @@
         }
 
         const rootCauseNames = {
+            "login_sessao_recorrente": { name: "Login & Sessão", color: "bg-rose-50 text-rose-800 border-rose-300" },
             "gov_br_cpf": { name: "Gov.br / CPF", color: "bg-red-50 text-red-700 border-red-200" },
             "senha_recuperacao": { name: "Senha / Recuperação", color: "bg-orange-50 text-orange-700 border-orange-200" },
             "lentidao_tela_preta": { name: "Lentidão / Tela Preta", color: "bg-amber-50 text-amber-700 border-amber-200" },

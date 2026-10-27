@@ -13,6 +13,7 @@ from typing import Dict, Any, List
 from analytics.complexity import ROOT_CAUSES_CONFIG, classify_text_issue
 
 ROOT_CAUSE_NAMES = {
+    "login_sessao_recorrente": "Instabilidade de Login, Conexão e Sessão",
     "gov_br_cpf": "Falha no Gov.br e Vínculo de CPF",
     "senha_recuperacao": "Recuperação de Senha e Redefinição",
     "boletim_notas": "Boletim em Branco e Notas Ausentes",
@@ -26,6 +27,7 @@ ROOT_CAUSE_NAMES = {
 }
 
 ROOT_CAUSE_ICONS = {
+    "login_sessao_recorrente": "fa-right-to-bracket text-rose-600",
     "gov_br_cpf": "fa-building-columns text-red-600",
     "senha_recuperacao": "fa-key text-amber-600",
     "boletim_notas": "fa-chart-simple text-blue-600",
@@ -39,6 +41,7 @@ ROOT_CAUSE_ICONS = {
 }
 
 ROOT_CAUSE_COLORS = {
+    "login_sessao_recorrente": "#e11d48",
     "gov_br_cpf": "#dc2626",
     "senha_recuperacao": "#d97706",
     "boletim_notas": "#2563eb",
