@@ -318,7 +318,10 @@ def get_temporal_diagnostics() -> Dict[str, Any]:
         for ym in months_sorted:
             monthly_counts.append(monthly_map[ym]["root_causes"].get(rc, 0))
 
-        if rc in ("gov_br_cpf", "senha_recuperacao"):
+        if rc == "login_sessao_recorrente":
+            pattern = "Crítico Recorrente: Instabilidade em sessões, expiração de token e múltiplas tentativas de login"
+            recommendation = "Persistir tokens de refresh seguros (AccountManager/Keychain), tolerância a timeout no gateway Prodemge e reconexão silenciosa sem forçar logout."
+        elif rc in ("gov_br_cpf", "senha_recuperacao"):
             pattern = "Pico Sazonal: Início de Ano Letivo & Cadastros (Fevereiro e Agosto)"
             recommendation = "Revisar fluxo de autenticação e timeout de tokens Gov.br nos períodos de matrícula."
         elif rc in ("boletim_notas", "faltas_frequencia"):
