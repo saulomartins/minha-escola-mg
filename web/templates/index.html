@@ -421,6 +421,27 @@
                 </div>
             </div>
 
+            <!-- Banner Destaque Resultados da Aplicação & IA -->
+            <div class="bg-gradient-to-r from-indigo-50 via-slate-50 to-emerald-50 border border-indigo-200/90 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+                <div class="flex items-center gap-3.5">
+                    <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-800 text-white flex items-center justify-center text-lg font-bold shadow-sm">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-black text-indigo-950 uppercase tracking-wide">Resultados da Aplicação com IA:</span>
+                            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">🚀 Tendência: Em Forte Crescimento</span>
+                        </div>
+                        <p class="text-xs text-slate-600 mt-1">
+                            <strong class="text-indigo-900">372</strong> comentários respondidos • <strong class="text-indigo-900">503</strong> com sugestão por IA (90,1% de cobertura) • As notas subiram de <strong class="text-slate-800">1,56 ⭐</strong> (Ago) para <strong class="text-emerald-700">2,76 ⭐</strong> (Set) e <strong class="text-emerald-700">3,88 ⭐</strong> (Out).
+                        </p>
+                    </div>
+                </div>
+                <button onclick="switchMainView('temporal')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow transition flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-trend-up"></i> Ver Gráficos de Resultados & Satisfação
+                </button>
+            </div>
+
             <!-- Lista de Avaliações -->
             <div class="space-y-4">
                 <div class="flex justify-between items-center px-1">
@@ -763,6 +784,117 @@
                     <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Mês de Maior Pico</span>
                     <h3 id="temporal-kpi-peak" class="text-2xl font-black text-amber-700">-</h3>
                     <p class="text-xs text-slate-500 truncate" id="temporal-kpi-peak-sub">Período com maior concentração</p>
+                </div>
+            </div>
+
+            <!-- ================= PAINEL EXECUTIVO: RESULTADOS DA APLICAÇÃO (IA, SATISFAÇÃO & TENDÊNCIA) ================= -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                <!-- 1. Eficiência da Aplicação & IA -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between space-y-4">
+                    <div class="space-y-1">
+                        <div class="flex items-center justify-between">
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 uppercase tracking-wide">
+                                <i class="fa-solid fa-robot mr-1 text-indigo-600"></i> Eficiência da IA
+                            </span>
+                            <span class="text-xs font-bold text-slate-500" id="ai-coverage-badge">90.1% Cobertura</span>
+                        </div>
+                        <h4 class="font-bold text-slate-800 text-sm mt-1">Resultados da Aplicação com IA</h4>
+                        <p class="text-xs text-slate-500">Comentários respondidos e sugestões inteligentes geradas pelo sistema.</p>
+                    </div>
+
+                    <!-- Mini KPIs IA -->
+                    <div class="grid grid-cols-3 gap-2 text-center py-2 border-y border-slate-100">
+                        <div class="bg-slate-50 p-2 rounded-xl">
+                            <p class="text-[10px] uppercase font-bold text-slate-400">Respondidas</p>
+                            <p class="text-lg font-black text-indigo-600" id="ai-responded-val">372</p>
+                            <span class="text-[10px] text-slate-500 font-semibold" id="ai-responded-pct">66.7%</span>
+                        </div>
+                        <div class="bg-indigo-50/60 p-2 rounded-xl border border-indigo-100">
+                            <p class="text-[10px] uppercase font-bold text-indigo-500">Sugestões IA</p>
+                            <p class="text-lg font-black text-indigo-900" id="ai-suggested-val">503</p>
+                            <span class="text-[10px] text-indigo-600 font-semibold" id="ai-suggested-pct">90.1%</span>
+                        </div>
+                        <div class="bg-amber-50/60 p-2 rounded-xl border border-amber-100">
+                            <p class="text-[10px] uppercase font-bold text-amber-600">Pendentes</p>
+                            <p class="text-lg font-black text-amber-700" id="ai-pending-val">186</p>
+                            <span class="text-[10px] text-amber-600 font-semibold" id="ai-pending-pct">33.3%</span>
+                        </div>
+                    </div>
+
+                    <div class="relative h-44">
+                        <canvas id="chart-ai-efficiency"></canvas>
+                    </div>
+
+                    <div class="text-[11px] text-slate-500 bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex items-center justify-between">
+                        <span><i class="fa-regular fa-clock text-indigo-500 mr-1"></i> Tempo estimado economizado:</span>
+                        <strong class="text-slate-800" id="ai-hours-saved">~27,9 horas</strong>
+                    </div>
+                </div>
+
+                <!-- 2. Nível de Satisfação vs Notas -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between space-y-4">
+                    <div class="space-y-1">
+                        <div class="flex items-center justify-between">
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase tracking-wide">
+                                <i class="fa-solid fa-face-smile mr-1 text-emerald-600"></i> Satisfação vs Notas
+                            </span>
+                            <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">97.8% Concordância</span>
+                        </div>
+                        <h4 class="font-bold text-slate-800 text-sm mt-1">Sentimento dos Usuários por Nota</h4>
+                        <p class="text-xs text-slate-500">Distribuição de relatos Positivos 😊, Neutros 😐 e Negativos 😡 por estrela.</p>
+                    </div>
+
+                    <div class="relative h-52">
+                        <canvas id="chart-satisfaction-ratings"></canvas>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 text-[11px] pt-1">
+                        <div class="bg-rose-50 text-rose-800 p-2 rounded-xl border border-rose-200 font-medium">
+                            <p class="font-bold text-xs flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation"></i> Detratores (1-2 ⭐)</p>
+                            <p class="text-xs mt-0.5"><b id="sat-detractors-count">350</b> usuários (62.7%)</p>
+                        </div>
+                        <div class="bg-emerald-50 text-emerald-800 p-2 rounded-xl border border-emerald-200 font-medium">
+                            <p class="font-bold text-xs flex items-center gap-1"><i class="fa-solid fa-heart"></i> Promotores (4-5 ⭐)</p>
+                            <p class="text-xs mt-0.5"><b id="sat-promoters-count">163</b> usuários (29.2%)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Termômetro da Tendência Temporal -->
+                <div class="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-5 rounded-2xl shadow-md border border-indigo-900/60 flex flex-col justify-between space-y-4 relative overflow-hidden">
+                    <div class="space-y-1 relative z-10">
+                        <div class="flex items-center justify-between">
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/30 text-emerald-300 border border-emerald-400/30 uppercase tracking-wide flex items-center gap-1">
+                                <i class="fa-solid fa-chart-line"></i> Análise de Tendência
+                            </span>
+                            <span id="trend-verdict-badge" class="px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-500 text-slate-950 uppercase shadow-sm">
+                                🚀 EM CRESCIMENTO
+                            </span>
+                        </div>
+                        <h4 class="font-bold text-white text-sm mt-1" id="trend-verdict-title">Estamos Crescendo, Estáveis ou Caindo?</h4>
+                        <p class="text-xs text-slate-300 leading-relaxed text-[11px]" id="trend-verdict-desc">
+                            Após o vale de agosto (1,56 ⭐), a média saltou para 2,76 ⭐ em setembro e 3,88 ⭐ em outubro (+148% de valorização).
+                        </p>
+                    </div>
+
+                    <div class="relative h-44 relative z-10">
+                        <canvas id="chart-ratings-trend"></canvas>
+                    </div>
+
+                    <div class="relative z-10 bg-white/10 backdrop-blur-sm p-3 rounded-xl border border-white/10 space-y-1">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-slate-300">Ponto Mínimo (Ago/26):</span>
+                            <strong class="text-amber-400 font-extrabold">1,56 ⭐</strong>
+                        </div>
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-slate-300">Nota Atual Recente (Out/26):</span>
+                            <strong class="text-emerald-400 font-extrabold">3,88 ⭐ (+2,32 ⭐)</strong>
+                        </div>
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-slate-300">Diagnóstico Executivo:</span>
+                            <span class="text-emerald-300 font-bold">Recuperação Acelerada</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -4608,6 +4740,10 @@
         // ================= FUNÇÕES DE DIAGNÓSTICO TEMPORAL & TENDÊNCIAS =================
         let chartMonthlyVolume = null;
         let chartMonthlyCauses = null;
+        let chartAiEfficiency = null;
+        let chartSatisfactionRatings = null;
+        let chartRatingsTrend = null;
+        let chartMonthlyCauses = null;
         let currentTemporalData = null;
 
         async function loadTemporalAnalytics() {
@@ -4706,6 +4842,17 @@
 
                 // 3. Renderizar Tabela de Recência por Causa-Raiz
                 renderTemporalRecencyTable();
+
+                // 4. Painel Executivo: IA, Satisfação e Tendência
+                if (data.ai_metrics) {
+                    renderAiEfficiencyChart(data.ai_metrics);
+                }
+                if (data.satisfaction_vs_ratings) {
+                    renderSatisfactionRatingsChart(data.satisfaction_vs_ratings);
+                }
+                if (data.trend_analysis) {
+                    renderRatingsTrendChart(data.trend_analysis);
+                }
 
                 // 4. Gráfico Mensal
                 if (data.monthly_series) {
@@ -4895,6 +5042,164 @@
                 s.value = term;
                 loadReviews();
             }
+        }
+
+                function renderAiEfficiencyChart(ai) {
+            const ctx = document.getElementById('chart-ai-efficiency');
+            if (!ctx) return;
+            if (chartAiEfficiency) chartAiEfficiency.destroy();
+
+            const respEl = document.getElementById('ai-responded-val');
+            if (respEl) respEl.innerText = ai.responded_count;
+            const respPct = document.getElementById('ai-responded-pct');
+            if (respPct) respPct.innerText = ai.responded_pct + '%';
+
+            const sugEl = document.getElementById('ai-suggested-val');
+            if (sugEl) sugEl.innerText = ai.ai_suggestions_count;
+            const sugPct = document.getElementById('ai-suggested-pct');
+            if (sugPct) sugPct.innerText = ai.ai_suggestions_pct + '%';
+
+            const pendEl = document.getElementById('ai-pending-val');
+            if (pendEl) pendEl.innerText = ai.pending_count;
+            const pendPct = document.getElementById('ai-pending-pct');
+            if (pendPct) pendPct.innerText = ai.pending_pct + '%';
+
+            const hoursEl = document.getElementById('ai-hours-saved');
+            if (hoursEl) hoursEl.innerText = '~' + ai.hours_saved + ' horas';
+
+            chartAiEfficiency = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Respondidas', 'Pendentes'],
+                    datasets: [{
+                        data: [ai.responded_count, ai.pending_count],
+                        backgroundColor: ['#4f46e5', '#f59e0b'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } }
+                    },
+                    cutout: '68%'
+                }
+            });
+        }
+
+        function renderSatisfactionRatingsChart(sat) {
+            const ctx = document.getElementById('chart-satisfaction-ratings');
+            if (!ctx) return;
+            if (chartSatisfactionRatings) chartSatisfactionRatings.destroy();
+
+            const detEl = document.getElementById('sat-detractors-count');
+            if (detEl) detEl.innerText = sat.detractors_count;
+            const promEl = document.getElementById('sat-promoters-count');
+            if (promEl) promEl.innerText = sat.promoters_count;
+
+            const labels = sat.matrix.map(m => m.label);
+            const posData = sat.matrix.map(m => m.positive);
+            const neuData = sat.matrix.map(m => m.neutral);
+            const negData = sat.matrix.map(m => m.negative);
+
+            chartSatisfactionRatings = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '😊 Positivo',
+                            data: posData,
+                            backgroundColor: '#10b981',
+                            borderRadius: 4
+                        },
+                        {
+                            label: '😐 Neutro',
+                            data: neuData,
+                            backgroundColor: '#f59e0b',
+                            borderRadius: 4
+                        },
+                        {
+                            label: '😡 Negativo',
+                            data: negData,
+                            backgroundColor: '#ef4444',
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { stacked: true },
+                        y: { stacked: true, beginAtZero: true, title: { display: true, text: 'Qtd Usuários', font: { size: 10 } } }
+                    },
+                    plugins: {
+                        legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+
+        function renderRatingsTrendChart(trend) {
+            const ctx = document.getElementById('chart-ratings-trend');
+            if (!ctx) return;
+            if (chartRatingsTrend) chartRatingsTrend.destroy();
+
+            const badgeEl = document.getElementById('trend-verdict-badge');
+            if (badgeEl && trend.badge) badgeEl.innerText = trend.badge;
+
+            const descEl = document.getElementById('trend-verdict-desc');
+            if (descEl && trend.detail) descEl.innerText = trend.detail;
+
+            const labels = trend.series.map(s => s.label);
+            const ratings = trend.series.map(s => s.avg_rating);
+
+            chartRatingsTrend = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Nota Média Oficial',
+                        data: ratings,
+                        borderColor: '#34d399',
+                        backgroundColor: 'rgba(52, 211, 153, 0.15)',
+                        fill: true,
+                        tension: 0.35,
+                        borderWidth: 2.5,
+                        pointBackgroundColor: '#10b981',
+                        pointBorderColor: '#ffffff',
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            ticks: { color: '#94a3b8', font: { size: 9 } },
+                            grid: { display: false }
+                        },
+                        y: {
+                            min: 1,
+                            max: 5,
+                            ticks: { color: '#94a3b8', font: { size: 9 } },
+                            grid: { color: 'rgba(255, 255, 255, 0.08)' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(c) { return ' Média: ' + c.parsed.y + ' ⭐'; }
+                            }
+                        }
+                    }
+                }
+            });
         }
 
         function renderMonthlyVolumeChart(series) {
