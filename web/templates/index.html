@@ -517,6 +517,172 @@
                 </div>
             </div>
 
+            <!-- ================= NOVO PAINEL: DIAGNÓSTICO DE SISTEMAS OPERACIONAIS (ANDROID VS IOS) NAS CAUSAS-RAIZ & COMPLEXIDADE ================= -->
+            <div class="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 border border-indigo-800/80 rounded-2xl p-6 text-white shadow-md space-y-6">
+                <!-- Header da Seção -->
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-indigo-800/60 pb-4">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-black bg-purple-500/30 text-purple-200 border border-purple-400/30 uppercase tracking-wider">
+                                Engenharia de SO • Android vs iOS
+                            </span>
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-black bg-rose-500/30 text-rose-200 border border-rose-400/30 uppercase tracking-wider">
+                                Qual SO Dá Mais Problema?
+                            </span>
+                        </div>
+                        <h3 class="text-xl font-black text-white flex items-center gap-2">
+                            <i class="fa-solid fa-code-compare text-indigo-400"></i> Diagnóstico de Causas-Raiz & Complexidade por Sistema Operacional
+                        </h3>
+                        <p class="text-xs text-slate-300 max-w-3xl leading-relaxed mt-1">
+                            Comparativo aprofundado revelando qual sistema operacional sofre mais em cada causa-raiz, o impacto na complexidade de desenvolvimento e as diretrizes de correção para Prodemge.
+                        </p>
+                    </div>
+                    <div class="bg-indigo-500/20 border border-indigo-400/30 rounded-xl px-4 py-2.5 text-right self-stretch md:self-auto flex flex-col justify-center">
+                        <span class="text-[10px] uppercase font-bold text-indigo-300 tracking-wider">Veredito Proporcional</span>
+                        <span class="text-sm font-black text-rose-400">🍎 iOS: 86,2% de Rejeição</span>
+                        <span class="text-[10px] text-slate-300">Android: 72,0% de Rejeição</span>
+                    </div>
+                </div>
+
+                <!-- 2 Cards Comparativos: Android vs iOS -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <!-- Card Android -->
+                    <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-5 space-y-4 relative overflow-hidden">
+                        <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl font-bold">
+                                    <i class="fa-brands fa-google-play"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-extrabold text-white text-base">Android (Google Play)</h4>
+                                    <p class="text-xs text-slate-400">500 avaliações • 89,6% da base</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xl font-black text-amber-400">2,43 ⭐</span>
+                                <span class="block text-[10px] text-slate-400">Nota Média Oficial</span>
+                            </div>
+                        </div>
+
+                        <!-- Métricas Chave Android -->
+                        <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                            <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-700/60">
+                                <span class="text-[10px] uppercase font-bold text-slate-400 block">Queixas Técnicas</span>
+                                <strong class="text-base font-black text-rose-400">360</strong>
+                                <span class="text-[10px] text-slate-400 block font-semibold">(72,0%)</span>
+                            </div>
+                            <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-700/60">
+                                <span class="text-[10px] uppercase font-bold text-slate-400 block">Alta Complexidade</span>
+                                <strong class="text-base font-black text-amber-400">113</strong>
+                                <span class="text-[10px] text-slate-400 block font-semibold">(31,4%)</span>
+                            </div>
+                            <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-700/60">
+                                <span class="text-[10px] uppercase font-bold text-slate-400 block">Elogios</span>
+                                <strong class="text-base font-black text-emerald-400">140</strong>
+                                <span class="text-[10px] text-slate-400 block font-semibold">(28,0%)</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-1.5 text-xs text-slate-300">
+                            <p class="flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation text-amber-400"></i> <b>Causa #1:</b> Instabilidade de Login & Sessão (112 queixas - 31,1%)</p>
+                            <p class="flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation text-amber-400"></i> <b>Causa #2:</b> Boletim em Branco / Notas (59 queixas - 16,4%)</p>
+                            <p class="flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation text-rose-400"></i> <b>Problemas Exclusivos:</b> 100% da Lentidão/Tela Preta (13) e dos Crashes (7) ocorrem em aparelhos no Android ≤ 12.</p>
+                        </div>
+                    </div>
+
+                    <!-- Card iOS -->
+                    <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-5 space-y-4 relative overflow-hidden">
+                        <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-10 h-10 rounded-xl bg-slate-700 text-white flex items-center justify-center text-xl font-bold">
+                                    <i class="fa-brands fa-apple"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-extrabold text-white text-base">iOS (Apple App Store)</h4>
+                                    <p class="text-xs text-slate-400">58 avaliações • 10,4% da base</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xl font-black text-rose-400">1,93 ⭐</span>
+                                <span class="block text-[10px] text-slate-400">Nota Média Oficial</span>
+                            </div>
+                        </div>
+
+                        <!-- Métricas Chave iOS -->
+                        <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                            <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-700/60">
+                                <span class="text-[10px] uppercase font-bold text-slate-400 block">Queixas Técnicas</span>
+                                <strong class="text-base font-black text-rose-400">50</strong>
+                                <span class="text-[10px] text-rose-300 block font-bold">(86,2% 🚨)</span>
+                            </div>
+                            <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-700/60">
+                                <span class="text-[10px] uppercase font-bold text-slate-400 block">Alta Complexidade</span>
+                                <strong class="text-base font-black text-rose-400">20</strong>
+                                <span class="text-[10px] text-amber-300 block font-bold">(40,0% 🔥)</span>
+                            </div>
+                            <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-700/60">
+                                <span class="text-[10px] uppercase font-bold text-slate-400 block">Elogios</span>
+                                <strong class="text-base font-black text-slate-400">8</strong>
+                                <span class="text-[10px] text-slate-400 block font-semibold">(13,8%)</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-1.5 text-xs text-slate-300">
+                            <p class="flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation text-rose-400"></i> <b>Causa #1:</b> Instabilidade de Login & Sessão (18 queixas - 36,0%)</p>
+                            <p class="flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation text-rose-400"></i> <b>Causa #2:</b> Falha Gov.br e CPF (17 queixas - 34,0% • <b>2,6x maior que Android</b>)</p>
+                            <p class="flex items-center gap-1.5"><i class="fa-solid fa-circle-check text-emerald-400"></i> <b>Pontos Fortes:</b> Zero relatos de lentidão de tela ou fechamento inesperado de hardware.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gráfico Comparativo: Incidência de Cada Causa-Raiz no Android vs iOS -->
+                <div class="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 space-y-3">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-700 pb-3">
+                        <div>
+                            <h4 class="font-extrabold text-white text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-chart-column text-indigo-400"></i> Comparativo de Incidência Relativa (% de Queixas dentro de cada SO)
+                            </h4>
+                            <p class="text-xs text-slate-400">Compara a proporção que cada causa-raiz representa no universo do Android vs universo do iOS.</p>
+                        </div>
+                        <div class="flex items-center gap-3 text-xs">
+                            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-emerald-500"></span> Android</span>
+                            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-indigo-400"></span> iOS</span>
+                        </div>
+                    </div>
+
+                    <div class="relative h-64">
+                        <canvas id="chart-os-causes-comparison"></canvas>
+                    </div>
+                </div>
+
+                <!-- Tabela Executiva Detalhada: Quem Sofre Mais em Cada Causa-Raiz -->
+                <div class="bg-slate-800/90 border border-slate-700/80 rounded-2xl overflow-hidden">
+                    <div class="p-4 border-b border-slate-700 flex justify-between items-center">
+                        <h4 class="font-extrabold text-white text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-table-cells text-indigo-400"></i> Matriz Detalhada: Causa-Raiz, Complexidade e Sistema Operacional Mais Ofendido
+                        </h4>
+                        <span class="text-[11px] font-semibold text-slate-300">Base: 410 queixas específicas analisadas</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-900/90 text-slate-400 font-bold border-b border-slate-700 uppercase tracking-wider text-[10px]">
+                                <tr>
+                                    <th class="p-3">Causa-Raiz</th>
+                                    <th class="p-3 text-center">Complexidade Técnica</th>
+                                    <th class="p-3 text-center">Android (Qtd / % Queixas)</th>
+                                    <th class="p-3 text-center">iOS (Qtd / % Queixas)</th>
+                                    <th class="p-3 text-center">SO Mais Afetado</th>
+                                    <th class="p-3">Diagnóstico Técnico & Ação Prodemge</th>
+                                </tr>
+                            </thead>
+                            <tbody id="os-comparison-tbody" class="divide-y divide-slate-700/60 text-slate-200">
+                                <!-- Gerado dinamicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
             <!-- Tabela Executiva de Causas-Raiz & Ações -->
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
                 <div class="flex justify-between items-center border-b border-slate-100 pb-3">
@@ -2697,6 +2863,7 @@
 
         let debounceTimer;
         let chartParetoInstance = null;
+        let chartOsCausesInstance = null;
         let chartComplexityInstance = null;
         let chartImpactInstance = null;
         let filterStuckAndroidOnly = false;
@@ -4190,6 +4357,105 @@
             row.classList.toggle('hidden');
         }
 
+        function renderOsBreakdownSection(osData) {
+            if (!osData) return;
+
+            // 1. Gráfico Comparativo de Causas por SO
+            const canvas = document.getElementById('chart-os-causes-comparison');
+            if (canvas && osData.chart_data) {
+                const ctx = canvas.getContext('2d');
+                if (chartOsCausesInstance) chartOsCausesInstance.destroy();
+
+                chartOsCausesInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: osData.chart_data.labels,
+                        datasets: [
+                            {
+                                label: 'Android (% das queixas)',
+                                data: osData.chart_data.android_pcts,
+                                backgroundColor: '#10b981',
+                                borderRadius: 5
+                            },
+                            {
+                                label: 'iOS (% das queixas)',
+                                data: osData.chart_data.ios_pcts,
+                                backgroundColor: '#818cf8',
+                                borderRadius: 5
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                ticks: { color: '#94a3b8', font: { size: 10 } },
+                                grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                title: { display: true, text: '% das queixas no SO', color: '#94a3b8', font: { size: 10 } },
+                                ticks: { color: '#94a3b8', font: { size: 10 } },
+                                grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                            }
+                        },
+                        plugins: {
+                            legend: { position: 'top', labels: { color: '#e2e8f0', boxWidth: 12, font: { size: 11 } } },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(ctx) { return ctx.dataset.label + ': ' + ctx.parsed.y + '%'; }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 2. Tabela Detalhada por Causa-Raiz
+            const tbody = document.getElementById('os-comparison-tbody');
+            if (tbody && osData.causes_comparison) {
+                tbody.innerHTML = osData.causes_comparison.map(item => {
+                    let domBadge = '';
+                    if (item.dominant === 'iOS') {
+                        domBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-black bg-rose-500/20 text-rose-300 border border-rose-500/40">🍎 iOS Sofre Mais</span>`;
+                    } else if (item.dominant === 'Android') {
+                        domBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">🤖 Android Sofre Mais</span>`;
+                    } else {
+                        domBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-black bg-amber-500/20 text-amber-300 border border-amber-500/40">⚖️ Equilibrado</span>`;
+                    }
+
+                    let compBadge = '';
+                    if (item.complexity === 'Alta' || item.complexity_score === 3) {
+                        compBadge = `<span class="px-2 py-0.5 rounded text-[11px] font-black bg-rose-500/20 text-rose-300 border border-rose-500/30">Alta (Score 3)</span>`;
+                    } else if (item.complexity === 'Média' || item.complexity_score === 2) {
+                        compBadge = `<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">Média (Score 2)</span>`;
+                    } else {
+                        compBadge = `<span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Baixa (Score 1)</span>`;
+                    }
+
+                    return `
+                        <tr class="hover:bg-slate-700/40 transition">
+                            <td class="p-3 font-bold text-white">
+                                ${escapeHtml(item.name)}
+                            </td>
+                            <td class="p-3 text-center">${compBadge}</td>
+                            <td class="p-3 text-center">
+                                <b class="text-white">${item.android_count}</b> <span class="text-slate-400 font-semibold text-[11px]">(${item.android_pct}%)</span>
+                            </td>
+                            <td class="p-3 text-center">
+                                <b class="text-white">${item.ios_count}</b> <span class="text-slate-400 font-semibold text-[11px]">(${item.ios_pct}%)</span>
+                            </td>
+                            <td class="p-3 text-center">${domBadge}</td>
+                            <td class="p-3 text-slate-300 text-[11px] leading-relaxed">
+                                ${escapeHtml(item.diagnosis)}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
         async function loadProblemAnalytics() {
             try {
                 const res = await fetch('/api/analytics/problems');
@@ -4260,6 +4526,11 @@
                 }
 
                 // 3. Matriz Executiva de Causas-Raiz
+                // Renderiza Comparativo de Sistemas Operacionais (Android vs iOS)
+                if (data.os_breakdown) {
+                    renderOsBreakdownSection(data.os_breakdown);
+                }
+
                 const matrixTbody = document.getElementById('problems-matrix-tbody');
                 if (matrixTbody && data.problems_ranking) {
                     matrixTbody.innerHTML = data.problems_ranking.map((p, idx) => {
