@@ -262,78 +262,120 @@ DOMAIN_PACKS: Dict[str, List[Dict[str, Any]]] = {
         }
     ],
 
-    # Domínio: Serviços Públicos / Cidadão / Governo (ex: MG App Cidadão, Detran, Poupatempo)
+    # Domínio: Serviços Públicos / Cidadão / Governo (ex: MG App Cidadão)
     "public_services": [
         {
-            "id": "gov_br_autenticacao",
-            "name": "Falha na Autenticação Gov.br e Biometria Facial",
+            "id": "agendamento_uai_cin",
+            "name": "Agendamento UAI & Carteira de Identidade (CIN/RG)",
             "keywords": [
-                "gov.br", "gov", "conta gov", "login gov", "nivel prata", "nivel ouro",
-                "reconhecimento facial", "validacao facial", "biometria facial", "selfie", "camera nao abre", "rosto"
+                "agendamento", "agendar", "identidade", "carteira de identidade", "cin", "rg",
+                "uai", "praça sete", "praca sete", "unidade de atendimento", "compareci", "comparecimento",
+                "vaga", "vagas", "sem vaga", "cancelado", "cancelaram", "horario", "marcar", "reagendar",
+                "nao consigo agendar", "data indisponivel", "agendar atendimento", "emissao da ci", "carteira de identidade"
+            ],
+            "severity": "Alta",
+            "severity_color": "#ea580c",
+            "complexity": "Média",
+            "complexity_score": 2,
+            "recommendation": "Otimizar disponibilidade de agenda da Polícia Civil/UAI no app, corrigir falso status de 'não comparecimento' e notificar cancelamentos prévios.",
+            "templates": {
+                "critical": "Olá, {nome}! Entendemos sua necessidade com o agendamento de identificação (CIN/RG) na UAI. As vagas nas unidades são abertas periodicamente pelos órgãos competentes. Caso necessite de apoio prioritário ou tenha enfrentado cancelamento/divergência de comparecimento, consulte o Canal de Atendimento Oficial: 👉 {canal_contato}",
+                "moderate": "Olá, {nome}! Agradecemos pelo retorno. Recomendamos verificar os horários de abertura de novas vagas nas unidades UAI de atendimento pelo Canal Oficial: 👉 {canal_contato}",
+                "positive": "Olá, {nome}! Ficamos muito felizes que conseguiu agendar seus serviços com praticidade no {app_name}! Estamos à disposição."
+            }
+        },
+        {
+            "id": "veiculos_detran_ipva",
+            "name": "Veículos, CNH, IPVA & Licenciamento (Detran MG)",
+            "keywords": [
+                "veiculo", "veículo", "carro", "moto", "cnh", "crlv", "detran", "transferencia", "transferência",
+                "ipva", "licenciamento", "multa", "multas", "vistoria", "atpv", "atpv-e", "renavam", "placa", "taxa",
+                "documento do carro", "cnh digital", "baixar documento", "nao sincroniza com o detran", "parcela do ipva"
             ],
             "severity": "Crítica",
             "severity_color": "#dc2626",
             "complexity": "Alta",
             "complexity_score": 3,
-            "recommendation": "Integrar SDK atualizado da validação facial Gov.br e orientar usuários sobre iluminação e permissões de câmera do aparelho.",
+            "recommendation": "Sincronizar em tempo real com o barramento do Detran MG, agilizar baixa do IPVA via PIX e permitir cancelamento simplificado de ATPV-e.",
             "templates": {
-                "critical": "Olá, {nome}! Sentimos muito pela dificuldade na autenticação Gov.br. A validação biométrica exige boa iluminação e permissões de câmera ativas. Caso o erro persista, consulte as diretrizes no Canal de Atendimento Oficial: 👉 {canal_contato}",
-                "moderate": "Olá, {nome}! Agradecemos pelo contato. A autenticação pelo Gov.br é essencial para a segurança dos seus dados. Havendo instabilidades, acesse o Canal Oficial: 👉 {canal_contato}",
-                "positive": "Olá, {nome}! Muito obrigado pela nota máxima no {app_name}! Trabalhamos para tornar o acesso aos serviços públicos cada vez mais ágil e seguro."
+                "critical": "Olá, {nome}! Lamentamos muito pela dificuldade nos serviços de trânsito e veículos do Detran MG. Para que nossa equipe técnica possa verificar a sincronização do seu veículo, CNH ou emissão de guias, acione o Canal de Atendimento Oficial: 👉 {canal_contato}",
+                "moderate": "Olá, {nome}! Agradecemos pelo contato. As informações de veículos e CNH dependem da integração em tempo real com o Detran MG. Havendo divergência de pagamento ou baixa de documentos, registre pelo Canal Oficial: 👉 {canal_contato}",
+                "positive": "Olá, {nome}! Muito obrigado pela avaliação positiva de {estrelas} estrelas! Acompanhar serviços de veículos e CNH de forma digital é prioridade no {app_name}."
             }
         },
         {
-            "id": "agendamento_atendimento",
-            "name": "Dificuldade em Agendamento Presencial e Vagas",
+            "id": "login_govbr_biometria",
+            "name": "Login Gov.br, Biometria Facial & Sessão",
             "keywords": [
-                "agendamento", "agendar", "marcar", "uai", "poupatempo", "vagas", "sem vaga", "horario",
-                "nao consigo agendar", "data indisponivel", "agendar atendimento", "unidade de atendimento"
-            ],
-            "severity": "Alta",
-            "severity_color": "#ea580c",
-            "complexity": "Média",
-            "complexity_score": 2,
-            "recommendation": "Exibir calendário preditivo com liberação de novos horários e permitir fila de espera digital com notificação push.",
-            "templates": {
-                "critical": "Olá, {nome}! Entendemos sua necessidade de realizar o agendamento. As vagas nas unidades são abertas periodicamente pelos órgãos competentes. Caso necessite de apoio prioritário, consulte o Canal Oficial: 👉 {canal_contato}",
-                "moderate": "Olá, {nome}! Agradecemos pelo retorno. Recomendamos verificar os horários de abertura de novas vagas nas unidades de atendimento pelo Canal Oficial: 👉 {canal_contato}",
-                "positive": "Olá, {nome}! Ficamos muito felizes que conseguiu agendar seus serviços com praticidade no {app_name}! Estamos à disposição."
-            }
-        },
-        {
-            "id": "emissao_documentos",
-            "name": "Erro na Emissão de Documentos e Certidões",
-            "keywords": [
-                "cnh", "documento", "certidao", "crlv", "rg", "carteira de identidade", "baixar documento",
-                "pdf nao abre", "nao baixa", "nao gera", "carteira digital", "licenciamento", "atestado"
+                "gov.br", "gov", "conta gov", "login gov", "nivel prata", "nivel ouro",
+                "reconhecimento facial", "validacao facial", "biometria facial", "selfie", "camera nao abre", "rosto",
+                "login", "logar", "deslogando", "desloga", "sai toda hora", "desconecta", "toda vez pede login",
+                "codigo do gov", "loop de login"
             ],
             "severity": "Alta",
             "severity_color": "#ea580c",
             "complexity": "Alta",
             "complexity_score": 3,
-            "recommendation": "Otimizar gerador de PDF mobile e permitir download/compartilhamento seguro via WhatsApp e e-mail.",
+            "recommendation": "Eliminar loop de autenticação Gov.br entre microserviços, integrar SDK otimizado de validação facial e orientar permissões de câmera.",
             "templates": {
-                "critical": "Olá, {nome}! Pedimos desculpas pela dificuldade ao emitir seu documento digital. Verifique a conexão com a internet e espaço de armazenamento no aparelho. Se o erro persistir, acione o Canal Oficial: 👉 {canal_contato}",
-                "moderate": "Olá, {nome}! Agradecemos pelo alerta sobre a emissão de documentos. Se precisar de suporte na emissão, conte conosco no Canal Oficial: 👉 {canal_contato}",
-                "positive": "Olá, {nome}! Ficamos muito felizes que seus documentos digitais estão acessíveis e práticos no {app_name}! Um abraço da equipe!"
+                "critical": "Olá, {nome}! Sentimos muito pela dificuldade na autenticação Gov.br ou reconhecimento facial no {app_name}. Recomendamos verificar se a iluminação está adequada para a biometria facial e se as permissões de câmera do app estão concedidas. Se o erro ou loop de login persistir, acione o Canal de Atendimento Oficial: 👉 {canal_contato}",
+                "moderate": "Olá, {nome}! Agradecemos pelo contato. A autenticação pelo Gov.br é essencial para a segurança dos seus dados estaduais. Havendo instabilidades, consulte as orientações no Canal Oficial: 👉 {canal_contato}",
+                "positive": "Olá, {nome}! Muito obrigado pela nota máxima no {app_name}! Trabalhamos para tornar o acesso aos serviços públicos cada vez mais ágil e seguro."
             }
         },
         {
-            "id": "consulta_taxas_debitos",
-            "name": "Divergência em IPVA, Multas e Guias DAE",
+            "id": "farmacia_minas_remedios",
+            "name": "Farmácia de Minas & Medicamentos",
             "keywords": [
-                "ipva", "multa", "multas", "dae", "taxa", "debito", "veiculo", "placa", "renavam", "pagamento",
-                "codigo de barras", "guia de pagamento", "divida ativa"
+                "farmacia", "farmácia", "medicamento", "medicamentos", "remedio", "remédio", "remedios", "remédios",
+                "leflunomida", "retirada", "estoque", "falta de medicamento", "falta de remedio", "farmacia de minas"
             ],
             "severity": "Média",
-            "severity_color": "#eab308",
+            "severity_color": "#0d9488",
             "complexity": "Média",
             "complexity_score": 2,
-            "recommendation": "Validar sincronização em tempo real entre a Secretaria de Fazenda/Detran e os serviços de consulta do aplicativo.",
+            "recommendation": "Integrar consulta em tempo real do estoque da Farmácia de Minas e enviar alerta push quando o medicamento estiver disponível para retirada.",
             "templates": {
-                "critical": "Olá, {nome}! Caso tenha notado divergência em valores de tributos ou taxas, orientamos consultar o extrato detalhado diretamente pelo Canal de Suporte Oficial: 👉 {canal_contato}",
-                "moderate": "Olá, {nome}! As informações tributárias e de débitos são sincronizadas com as bases oficiais dos órgãos arrecadadores. Para orientações, acesse o Canal Oficial: 👉 {canal_contato}",
-                "positive": "Olá, {nome}! Muito obrigado pela avaliação de {estrelas} estrelas no {app_name}! Estamos sempre à disposição para facilitar suas consultas."
+                "critical": "Olá, {nome}! Compreendemos a extrema importância do acesso a medicamentos pelo Farmácia de Minas. A disponibilidade e reposição dos estoques são geridas diretamente pela Secretaria de Estado de Saúde (SES-MG). Para verificar a previsão de chegada ou agendar a retirada, consulte o Canal de Atendimento Oficial: 👉 {canal_contato}",
+                "moderate": "Olá, {nome}! Agradecemos pelo seu relato. O {app_name} reflete a disponibilidade das unidades da Farmácia de Minas. Caso precise de apoio com sua solicitação de medicamentos, acesse o Canal Oficial: 👉 {canal_contato}",
+                "positive": "Olá, {nome}! Ficamos muito felizes em apoiar o acompanhamento e a retirada dos seus medicamentos na Farmácia de Minas pelo {app_name}!"
+            }
+        },
+        {
+            "id": "estabilidade_erros_app",
+            "name": "Instabilidade, Erros e Travamentos",
+            "keywords": [
+                "fora do ar", "trava", "travando", "fecha sozinho", "fechando", "lento", "lentidao",
+                "lentidão", "erro", "erros", "bug", "bugs", "nao abre", "não abre", "sistema caiu", "crash",
+                "sempre fora do ar", "site cheio de bugs"
+            ],
+            "severity": "Crítica",
+            "severity_color": "#dc2626",
+            "complexity": "Alta",
+            "complexity_score": 3,
+            "recommendation": "Monitorar indisponibilidade de microserviços de backend e implementar retry com tratamento amigável de falhas de conexão.",
+            "templates": {
+                "critical": "Olá, {nome}! Pedimos sinceras desculpas pela instabilidade técnica ou lentidão no {app_name}. Nossa equipe técnica da {org_name} está atuando na manutenção preventiva da infraestrutura. Como ação rápida, sugerimos limpar o cache do aplicativo nas configurações do aparelho. Persistindo o erro, acione o Canal Oficial: 👉 {canal_contato}",
+                "moderate": "Olá, {nome}! Agradecemos pelo reporte técnico. Estamos trabalhando na estabilidade contínua dos servidores do {app_name}. Se o erro continuar, relate pelo Canal Oficial: 👉 {canal_contato}",
+                "positive": "Olá, {nome}! Agradecemos pela avaliação de {estrelas} estrelas! Continuamos investindo na estabilidade e velocidade do {app_name}."
+            }
+        },
+        {
+            "id": "usabilidade_navegacao",
+            "name": "Usabilidade, Busca e Nova Interface",
+            "keywords": [
+                "atualização", "atualizacao", "layout", "piorou", "dificil", "difícil", "lupa",
+                "buscar", "procurar", "idosos", "ajudar pessoas", "complicado", "layout ruim", "pouca orientacao"
+            ],
+            "severity": "Média",
+            "severity_color": "#8b5cf6",
+            "complexity": "Baixa",
+            "complexity_score": 1,
+            "recommendation": "Melhorar motor de busca com sinônimos de serviços e permitir agendamento para mais dependentes/familiares idosos.",
+            "templates": {
+                "critical": "Olá, {nome}! Agradecemos pelo feedback construtivo sobre a navegação e busca no {app_name}. Nossa equipe de design e desenvolvimento está refinando a localização de serviços para torná-la cada vez mais clara e acessível a todos os cidadãos. Sugestões detalhadas podem ser registradas no Canal Oficial: 👉 {canal_contato}",
+                "moderate": "Olá, {nome}! Obrigado por suas sugestões de melhoria de usabilidade. Elas são muito importantes para o aprimoramento contínuo do {app_name}.",
+                "positive": "Olá, {nome}! Muito obrigado pelo retorno positivo sobre a facilidade de uso do {app_name}! Trabalhamos diariamente para facilitar a vida do cidadão mineiro."
             }
         }
     ],

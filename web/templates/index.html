@@ -409,7 +409,17 @@
                     <div class="sm:col-span-1 lg:col-span-3">
                         <select id="filter-root-cause" onchange="loadReviews()" class="w-full py-3 px-3.5 bg-indigo-50/70 border border-indigo-200 text-indigo-950 font-bold rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition cursor-pointer">
                             <option value="todos">🎯 Todas as Causas-Raiz</option>
-                            <option value="login_sessao_recorrente">🔐 Instabilidade de Login, Conexão e Sessão</option>
+                            {% if app_config.app_id == 'mg_app_cidadao' %}
+                            <option value="agendamento_uai_cin">📅 Agendamento UAI & Carteira de Identidade (CIN/RG)</option>
+                            <option value="veiculos_detran_ipva">🚗 Veículos, CNH, IPVA & Licenciamento (Detran MG)</option>
+                            <option value="login_govbr_biometria">🔐 Login Gov.br, Biometria Facial & Sessão</option>
+                            <option value="farmacia_minas_remedios">💊 Farmácia de Minas & Medicamentos</option>
+                            <option value="estabilidade_erros_app">⚡ Instabilidade, Erros e Travamentos</option>
+                            <option value="usabilidade_navegacao">🧭 Usabilidade, Busca e Nova Interface</option>
+                            <option value="outros_problemas">❓ Outros Serviços Estaduais e Dúvidas</option>
+                            <option value="elogios_satisfacao">⭐ Elogios e Experiência Positiva</option>
+                            {% else %}
+                            <option value="login_sessao_recorrente">🔴 Instabilidade de Login, Conexão e Sessão</option>
                             <option value="gov_br_cpf">🏛️ Falha no Gov.br e Vínculo de CPF</option>
                             <option value="senha_recuperacao">🔑 Recuperação de Senha e Redefinição</option>
                             <option value="lentidao_tela_preta">⏳ Lentidão Extrema e Tela Preta</option>
@@ -420,6 +430,7 @@
                             <option value="outros_problemas">❓ Problemas Gerais e Dúvidas</option>
                             <option value="geral_outros">💡 Geral / Sugestões Diversas</option>
                             <option value="elogios_satisfacao">⭐ Elogios e Avaliações Positivas</option>
+                            {% endif %}
                         </select>
                     </div>
 
@@ -473,12 +484,24 @@
                     <button type="button" onclick="applySmartFilter('pending')" data-chip="pending" class="smart-chip px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap bg-white text-amber-700 hover:bg-amber-50 border border-amber-200 shadow-sm">
                         <i class="fa-solid fa-clock text-amber-500"></i> Aguardando Resposta
                     </button>
+                    {% if app_config.app_id == 'mg_app_cidadao' %}
+                    <button type="button" onclick="applySmartFilter('uai_cin')" data-chip="uai_cin" class="smart-chip px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap bg-white text-orange-700 hover:bg-orange-50 border border-orange-200 shadow-sm">
+                        <i class="fa-solid fa-id-card text-orange-500"></i> Agendamento UAI / CIN
+                    </button>
+                    <button type="button" onclick="applySmartFilter('detran')" data-chip="detran" class="smart-chip px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap bg-white text-rose-700 hover:bg-rose-50 border border-rose-200 shadow-sm">
+                        <i class="fa-solid fa-car text-rose-500"></i> Veículos & Detran MG
+                    </button>
+                    <button type="button" onclick="applySmartFilter('gov_biometria')" data-chip="gov_biometria" class="smart-chip px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap bg-white text-blue-700 hover:bg-blue-50 border border-blue-200 shadow-sm">
+                        <i class="fa-solid fa-fingerprint text-blue-500"></i> Gov.br & Biometria
+                    </button>
+                    {% else %}
                     <button type="button" onclick="applySmartFilter('stuck_android')" data-chip="stuck_android" class="smart-chip px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap bg-white text-purple-700 hover:bg-purple-50 border border-purple-200 shadow-sm">
                         <i class="fa-solid fa-ban text-purple-500"></i> Presos no Android ≤ 12
                     </button>
                     <button type="button" onclick="applySmartFilter('gov_br')" data-chip="gov_br" class="smart-chip px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap bg-white text-blue-700 hover:bg-blue-50 border border-blue-200 shadow-sm">
                         <i class="fa-solid fa-landmark text-blue-500"></i> Falhas Gov.br / CPF
                     </button>
+                    {% endif %}
                     <button type="button" onclick="applySmartFilter('positive')" data-chip="positive" class="smart-chip px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap bg-white text-emerald-700 hover:bg-emerald-50 border border-emerald-200 shadow-sm">
                         <i class="fa-solid fa-star text-emerald-500"></i> Elogios (5 ⭐)
                     </button>
@@ -650,12 +673,12 @@
                     </div>
                     <div class="bg-indigo-500/20 border border-indigo-400/30 rounded-xl px-4 py-2.5 text-right self-stretch md:self-auto flex flex-col justify-center">
                         <span class="text-[10px] uppercase font-bold text-indigo-300 tracking-wider">Veredito Proporcional</span>
-                        <span class="text-sm font-black text-rose-400">🍎 iOS: 86,2% de Rejeição</span>
-                        <span class="text-[10px] text-slate-300">Android: 72,0% de Rejeição</span>
+                        <span id="os-verdict-title" class="text-sm font-black text-rose-400">🍎 Calculando...</span>
+                        <span id="os-verdict-sub" class="text-[10px] text-slate-300">Android: Calculando...</span>
                     </div>
                 </div>
 
-                <!-- 2 Cards Comparativos: Android vs iOS -->
+                <!-- 2 Cards Comparativos: Android vs iOS (Dinâmicos e Segmentados por App) -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <!-- Card Android -->
                     <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-5 space-y-4 relative overflow-hidden">
@@ -666,11 +689,11 @@
                                 </div>
                                 <div>
                                     <h4 class="font-extrabold text-white text-base">Android (Google Play)</h4>
-                                    <p class="text-xs text-slate-400">500 avaliações • 89,6% da base</p>
+                                    <p id="os-android-total-sub" class="text-xs text-slate-400">Carregando dados...</p>
                                 </div>
                             </div>
                             <div class="text-right">
-                                <span class="text-xl font-black text-amber-400">2,43 ⭐</span>
+                                <span id="os-android-avg" class="text-xl font-black text-amber-400">- ⭐</span>
                                 <span class="block text-[10px] text-slate-400">Nota Média Oficial</span>
                             </div>
                         </div>
@@ -679,25 +702,23 @@
                         <div class="grid grid-cols-3 gap-2 text-center text-xs">
                             <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-700/60">
                                 <span class="text-[10px] uppercase font-bold text-slate-400 block">Queixas Técnicas</span>
-                                <strong class="text-base font-black text-rose-400">360</strong>
-                                <span class="text-[10px] text-slate-400 block font-semibold">(72,0%)</span>
+                                <strong id="os-android-complaints" class="text-base font-black text-rose-400">-</strong>
+                                <span id="os-android-complaints-pct" class="text-[10px] text-slate-400 block font-semibold">(-%)</span>
                             </div>
                             <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-700/60">
                                 <span class="text-[10px] uppercase font-bold text-slate-400 block">Alta Complexidade</span>
-                                <strong class="text-base font-black text-amber-400">113</strong>
-                                <span class="text-[10px] text-slate-400 block font-semibold">(31,4%)</span>
+                                <strong id="os-android-high-comp" class="text-base font-black text-amber-400">-</strong>
+                                <span class="text-[10px] text-slate-400 block font-semibold">impacto técnico</span>
                             </div>
                             <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-700/60">
                                 <span class="text-[10px] uppercase font-bold text-slate-400 block">Elogios</span>
-                                <strong class="text-base font-black text-emerald-400">140</strong>
-                                <span class="text-[10px] text-slate-400 block font-semibold">(28,0%)</span>
+                                <strong id="os-android-positive" class="text-base font-black text-emerald-400">-</strong>
+                                <span id="os-android-positive-pct" class="text-[10px] text-slate-400 block font-semibold">(-%)</span>
                             </div>
                         </div>
 
-                        <div class="space-y-1.5 text-xs text-slate-300">
-                            <p class="flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation text-amber-400"></i> <b>Causa #1:</b> Instabilidade de Login & Sessão (112 queixas - 31,1%)</p>
-                            <p class="flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation text-amber-400"></i> <b>Causa #2:</b> Boletim em Branco / Notas (59 queixas - 16,4%)</p>
-                            <p class="flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation text-rose-400"></i> <b>Problemas Exclusivos:</b> 100% da Lentidão/Tela Preta (13) e dos Crashes (7) ocorrem em aparelhos no Android ≤ 12.</p>
+                        <div id="os-android-top-causes" class="space-y-1.5 text-xs text-slate-300">
+                            <!-- Inserido dinamicamente via JS -->
                         </div>
                     </div>
 
@@ -710,11 +731,11 @@
                                 </div>
                                 <div>
                                     <h4 class="font-extrabold text-white text-base">iOS (Apple App Store)</h4>
-                                    <p class="text-xs text-slate-400">58 avaliações • 10,4% da base</p>
+                                    <p id="os-ios-total-sub" class="text-xs text-slate-400">Carregando dados...</p>
                                 </div>
                             </div>
                             <div class="text-right">
-                                <span class="text-xl font-black text-rose-400">1,93 ⭐</span>
+                                <span id="os-ios-avg" class="text-xl font-black text-rose-400">- ⭐</span>
                                 <span class="block text-[10px] text-slate-400">Nota Média Oficial</span>
                             </div>
                         </div>
@@ -723,25 +744,23 @@
                         <div class="grid grid-cols-3 gap-2 text-center text-xs">
                             <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-700/60">
                                 <span class="text-[10px] uppercase font-bold text-slate-400 block">Queixas Técnicas</span>
-                                <strong class="text-base font-black text-rose-400">50</strong>
-                                <span class="text-[10px] text-rose-300 block font-bold">(86,2% 🚨)</span>
+                                <strong id="os-ios-complaints" class="text-base font-black text-rose-400">-</strong>
+                                <span id="os-ios-complaints-pct" class="text-[10px] text-rose-300 block font-bold">(-%)</span>
                             </div>
                             <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-700/60">
                                 <span class="text-[10px] uppercase font-bold text-slate-400 block">Alta Complexidade</span>
-                                <strong class="text-base font-black text-rose-400">20</strong>
-                                <span class="text-[10px] text-amber-300 block font-bold">(40,0% 🔥)</span>
+                                <strong id="os-ios-high-comp" class="text-base font-black text-rose-400">-</strong>
+                                <span class="text-[10px] text-amber-300 block font-bold">impacto técnico</span>
                             </div>
                             <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-700/60">
                                 <span class="text-[10px] uppercase font-bold text-slate-400 block">Elogios</span>
-                                <strong class="text-base font-black text-slate-400">8</strong>
-                                <span class="text-[10px] text-slate-400 block font-semibold">(13,8%)</span>
+                                <strong id="os-ios-positive" class="text-base font-black text-slate-400">-</strong>
+                                <span id="os-ios-positive-pct" class="text-[10px] text-slate-400 block font-semibold">(-%)</span>
                             </div>
                         </div>
 
-                        <div class="space-y-1.5 text-xs text-slate-300">
-                            <p class="flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation text-rose-400"></i> <b>Causa #1:</b> Instabilidade de Login & Sessão (18 queixas - 36,0%)</p>
-                            <p class="flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation text-rose-400"></i> <b>Causa #2:</b> Falha Gov.br e CPF (17 queixas - 34,0% • <b>2,6x maior que Android</b>)</p>
-                            <p class="flex items-center gap-1.5"><i class="fa-solid fa-circle-check text-emerald-400"></i> <b>Pontos Fortes:</b> Zero relatos de lentidão de tela ou fechamento inesperado de hardware.</p>
+                        <div id="os-ios-top-causes" class="space-y-1.5 text-xs text-slate-300">
+                            <!-- Inserido dinamicamente via JS -->
                         </div>
                     </div>
                 </div>
@@ -3147,6 +3166,12 @@
                 }
             } else if (type === 'gov_br') {
                 if (rootCauseSelect) rootCauseSelect.value = 'gov_br_cpf';
+            } else if (type === 'uai_cin') {
+                if (rootCauseSelect) rootCauseSelect.value = 'agendamento_uai_cin';
+            } else if (type === 'detran') {
+                if (rootCauseSelect) rootCauseSelect.value = 'veiculos_detran_ipva';
+            } else if (type === 'gov_biometria') {
+                if (rootCauseSelect) rootCauseSelect.value = 'login_govbr_biometria';
             } else if (type === 'positive') {
                 if (ratingSelect) ratingSelect.value = '5';
                 if (statusSelect) statusSelect.value = 'todos';
@@ -4049,6 +4074,7 @@
         }
 
         const rootCauseNames = {
+            // Causas Minha Escola MG
             "login_sessao_recorrente": { name: "Login & Sessão", color: "bg-rose-50 text-rose-800 border-rose-300" },
             "gov_br_cpf": { name: "Gov.br / CPF", color: "bg-red-50 text-red-700 border-red-200" },
             "senha_recuperacao": { name: "Senha / Recuperação", color: "bg-orange-50 text-orange-700 border-orange-200" },
@@ -4057,6 +4083,14 @@
             "faltas_frequencia": { name: "Faltas / Frequência", color: "bg-blue-50 text-blue-700 border-blue-200" },
             "crash_fechamento": { name: "Crash / Fechamento", color: "bg-rose-50 text-rose-700 border-rose-200" },
             "acesso_responsaveis": { name: "Acesso Pais / Filhos", color: "bg-purple-50 text-purple-700 border-purple-200" },
+            // Causas MG App Cidadão
+            "agendamento_uai_cin": { name: "Agendamento UAI / CIN", color: "bg-orange-50 text-orange-800 border-orange-300" },
+            "veiculos_detran_ipva": { name: "Detran / Veículos / IPVA", color: "bg-red-50 text-red-800 border-red-300" },
+            "login_govbr_biometria": { name: "Gov.br / Biometria Facial", color: "bg-amber-50 text-amber-800 border-amber-300" },
+            "farmacia_minas_remedios": { name: "Farmácia de Minas", color: "bg-teal-50 text-teal-800 border-teal-300" },
+            "estabilidade_erros_app": { name: "Instabilidade / Erros", color: "bg-rose-50 text-rose-800 border-rose-300" },
+            "usabilidade_navegacao": { name: "Usabilidade & Busca", color: "bg-purple-50 text-purple-800 border-purple-300" },
+            // Gerais / Universais
             "outros_problemas": { name: "Problemas Gerais", color: "bg-slate-100 text-slate-700 border-slate-200" },
             "geral_outros": { name: "Sugestões / Geral", color: "bg-teal-50 text-teal-700 border-teal-200" },
             "elogios_satisfacao": { name: "Elogio / Positivo", color: "bg-emerald-50 text-emerald-700 border-emerald-200" }
@@ -4739,6 +4773,82 @@
         function renderOsBreakdownSection(osData) {
             if (!osData) return;
 
+            // 0. Atualiza os Cards Dinâmicos Android vs iOS
+            if (osData.total_android !== undefined) {
+                const elAndSub = document.getElementById('os-android-total-sub');
+                if (elAndSub) elAndSub.innerText = `${osData.total_android} avaliações • ${osData.android_pct_base}% da base`;
+                const elAndAvg = document.getElementById('os-android-avg');
+                if (elAndAvg) elAndAvg.innerText = `${Number(osData.android_avg_rating).toFixed(2).replace('.', ',')} ⭐`;
+                const elAndComp = document.getElementById('os-android-complaints');
+                if (elAndComp) elAndComp.innerText = osData.android_complaints;
+                const elAndCompPct = document.getElementById('os-android-complaints-pct');
+                if (elAndCompPct) elAndCompPct.innerText = `(${osData.android_rejection_pct.toFixed(1).replace('.', ',')}%)`;
+                const elAndHigh = document.getElementById('os-android-high-comp');
+                if (elAndHigh) elAndHigh.innerText = osData.android_high_complexity;
+                const elAndPos = document.getElementById('os-android-positive');
+                if (elAndPos) elAndPos.innerText = osData.android_positive;
+                const elAndPosPct = document.getElementById('os-android-positive-pct');
+                if (elAndPosPct && osData.total_android > 0) {
+                    const posPct = ((osData.android_positive / osData.total_android) * 100).toFixed(1).replace('.', ',');
+                    elAndPosPct.innerText = `(${posPct}%)`;
+                }
+
+                // Top Causes Android
+                const elAndTop = document.getElementById('os-android-top-causes');
+                if (elAndTop && osData.top_android_causes) {
+                    elAndTop.innerHTML = osData.top_android_causes.map((c, i) => `
+                        <p class="flex items-center gap-1.5">
+                            <i class="fa-solid fa-triangle-exclamation text-amber-400"></i>
+                            <b>Causa #${i+1}:</b> ${escapeHtml(c.name)} (${c.android_count} queixas - ${c.android_pct}%)
+                        </p>
+                    `).join('');
+                }
+            }
+
+            if (osData.total_ios !== undefined) {
+                const elIosSub = document.getElementById('os-ios-total-sub');
+                if (elIosSub) elIosSub.innerText = `${osData.total_ios} avaliações • ${osData.ios_pct_base}% da base`;
+                const elIosAvg = document.getElementById('os-ios-avg');
+                if (elIosAvg) elIosAvg.innerText = `${Number(osData.ios_avg_rating).toFixed(2).replace('.', ',')} ⭐`;
+                const elIosComp = document.getElementById('os-ios-complaints');
+                if (elIosComp) elIosComp.innerText = osData.ios_complaints;
+                const elIosCompPct = document.getElementById('os-ios-complaints-pct');
+                if (elIosCompPct) elIosCompPct.innerText = `(${osData.ios_rejection_pct.toFixed(1).replace('.', ',')}%)`;
+                const elIosHigh = document.getElementById('os-ios-high-comp');
+                if (elIosHigh) elIosHigh.innerText = osData.ios_high_complexity;
+                const elIosPos = document.getElementById('os-ios-positive');
+                if (elIosPos) elIosPos.innerText = osData.ios_positive;
+                const elIosPosPct = document.getElementById('os-ios-positive-pct');
+                if (elIosPosPct && osData.total_ios > 0) {
+                    const posPct = ((osData.ios_positive / osData.total_ios) * 100).toFixed(1).replace('.', ',');
+                    elIosPosPct.innerText = `(${posPct}%)`;
+                }
+
+                // Top Causes iOS
+                const elIosTop = document.getElementById('os-ios-top-causes');
+                if (elIosTop && osData.top_ios_causes) {
+                    elIosTop.innerHTML = osData.top_ios_causes.map((c, i) => `
+                        <p class="flex items-center gap-1.5">
+                            <i class="fa-solid fa-triangle-exclamation text-rose-400"></i>
+                            <b>Causa #${i+1}:</b> ${escapeHtml(c.name)} (${c.ios_count} queixas - ${c.ios_pct}%)
+                        </p>
+                    `).join('');
+                }
+            }
+
+            // Veredito Proporcional
+            const elVerdTitle = document.getElementById('os-verdict-title');
+            const elVerdSub = document.getElementById('os-verdict-sub');
+            if (elVerdTitle && elVerdSub && osData.ios_rejection_pct !== undefined) {
+                if (osData.ios_rejection_pct >= osData.android_rejection_pct) {
+                    elVerdTitle.innerText = `🍎 iOS: ${osData.ios_rejection_pct.toFixed(1).replace('.', ',')}% de Rejeição`;
+                    elVerdSub.innerText = `Android: ${osData.android_rejection_pct.toFixed(1).replace('.', ',')}% de Rejeição`;
+                } else {
+                    elVerdTitle.innerText = `🤖 Android: ${osData.android_rejection_pct.toFixed(1).replace('.', ',')}% de Rejeição`;
+                    elVerdSub.innerText = `iOS: ${osData.ios_rejection_pct.toFixed(1).replace('.', ',')}% de Rejeição`;
+                }
+            }
+
             // 1. Gráfico Comparativo de Causas por SO
             const canvas = document.getElementById('chart-os-causes-comparison');
             if (canvas && osData.chart_data) {
@@ -4837,7 +4947,8 @@
 
         async function loadProblemAnalytics() {
             try {
-                const res = await fetch('/api/analytics/problems');
+                const activeApp = (document.getElementById('input-app-id') ? document.getElementById('input-app-id').value : '') || 'minha_escola_mg';
+                const res = await fetch('/api/analytics/problems?app_id=' + encodeURIComponent(activeApp));
                 const data = await res.json();
                 if (!data || !data.charts) return;
 

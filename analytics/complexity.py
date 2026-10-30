@@ -47,37 +47,35 @@ def classify_text_issue(content: str, title: str = "", rating: int = 3, domain: 
     if rating >= 4 and not any(w in text for w in negative_signals):
         return elogio_cfg
 
-    # Prioridade para Instabilidade de Login / Sessão se houver termos característicos
-    login_cfg = next((c for c in causes if c["id"] == "login_sessao_recorrente"), None)
-    if login_cfg:
-        login_regexes = [
-            r"login", r"logar", r"tentativ", r"deslog", r"desconect",
-            r"toda\s*(hora|vez).*(sai|pede|tem\s*que)",
-            r"(sai|caiu|desfez).*(da\s*conta|o\s*login)",
-            r"(nao|nem|nunca|sem|dificil|impossivel).*(consig|consegu|da\s*pra|passa\s*da).*(acess|entr|log|autentic|abrir|conect)",
-            r"(erro|falha|bug|problema).*(ao|de|no|para|pra)?\s*(entr|acess|log|autentic|conect|abrir)",
-            r"erro\s*(interno|de\s*sessao|de\s*token)",
-            r"(sessao|token).*(expir|invalid)",
-            r"(usuario|email).*(e|ou)\s*senha",
-            r"senha.*(invalida|incorreta|nao\s*confere)",
-            r"(fora\s*do\s*ar|fora\s*de\s*ar)",
-            r"(nao|nunca).*(entra|conecta|autentica)",
-            r"(tentar|tento|tentando|tentei).*(entrar|acessar|logar|abrir)",
-            r"(bloqueou|bloqueada|bloqueado).*(conta|acesso|login)",
-            r"acessar\s*(minha|a)?\s*conta",
-            r"so\s*abre\s*quando\s*quer"
-        ]
-        for pat in login_regexes:
-            if re.search(pat, text):
-                return login_cfg
-
-    # Percorre as causas do domínio e universais testando as palavras-chave
+    # 1. Primeiro verifica causas específicas do domínio (ex: Agendamento UAI, Veículos/Detran, Farmácia, Boletim, etc.)
     for cfg in causes:
-        if cfg["id"] in ("elogios_satisfacao", "outros_problemas"):
+        if cfg["id"] in ("elogios_satisfacao", "outros_problemas", "login_sessao_recorrente"):
             continue
         keywords = cfg.get("keywords", [])
         if any(k in text for k in keywords):
             return cfg
+
+    # 2. Em seguida, verifica instabilidade genérica de login / sessão
+    login_cfg = next((c for c in causes if c["id"] in ("login_sessao_recorrente", "login_govbr_biometria")), None)
+    if login_cfg:
+        login_regexes = [
+            r"\blogin\b", r"\blogar\b", r"tentativ", r"deslog", r"desconect",
+            r"toda\s*(hora|vez).*(sai|pede|tem\s*que)",
+            r"(sai|caiu|desfez).*(da\s*conta|o\s*login)",
+            r"(nao|nem|nunca|sem|dificil|impossivel).*(consig|consegu|da\s*pra|passa\s*da).*(acess|entr|log|autentic|conect)",
+            r"(erro|falha|bug|problema).*(ao|de|no|para|pra)?\s*(entr|acess|log|autentic|conect)",
+            r"erro\s*(interno|de\s*sessao|de\s*token)",
+            r"(sessao|token).*(expir|invalid)",
+            r"(usuario|email).*(e|ou)\s*senha",
+            r"senha.*(invalida|incorreta|nao\s*confere)",
+            r"(nao|nunca).*(entra|conecta|autentica)",
+            r"(tentar|tento|tentando|tentei).*(entrar|acessar|logar)",
+            r"(bloqueou|bloqueada|bloqueado).*(conta|acesso|login)",
+            r"acessar\s*(minha|a)?\s*conta"
+        ]
+        for pat in login_regexes:
+            if re.search(pat, text):
+                return login_cfg
 
     # Fallback
     if rating >= 4:
@@ -92,7 +90,7 @@ def get_detailed_problem_analytics(app_id: Optional[str] = None, domain: Optiona
     cruzado por Sistema Operacional especificamente para o aplicativo ativo (app_id).
     """
     target_app_id = app_id or (lambda: (__import__('config').get_app_id()))()
-    target_domain = domain or (lambda: (__import__('config').get_domain()))()
+    target_domain = domain or (lambda: (__import__('config').get_domain(target_app_id)))()
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -281,8 +279,20 @@ def get_detailed_problem_analytics(app_id: Optional[str] = None, domain: Optiona
         "os_breakdown": {
             "total_android": tot_android,
             "total_ios": tot_ios,
+            "android_pct_base": round((tot_android / total_reviews * 100), 1) if total_reviews > 0 else 0,
+            "ios_pct_base": round((tot_ios / total_reviews * 100), 1) if total_reviews > 0 else 0,
+            "android_avg_rating": round(sum(r["rating"] for r in android_rows) / tot_android, 2) if tot_android > 0 else 0.0,
+            "ios_avg_rating": round(sum(r["rating"] for r in ios_rows) / tot_ios, 2) if tot_ios > 0 else 0.0,
             "android_complaints": android_complaints_count,
             "ios_complaints": ios_complaints_count,
+            "android_rejection_pct": round((android_complaints_count / tot_android * 100), 1) if tot_android > 0 else 0.0,
+            "ios_rejection_pct": round((ios_complaints_count / tot_ios * 100), 1) if tot_ios > 0 else 0.0,
+            "android_high_complexity": sum(1 for r in android_rows if causes_map.get(r.get("root_cause_id", ""), {}).get("complexity") in ("Alta", "Crítica")),
+            "ios_high_complexity": sum(1 for r in ios_rows if causes_map.get(r.get("root_cause_id", ""), {}).get("complexity") in ("Alta", "Crítica")),
+            "android_positive": sum(1 for r in android_rows if r.get("rating", 0) >= 4),
+            "ios_positive": sum(1 for r in ios_rows if r.get("rating", 0) >= 4),
+            "top_android_causes": sorted([c for c in os_causes_table if c["android_count"] > 0], key=lambda x: x["android_count"], reverse=True)[:2],
+            "top_ios_causes": sorted([c for c in os_causes_table if c["ios_count"] > 0], key=lambda x: x["ios_count"], reverse=True)[:2],
             "causes_table": os_causes_table
         }
     }

@@ -4,7 +4,7 @@ from database.db import get_connection, get_setting
 from ai.analyzer import has_problem_context, strip_support_link
 
 # Configuração e descrição detalhada de cada causa-raiz com templates para todas as estrelas
-from config import get_app_name, get_organization_name, get_support_url
+from config import get_app_name, get_organization_name, get_support_url, get_domain
 
 OFFICIAL_SUPPORT_FORM = get_support_url()
 
@@ -151,6 +151,85 @@ PROBLEM_TEMPLATES_CONFIG = {
             "moderate": "Olá, {nome}! Muito obrigado por compartilhar sua visão e sugestões de aprimoramento. Se notar qualquer instabilidade ou precisar de auxílio técnico, registre no Canal de Suporte Oficial: 👉 {canal_contato}",
             "positive": "Olá, {nome}! Agradecemos pela avaliação de {estrelas} estrelas no {app_name}! Trabalhamos para tornar o dia a dia escolar cada vez mais prático. Conte conosco!"
         }
+    },
+    # Domínio Serviços Públicos / MG App Cidadão
+    "agendamento_uai_cin": {
+        "id": "agendamento_uai_cin",
+        "name": "Agendamento UAI & Carteira de Identidade (CIN/RG)",
+        "description": "Dificuldades de agendamento de emissão da nova Carteira de Identidade Nacional (CIN) ou serviços nas UAIs.",
+        "keywords": ["agendamento", "agendar", "identidade", "cin", "rg", "uai", "vagas", "cancelado"],
+        "severity": "Alta",
+        "complexity": "Média",
+        "templates": {
+            "critical": "Olá, {nome}! Entendemos sua necessidade com o agendamento de identificação (CIN/RG) na UAI. As vagas nas unidades são abertas periodicamente pelos órgãos competentes. Caso necessite de apoio prioritário ou tenha enfrentado cancelamento/divergência de comparecimento, consulte o Canal de Atendimento Oficial: 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! Agradecemos pelo retorno. Recomendamos verificar os horários de abertura de novas vagas nas unidades UAI de atendimento pelo Canal de Atendimento Oficial: 👉 {canal_contato}",
+            "positive": "Olá, {nome}! Ficamos muito felizes que conseguiu agendar seus serviços com praticidade no {app_name}! Estamos à disposição."
+        }
+    },
+    "veiculos_detran_ipva": {
+        "id": "veiculos_detran_ipva",
+        "name": "Veículos, CNH, IPVA & Licenciamento (Detran MG)",
+        "description": "Dúvidas e falhas de sincronização de CNH, CRLV, transferência de veículos, ATPV-e ou guias de IPVA.",
+        "keywords": ["veiculo", "veículo", "carro", "moto", "cnh", "crlv", "detran", "transferencia", "ipva", "licenciamento", "atpv"],
+        "severity": "Crítica",
+        "complexity": "Alta",
+        "templates": {
+            "critical": "Olá, {nome}! Lamentamos muito pela dificuldade nos serviços de trânsito e veículos do Detran MG. Para que nossa equipe técnica possa verificar a sincronização do seu veículo, CNH ou emissão de guias, acione o Canal de Atendimento Oficial: 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! Agradecemos pelo contato. As informações de veículos e CNH dependem da integração em tempo real com o Detran MG. Havendo divergência de pagamento ou baixa de documentos, registre pelo Canal de Atendimento Oficial: 👉 {canal_contato}",
+            "positive": "Olá, {nome}! Muito obrigado pela avaliação positiva de {estrelas} estrelas! Acompanhar serviços de veículos e CNH de forma digital é prioridade no {app_name}."
+        }
+    },
+    "login_govbr_biometria": {
+        "id": "login_govbr_biometria",
+        "name": "Login Gov.br, Biometria Facial & Sessão",
+        "description": "Dificuldades com reconhecimento facial, validação biométrica, loop de login ou autenticação Gov.br.",
+        "keywords": ["gov.br", "gov", "biometria facial", "reconhecimento facial", "selfie", "loop de login", "desloga"],
+        "severity": "Alta",
+        "complexity": "Alta",
+        "templates": {
+            "critical": "Olá, {nome}! Sentimos muito pela dificuldade na autenticação Gov.br ou reconhecimento facial no {app_name}. Recomendamos verificar se a iluminação está adequada para a biometria facial e se as permissões de câmera do app estão concedidas. Se a falha persistir, acione o Canal de Atendimento Oficial: 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! Agradecemos pelo contato. A autenticação pelo Gov.br é essencial para a segurança dos seus dados estaduais. Havendo instabilidades, consulte as orientações no Canal de Atendimento Oficial: 👉 {canal_contato}",
+            "positive": "Olá, {nome}! Muito obrigado pela nota máxima no {app_name}! Trabalhamos para tornar o acesso aos serviços públicos cada vez mais ágil e seguro."
+        }
+    },
+    "farmacia_minas_remedios": {
+        "id": "farmacia_minas_remedios",
+        "name": "Farmácia de Minas & Medicamentos",
+        "description": "Consultas sobre disponibilidade de medicamentos de alto custo e retirada na Farmácia de Minas.",
+        "keywords": ["farmacia", "farmácia", "medicamento", "medicamentos", "remedio", "remédio", "farmacia de minas"],
+        "severity": "Média",
+        "complexity": "Média",
+        "templates": {
+            "critical": "Olá, {nome}! Compreendemos a extrema importância do acesso a medicamentos pelo Farmácia de Minas. A disponibilidade e reposição dos estoques são geridas diretamente pela Secretaria de Estado de Saúde (SES-MG). Para verificar a previsão de chegada ou agendar a retirada, consulte o Canal de Atendimento Oficial: 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! Agradecemos pelo seu relato. O {app_name} reflete a disponibilidade das unidades da Farmácia de Minas. Caso precise de apoio com sua solicitação de medicamentos, acesse o Canal de Atendimento Oficial: 👉 {canal_contato}",
+            "positive": "Olá, {nome}! Ficamos muito felizes em apoiar o acompanhamento e a retirada dos seus medicamentos na Farmácia de Minas pelo {app_name}!"
+        }
+    },
+    "estabilidade_erros_app": {
+        "id": "estabilidade_erros_app",
+        "name": "Instabilidade, Erros e Travamentos",
+        "description": "Erros inesperados, aplicativo fechando ou páginas fora do ar.",
+        "keywords": ["fora do ar", "trava", "travando", "fecha sozinho", "lento", "bug", "crash"],
+        "severity": "Crítica",
+        "complexity": "Alta",
+        "templates": {
+            "critical": "Olá, {nome}! Pedimos sinceras desculpas pela instabilidade técnica ou lentidão no {app_name}. Nossa equipe técnica da {org_name} está atuando na manutenção preventiva da infraestrutura. Como ação rápida, sugerimos limpar o cache do aplicativo nas configurações do aparelho. Persistindo o erro, acione o Canal de Atendimento Oficial: 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! Agradecemos pelo reporte técnico. Estamos trabalhando na estabilidade contínua dos servidores do {app_name}. Se o erro continuar, relate pelo Canal de Atendimento Oficial: 👉 {canal_contato}",
+            "positive": "Olá, {nome}! Agradecemos pela avaliação de {estrelas} estrelas! Continuamos investindo na estabilidade e velocidade do {app_name}."
+        }
+    },
+    "usabilidade_navegacao": {
+        "id": "usabilidade_navegacao",
+        "name": "Usabilidade, Busca e Nova Interface",
+        "description": "Comentários sobre dificuldade de encontrar serviços, busca (lupa) ou sugestões de interface.",
+        "keywords": ["atualização", "layout", "piorou", "dificil", "lupa", "buscar", "complicado"],
+        "severity": "Média",
+        "complexity": "Baixa",
+        "templates": {
+            "critical": "Olá, {nome}! Agradecemos pelo feedback construtivo sobre a navegação e busca no {app_name}. Nossa equipe de design e desenvolvimento está refinando a localização de serviços para torná-la cada vez mais clara e acessível a todos os cidadãos. Sugestões detalhadas podem ser registradas no Canal de Atendimento Oficial: 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! Obrigado por suas sugestões de melhoria de usabilidade. Elas são muito importantes para o aprimoramento contínuo do {app_name}.",
+            "positive": "Olá, {nome}! Muito obrigado pelo retorno positivo sobre a facilidade de uso do {app_name}! Trabalhamos diariamente para facilitar a vida do cidadão mineiro."
+        }
     }
 }
 
@@ -189,7 +268,8 @@ def generate_auto_reply_for_review(review: Dict[str, Any], root_cause_id: Option
     # Identifica o grupo se não fornecido
     from analytics.complexity import classify_text_issue
     if not root_cause_id or root_cause_id not in PROBLEM_TEMPLATES_CONFIG:
-        c = classify_text_issue(content, review.get("title", ""), rating)
+        app_domain = get_domain(target_app)
+        c = classify_text_issue(content, review.get("title", ""), rating, domain=app_domain)
         root_cause_id = c["id"]
 
     cfg = PROBLEM_TEMPLATES_CONFIG.get(root_cause_id, PROBLEM_TEMPLATES_CONFIG["outros_problemas"])

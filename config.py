@@ -216,7 +216,12 @@ def get_app_domain() -> str:
     cfg = get_app_config()
     return cfg.get("domain", "education" if get_app_id() == "minha_escola_mg" else "general")
 
-def get_domain() -> str:
+def get_domain(app_id: Optional[str] = None) -> str:
+    target_app = normalize_app_id(app_id or get_app_id())
+    if target_app == "minha_escola_mg":
+        return "education"
+    elif target_app == "mg_app_cidadao":
+        return "public_services"
     return get_app_domain()
 
 def get_app_name(app_id: Optional[str] = None) -> str:
