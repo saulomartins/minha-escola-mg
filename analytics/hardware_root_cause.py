@@ -44,24 +44,40 @@ CAUSES_META["avaliacao_sem_comentario"] = {
 
 def get_hardware_root_cause_analytics(
     filter_brand: Optional[str] = None,
-    filter_root_cause_id: Optional[str] = None
+    filter_root_cause_id: Optional[str] = None,
+    app_id: Optional[str] = None,
+    domain: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Retorna métricas cruzadas entre Fabricantes, Modelos de Celular e Causas-Raiz.
-    Suporta filtros opcionais de marca e causa-raiz.
+    Suporta filtros opcionais de marca e causa-raiz especificamente para o aplicativo ativo (app_id).
     """
+    target_app_id = app_id or (lambda: (__import__('config').get_app_id()))()
+    target_domain = domain or (lambda: (__import__('config').get_domain()))()
+
+    from analytics.taxonomy import get_root_causes_config
+    dynamic_causes = get_root_causes_config(domain=target_domain)
+    local_causes_meta = dict(CAUSES_META)
+    for c in dynamic_causes:
+        local_causes_meta[c["id"]] = {
+            "name": c["name"],
+            "severity": c["severity"],
+            "severity_color": c.get("severity_color", "#64748b"),
+            "complexity": c.get("complexity", "Média")
+        }
+
     conn = get_connection()
     cursor = conn.cursor()
     
-    # Busca todas as avaliações com dados de hardware e causas
     cursor.execute("""
         SELECT 
             id, store, user_name, rating, title, content, 
             device_brand, device_model, os_name, os_version, 
             root_cause_id, review_date
         FROM reviews
+        WHERE app_id = ?
         ORDER BY review_date DESC
-    """)
+    """, (target_app_id,))
     rows = [dict(r) for r in cursor.fetchall()]
     conn.close()
 
@@ -90,7 +106,7 @@ def get_hardware_root_cause_analytics(
 
         rc_id = r.get("root_cause_id")
         if not rc_id:
-            classified = classify_text_issue(r.get("content", ""), r.get("title", ""), r.get("rating", 3))
+            classified = classify_text_issue(r.get("content", ""), r.get("title", ""), r.get("rating", 3), domain=target_domain)
             rc_id = classified["id"]
 
         r["normalized_brand"] = brand
@@ -104,7 +120,7 @@ def get_hardware_root_cause_analytics(
     all_causes_ids = sorted(list(set(r["normalized_root_cause_id"] for r in processed_reviews)))
     available_causes = []
     for cid in all_causes_ids:
-        meta = CAUSES_META.get(cid, {"name": cid, "severity": "Média", "severity_color": "#64748b"})
+        meta = local_causes_meta.get(cid, {"name": cid, "severity": "Média", "severity_color": "#64748b"})
         available_causes.append({
             "id": cid,
             "name": meta["name"],
@@ -186,7 +202,7 @@ def get_hardware_root_cause_analytics(
     # Formatação do resultado `by_root_cause`
     by_root_cause = []
     for cid, data in rc_aggregate.items():
-        meta = CAUSES_META.get(cid, {
+        meta = local_causes_meta.get(cid, {
             "name": cid,
             "severity": "Média",
             "severity_color": "#64748b",
@@ -246,7 +262,7 @@ def get_hardware_root_cause_analytics(
         # Top causas dessa marca
         b_causes = []
         for cid, c_count in sorted(b_data["causes"].items(), key=lambda x: x[1], reverse=True):
-            meta = CAUSES_META.get(cid, {"name": cid, "severity": "Média", "severity_color": "#64748b"})
+            meta = local_causes_meta.get(cid, {"name": cid, "severity": "Média", "severity_color": "#64748b"})
             b_causes.append({
                 "id": cid,
                 "name": meta["name"],
@@ -289,7 +305,7 @@ def get_hardware_root_cause_analytics(
         # Causas discriminadas do modelo
         m_causes = []
         for cid, c_count in sorted(m_data["causes"].items(), key=lambda x: x[1], reverse=True):
-            meta = CAUSES_META.get(cid, {"name": cid, "severity": "Média", "severity_color": "#64748b"})
+            meta = local_causes_meta.get(cid, {"name": cid, "severity": "Média", "severity_color": "#64748b"})
             m_causes.append({
                 "id": cid,
                 "name": meta["name"],

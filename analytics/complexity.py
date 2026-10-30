@@ -256,10 +256,24 @@ def get_detailed_problem_analytics(app_id: Optional[str] = None, domain: Optiona
             "diagnostic": diag
         })
 
+    pareto_labels = [g["name"] for g in pareto_items]
+    pareto_counts = [g["count"] for g in pareto_items]
+    pareto_pcts = [g["percentage"] for g in pareto_items]
+
+    charts = {
+        "pareto": {
+            "labels": pareto_labels,
+            "counts": pareto_counts,
+            "percentages": pareto_pcts
+        }
+    }
+
     return {
         "total_reviews": total_reviews,
         "total_complaints": total_complaints,
         "groups": sorted_groups,
+        "problems_ranking": sorted_groups,
+        "charts": charts,
         "severity_distribution": severity_dist,
         "complexity_distribution": complexity_dist,
         "backlog": problem_backlog,

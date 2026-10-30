@@ -206,6 +206,9 @@ def get_app_domain() -> str:
     cfg = get_app_config()
     return cfg.get("domain", "education" if get_app_id() == "minha_escola_mg" else "general")
 
+def get_domain() -> str:
+    return get_app_domain()
+
 def get_app_name() -> str:
     return get_app_config().get("app_name", "Minha Escola MG")
 
