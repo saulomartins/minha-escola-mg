@@ -105,6 +105,8 @@ class ReplyRequest(BaseModel):
     send_to_store: bool = False
 
 class SettingsRequest(BaseModel):
+    app_id: Optional[str] = None
+    domain: Optional[str] = None
     app_name: Optional[str] = None
     organization_name: Optional[str] = None
     google_play_package: Optional[str] = None
@@ -1720,6 +1722,10 @@ def api_get_settings():
 
 @app.post("/api/settings")
 def api_update_settings(req: SettingsRequest):
+    if req.app_id is not None:
+        set_setting("app_id", req.app_id.strip())
+    if req.domain is not None:
+        set_setting("domain", req.domain.strip())
     if req.app_name is not None:
         set_setting("app_name", req.app_name.strip())
     if req.organization_name is not None:
@@ -1762,6 +1768,20 @@ def api_update_settings(req: SettingsRequest):
         set_setting("smtp_password", req.smtp_password.strip())
     if req.smtp_from_email is not None:
         set_setting("smtp_from_email", req.smtp_from_email.strip())
+    try:
+        from config import save_app_config
+        app_sync = {}
+        if req.app_id is not None: app_sync["app_id"] = req.app_id.strip()
+        if req.domain is not None: app_sync["domain"] = req.domain.strip()
+        if req.app_name is not None: app_sync["app_name"] = req.app_name.strip()
+        if req.organization_name is not None: app_sync["organization_name"] = req.organization_name.strip()
+        if req.google_play_package is not None: app_sync.setdefault("google_play", {})["package_name"] = req.google_play_package.strip()
+        if req.apple_store_id is not None: app_sync.setdefault("apple_store", {})["app_id"] = req.apple_store_id.strip()
+        if req.support_contact_url is not None: app_sync["support_url"] = req.support_contact_url.strip()
+        if app_sync:
+            save_app_config(app_sync)
+    except Exception as e:
+        pass
     return {"success": True, "message": "Configurações salvas com sucesso!"}
 
 @app.post("/api/settings/test-gemini")

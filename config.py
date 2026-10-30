@@ -141,6 +141,24 @@ def get_app_config() -> Dict[str, Any]:
     if env_support_email:
         config["support_email"] = env_support_email.strip()
 
+    
+    # Garantia de Coerência entre app_id, app_name e domain
+    curr_id = config.get("app_id", "minha_escola_mg")
+    if curr_id == "minha_escola_mg":
+        if "escola" not in config.get("app_name", "").lower():
+            config["app_name"] = "Minha Escola MG"
+        config["domain"] = "education"
+    elif curr_id == "mg_app_cidadao":
+        if "cidad" not in config.get("app_name", "").lower():
+            config["app_name"] = "MG App Cidadão"
+        config["domain"] = "public_services"
+    elif curr_id == "fintech_banco":
+        if "banco" not in config.get("app_name", "").lower() and "fintech" not in config.get("app_name", "").lower():
+            config["app_name"] = "Banco Digital & Cartões"
+        config["domain"] = "fintech"
+    elif curr_id == "app_generico":
+        config["domain"] = "general"
+
     return config
 
 def save_app_config(new_config: Dict[str, Any]) -> bool:

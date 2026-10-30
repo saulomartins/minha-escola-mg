@@ -95,11 +95,19 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
             <div class="flex items-center space-x-3">
                 <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center text-white text-xl shadow-inner font-bold">
-                    <i class="fa-solid fa-graduation-cap"></i>
+                    {% if app_config.domain == 'education' %}
+                        <i class="fa-solid fa-graduation-cap"></i>
+                    {% elif app_config.domain == 'public_services' %}
+                        <i class="fa-solid fa-landmark"></i>
+                    {% elif app_config.domain == 'fintech' %}
+                        <i class="fa-solid fa-wallet"></i>
+                    {% else %}
+                        <i class="fa-solid fa-mobile-screen-button"></i>
+                    {% endif %}
                 </div>
                 <div>
                     <h1 class="text-xl font-bold tracking-tight">{{ app_config.app_name or "Minha Escola MG" }} - Central de Inteligência</h1>
-                    <p class="text-xs text-indigo-200">Monitoramento, Análise de Complexidade & Resposta (Google Play & App Store)</p>
+                    <p class="text-xs text-indigo-200">{{ app_config.app_tagline or "Monitoramento, Análise de Complexidade & Resposta (Google Play & App Store)" }}</p>
                 </div>
             </div>
 
@@ -288,32 +296,34 @@
         </div>
 
         <!-- Seletor de Visão Principal (Comentários vs Diagnóstico de Aparelhos/SO vs Complexidade vs Temporal) -->
-        <div class="flex flex-wrap border-b border-slate-200 bg-white p-1.5 rounded-xl shadow-sm gap-2 no-print">
-            <button onclick="switchMainView('reviews')" id="nav-btn-reviews" class="nav-view-btn active flex-1 min-w-[200px] py-2.5 px-4 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2">
-                <i class="fa-solid fa-list-check"></i> 1. Comentários & Respostas
+        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8 gap-2 bg-white p-2 rounded-xl shadow-sm border border-slate-200 no-print">
+            <button onclick="switchMainView('reviews')" id="nav-btn-reviews" class="nav-view-btn active py-2.5 px-3 rounded-lg font-bold text-xs sm:text-sm transition flex items-center justify-center gap-1.5 text-center">
+                <i class="fa-solid fa-list-check"></i> <span>1. Comentários</span>
             </button>
-            <button onclick="switchMainView('devices')" id="nav-btn-devices" class="nav-view-btn flex-1 min-w-[200px] py-2.5 px-4 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2 text-slate-600 hover:bg-slate-50">
-                <i class="fa-solid fa-mobile-screen-button text-purple-600"></i> 2. Diagnóstico de Celulares & SO
+            <button onclick="switchMainView('devices')" id="nav-btn-devices" class="nav-view-btn py-2.5 px-3 rounded-lg font-bold text-xs sm:text-sm transition flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-50 text-center">
+                <i class="fa-solid fa-mobile-screen-button text-purple-600"></i> <span>2. Celulares & SO</span>
             </button>
-            <button onclick="switchMainView('analytics')" id="nav-btn-analytics" class="nav-view-btn flex-1 min-w-[200px] py-2.5 px-4 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2 text-slate-600 hover:bg-slate-50">
-                <i class="fa-solid fa-chart-line text-indigo-600"></i> 3. Diagnóstico de Causas-Raiz
+            <button onclick="switchMainView('analytics')" id="nav-btn-analytics" class="nav-view-btn py-2.5 px-3 rounded-lg font-bold text-xs sm:text-sm transition flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-50 text-center">
+                <i class="fa-solid fa-chart-line text-indigo-600"></i> <span>3. Causas-Raiz</span>
             </button>
-            <button onclick="switchMainView('temporal')" id="nav-btn-temporal" class="nav-view-btn flex-1 min-w-[200px] py-2.5 px-4 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2 text-slate-600 hover:bg-slate-50">
-                <i class="fa-solid fa-calendar-days text-amber-500"></i> 4. Diagnóstico Temporal & Tendências
+            <button onclick="switchMainView('temporal')" id="nav-btn-temporal" class="nav-view-btn py-2.5 px-3 rounded-lg font-bold text-xs sm:text-sm transition flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-50 text-center">
+                <i class="fa-solid fa-calendar-days text-amber-500"></i> <span>4. Tendências</span>
             </button>
-            <button onclick="switchMainView('hardware-rc')" id="nav-btn-hardware-rc" class="nav-view-btn flex-1 min-w-[200px] py-2.5 px-4 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2 text-slate-600 hover:bg-slate-50">
-                <i class="fa-solid fa-microchip text-rose-500"></i> 5. Matriz Hardware x Causas-Raiz
+            <button onclick="switchMainView('hardware-rc')" id="nav-btn-hardware-rc" class="nav-view-btn py-2.5 px-3 rounded-lg font-bold text-xs sm:text-sm transition flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-50 text-center">
+                <i class="fa-solid fa-microchip text-rose-500"></i> <span>5. Matriz HW x Causa</span>
             </button>
-            <button onclick="switchMainView('scanner')" id="nav-btn-scanner" class="nav-view-btn flex-1 min-w-[200px] py-2.5 px-4 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2 text-slate-600 hover:bg-slate-50">
-                <i class="fa-solid fa-magnifying-glass-chart text-cyan-600"></i> 6. Varredura de Palavras & Termos
+            <button onclick="switchMainView('scanner')" id="nav-btn-scanner" class="nav-view-btn py-2.5 px-3 rounded-lg font-bold text-xs sm:text-sm transition flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-50 text-center">
+                <i class="fa-solid fa-magnifying-glass-chart text-cyan-600"></i> <span>6. Varredura</span>
             </button>
-            <button onclick="switchMainView('support')" id="nav-btn-support" class="nav-view-btn flex-1 min-w-[200px] py-2.5 px-4 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2 text-slate-600 hover:bg-slate-50">
-                <i class="fa-solid fa-headset text-blue-600"></i> 7. Fale Conosco / Suporte Prodemge
-                <span id="badge-support-count" class="ml-1 px-2 py-0.5 text-[10px] font-extrabold bg-blue-100 text-blue-800 rounded-full">1.957</span>
+            {% if app_config.features.enable_fale_conosco %}
+            <button onclick="switchMainView('support')" id="nav-btn-support" class="nav-view-btn py-2.5 px-3 rounded-lg font-bold text-xs sm:text-sm transition flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-50 text-center">
+                <i class="fa-solid fa-headset text-blue-600"></i> <span>7. Fale Conosco</span>
+                <span id="badge-support-count" class="ml-1 px-1.5 py-0.5 text-[10px] font-extrabold bg-blue-100 text-blue-800 rounded-full">1.957</span>
             </button>
+            {% endif %}
             {% if current_user and current_user.role == 'admin' %}
-            <button onclick="switchMainView('users')" id="nav-btn-users" class="nav-view-btn flex-1 min-w-[200px] py-2.5 px-4 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2 text-slate-600 hover:bg-slate-50">
-                <i class="fa-solid fa-users-gear text-emerald-600"></i> 8. Gestão de Acessos
+            <button onclick="switchMainView('users')" id="nav-btn-users" class="nav-view-btn py-2.5 px-3 rounded-lg font-bold text-xs sm:text-sm transition flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-50 text-center">
+                <i class="fa-solid fa-users-gear text-emerald-600"></i> <span>8. Acessos</span>
                 <span id="badge-pending-count" class="hidden ml-1 px-2 py-0.5 text-[10px] font-extrabold bg-amber-500 text-white rounded-full animate-pulse">0</span>
             </button>
             {% endif %}
@@ -323,15 +333,15 @@
         <div id="view-reviews" class="space-y-6">
             <!-- Filtros e Barra de Ações -->
             <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3">
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-2.5">
                     <!-- Busca Textual -->
-                    <div class="relative md:col-span-2 lg:col-span-2">
+                    <div class="relative md:col-span-4">
                         <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-sm"></i>
                         <input type="text" id="filter-search" oninput="debounceLoadReviews()" placeholder="Buscar palavras (ex: senha, moto g, tela preta)..." class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white">
                     </div>
 
                     <!-- Filtro Causa-Raiz / Diagnóstico -->
-                    <div class="md:col-span-1 lg:col-span-1">
+                    <div class="md:col-span-3">
                         <select id="filter-root-cause" onchange="loadReviews()" class="w-full py-2 px-3 bg-indigo-50/60 border border-indigo-200 text-indigo-950 font-medium rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                             <option value="todos">🎯 Todas as Causas-Raiz</option>
                             <option value="login_sessao_recorrente">🔐 Instabilidade de Login, Conexão e Sessão</option>
@@ -2631,8 +2641,6 @@
                     </div>
                     <div id="apple-test-result" class="hidden text-xs font-semibold"></div>
                 </div>
-
-                </div>
             </div>
 
             <!-- Conteúdo da Tab 4: App Monitorado (Parametrização) -->
@@ -2648,42 +2656,46 @@
                 <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
                     <label class="block font-bold text-xs text-slate-700">Perfis Pré-Configurados (Presets Rápidos):</label>
                     <div class="flex gap-2">
-                        <select id="select-app-preset" class="flex-1 px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 bg-white">
-                            <option value="minha_escola_mg.json">Minha Escola MG (SEE/MG & Prodemge)</option>
-                            <option value="mg_app_cidadao.json">MG App Cidadão (Governo de Minas Gerais)</option>
-                            <option value="app_generico.json">Meu Aplicativo Mobile (Genérico)</option>
+                        <select id="select-app-preset" onchange="onPresetSelectedChange(this.value)" class="flex-1 px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 bg-white">
+                            <option value="minha_escola_mg.json" {% if app_config.app_id == 'minha_escola_mg' %}selected{% endif %}>Minha Escola MG (SEE/MG & Prodemge)</option>
+                            <option value="mg_app_cidadao.json" {% if app_config.app_id == 'mg_app_cidadao' %}selected{% endif %}>MG App Cidadão (Governo de Minas Gerais)</option>
+                            <option value="fintech_banco.json" {% if app_config.app_id == 'fintech_banco' %}selected{% endif %}>Banco Digital & Fintech</option>
+                            <option value="app_generico.json" {% if app_config.app_id == 'app_generico' %}selected{% endif %}>Meu Aplicativo Mobile (Genérico)</option>
                         </select>
-                        <button type="button" onclick="applySelectedPreset()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-xs transition shadow-sm">
-                            Carregar Perfil
+                        <button type="button" onclick="applySelectedPreset()" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-xs transition shadow-sm flex items-center gap-1.5 shrink-0">
+                            <i class="fa-solid fa-cloud-arrow-down"></i> Ativar Perfil
                         </button>
                     </div>
                 </div>
 
+                <input type="hidden" id="input-app-id" value="{{ app_config.app_id or 'minha_escola_mg' }}">
+                <input type="hidden" id="input-app-domain" value="{{ app_config.domain or 'education' }}">
+
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block font-semibold text-slate-700 mb-1 text-xs">Nome do Aplicativo</label>
-                        <input type="text" id="input-app-name" placeholder="Ex: Minha Escola MG" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                        <input type="text" id="input-app-name" value="{{ app_config.app_name or 'Minha Escola MG' }}" placeholder="Ex: Minha Escola MG" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white font-medium">
                     </div>
                     <div>
                         <label class="block font-semibold text-slate-700 mb-1 text-xs">Empresa / Órgão Desenvolvedor</label>
-                        <input type="text" id="input-org-name" placeholder="Ex: Governo de MG / Prodemge" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                        <input type="text" id="input-org-name" value="{{ app_config.organization_name or 'Governo de Minas Gerais / Prodemge' }}" placeholder="Ex: Governo de MG / Prodemge" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white font-medium">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block font-semibold text-slate-700 mb-1 text-xs">Google Play (Package Name)</label>
-                        <input type="text" id="input-gp-package" placeholder="Ex: com.prodemge.minhaescolamg" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono text-xs">
+                        <input type="text" id="input-gp-package" value="{{ app_config.google_play.package_name if app_config.google_play else 'com.prodemge.minhaescolamg' }}" placeholder="Ex: com.prodemge.minhaescolamg" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono text-xs bg-white font-medium">
                     </div>
                     <div>
                         <label class="block font-semibold text-slate-700 mb-1 text-xs">Apple App Store (ID Numérico)</label>
-                        <input type="text" id="input-apple-id" placeholder="Ex: 6749247611" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono text-xs">
+                        <input type="text" id="input-apple-id" value="{{ app_config.apple_store.app_id if app_config.apple_store else '6749247611' }}" placeholder="Ex: 6749247611" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono text-xs bg-white font-medium">
                     </div>
                 </div>
 
                 <div>
                     <label class="block font-semibold text-slate-700 mb-1 text-xs">Canal de Suporte Oficial (Formulário / Portal Web)</label>
-                    <input type="url" id="input-support-url-app" placeholder="https://forms.cloud.microsoft/r/..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                    <input type="url" id="input-support-url-app" value="{{ app_config.support_url or '' }}" placeholder="https://..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white font-medium">
                 </div>
             </div>
 
@@ -4806,6 +4818,8 @@
             const appleP8 = document.getElementById('input-apple-p8').value.trim();
             
 
+            const appId = document.getElementById('input-app-id') ? document.getElementById('input-app-id').value.trim() : null;
+            const appDomain = document.getElementById('input-app-domain') ? document.getElementById('input-app-domain').value.trim() : null;
             const appName = document.getElementById('input-app-name') ? document.getElementById('input-app-name').value.trim() : null;
             const orgName = document.getElementById('input-org-name') ? document.getElementById('input-org-name').value.trim() : null;
             const gpPackage = document.getElementById('input-gp-package') ? document.getElementById('input-gp-package').value.trim() : null;
@@ -4831,6 +4845,8 @@
                         auto_publish_direct: autoPublish,
                         auto_reply_5_stars_only: auto5stars,
                         auto_sync_interval: autoSyncInterval,
+                        app_id: appId,
+                        domain: appDomain,
                         app_name: appName,
                         organization_name: orgName,
                         google_play_package: gpPackage,
@@ -4847,6 +4863,57 @@
         }
 
         
+        const PRESETS_DATA = {
+            "minha_escola_mg.json": {
+                app_id: "minha_escola_mg",
+                app_name: "Minha Escola MG",
+                domain: "education",
+                org_name: "Governo de Minas Gerais / Prodemge",
+                gp_package: "com.prodemge.minhaescolamg",
+                apple_id: "6749247611",
+                support_url: "https://forms.cloud.microsoft/r/JmZhSzXtwG"
+            },
+            "mg_app_cidadao.json": {
+                app_id: "mg_app_cidadao",
+                app_name: "MG App Cidadão",
+                domain: "public_services",
+                org_name: "Governo de Minas Gerais / Prodemge",
+                gp_package: "br.gov.prodemge.cidadao",
+                apple_id: "1158925514",
+                support_url: "https://www.mg.gov.br/atendimento"
+            },
+            "fintech_banco.json": {
+                app_id: "fintech_banco",
+                app_name: "Banco Digital & Cartões",
+                domain: "fintech",
+                org_name: "Instituição Financeira / Fintech",
+                gp_package: "com.fintech.banco",
+                apple_id: "1234567890",
+                support_url: "https://ajuda.banco.com.br"
+            },
+            "app_generico.json": {
+                app_id: "app_generico",
+                app_name: "Meu Aplicativo Mobile",
+                domain: "general",
+                org_name: "Minha Empresa / Instituição",
+                gp_package: "com.exemplo.meuapp",
+                apple_id: "1234567890",
+                support_url: "https://suporte.exemplo.com"
+            }
+        };
+
+        function onPresetSelectedChange(val) {
+            const p = PRESETS_DATA[val];
+            if (!p) return;
+            if (document.getElementById('input-app-id')) document.getElementById('input-app-id').value = p.app_id;
+            if (document.getElementById('input-app-domain')) document.getElementById('input-app-domain').value = p.domain;
+            if (document.getElementById('input-app-name')) document.getElementById('input-app-name').value = p.app_name;
+            if (document.getElementById('input-org-name')) document.getElementById('input-org-name').value = p.org_name;
+            if (document.getElementById('input-gp-package')) document.getElementById('input-gp-package').value = p.gp_package;
+            if (document.getElementById('input-apple-id')) document.getElementById('input-apple-id').value = p.apple_id;
+            if (document.getElementById('input-support-url-app')) document.getElementById('input-support-url-app').value = p.support_url;
+        }
+
         async function applySelectedPreset() {
             const sel = document.getElementById('select-app-preset').value;
             if (!sel) return;
