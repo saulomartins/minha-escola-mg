@@ -163,9 +163,11 @@ def generate_auto_reply_for_review(review: Dict[str, Any], root_cause_id: Option
     3. A URL sempre vem do campo de configuração 'Canal de Suporte Oficial citado pela IA (Formulário {org_name})' (support_contact_url / support_email).
     4. NUNCA inclui e-mails pessoais ou de desenvolvedores (ex: saulomartins.costa@gmail.com).
     """
+    target_app = (review.get("app_id") or (lambda: (__import__('config').get_app_id()))()).strip()
+
     user_name = review.get("user_name", "").strip()
     if not user_name or user_name.lower() in ("usuário", "usuario", "usuario google play", "usuário apple"):
-        greeting_name = "estudante/responsável"
+        greeting_name = "estudante/responsável" if target_app == "minha_escola_mg" else "cidadão(ã)"
     else:
         greeting_name = user_name
 
@@ -174,11 +176,11 @@ def generate_auto_reply_for_review(review: Dict[str, Any], root_cause_id: Option
     store = review.get("store", "google")
     store_name = "Google Play Store" if store == "google" else "Apple App Store"
 
-    # Obtém o canal de contato oficial configurado no campo "Canal de Suporte Oficial citado pela IA (Formulário {org_name})"
-    canal_contato = get_support_url()
+    # Obtém o canal de contato oficial configurado especificamente para este app
+    canal_contato = get_support_url(target_app)
     # REGRA ABSOLUTA: NUNCA usar endereços de e-mail (como saulomartins.costa@gmail.com)
     if "@" in canal_contato or not canal_contato.strip():
-        canal_contato = OFFICIAL_SUPPORT_FORM
+        canal_contato = "https://forms.cloud.microsoft/r/JmZhSzXtwG" if target_app == "minha_escola_mg" else "https://www.mg.gov.br/atendimento"
     canal_contato = canal_contato.strip()
 
     # Avalia se há contexto de problema
@@ -214,8 +216,9 @@ def generate_auto_reply_for_review(review: Dict[str, Any], root_cause_id: Option
         else:
             template = cfg["templates"]["positive"]
 
-    app_name = get_app_name()
-    org_name = get_organization_name()
+    from config import get_app_name as cfg_get_app_name, get_organization_name as cfg_get_org_name
+    app_name = cfg_get_app_name(target_app)
+    org_name = cfg_get_org_name()
     formatted = template.format(
         nome=greeting_name,
         loja=store_name,
@@ -230,7 +233,7 @@ def generate_auto_reply_for_review(review: Dict[str, Any], root_cause_id: Option
     if rating >= 5:
         # REGRA ABSOLUTA: 5 estrelas NUNCA exibe canal de suporte nem link
         formatted = strip_support_link(formatted)
-    elif (rating <= 3 or is_problem) and (canal_contato not in formatted and "forms.cloud.microsoft" not in formatted):
+    elif (rating <= 3 or is_problem) and (canal_contato not in formatted and "forms.cloud.microsoft" not in formatted and "mg.gov.br" not in formatted):
         formatted = (
             f"{formatted} Para que possamos analisar e solucionar sua situação, por favor acesse o "
             f"Canal de Suporte Oficial: 👉 {canal_contato}"

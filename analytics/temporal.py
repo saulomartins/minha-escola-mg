@@ -8,7 +8,7 @@ import sqlite3
 import os
 from datetime import datetime
 from collections import defaultdict
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 from analytics.complexity import ROOT_CAUSES_CONFIG, classify_text_issue
 

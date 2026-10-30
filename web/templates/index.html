@@ -2549,7 +2549,7 @@
 
     <!-- Modal de Configurações Expandido (Gemini + Conexão com as Lojas + Agendador) -->
     <div id="modal-settings" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-        <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full p-6 space-y-5 my-8">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 space-y-5 my-8 border border-slate-100 relative mx-auto">
             <div class="flex justify-between items-center border-b border-slate-100 pb-3">
                 <div>
                     <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
@@ -2801,9 +2801,11 @@
                 </div>
             </div>
 
-            <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
-                <button type="button" onclick="closeSettingsModal()" class="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
-                <button type="button" onclick="saveSettings()" class="px-4 py-2 text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow">Salvar Todas as Configurações</button>
+            <div class="flex flex-col sm:flex-row justify-end items-center gap-3 pt-4 border-t border-slate-100">
+                <button type="button" onclick="closeSettingsModal()" class="w-full sm:w-auto px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition text-center order-2 sm:order-1">Cancelar</button>
+                <button type="button" onclick="saveSettings()" class="w-full sm:w-auto px-5 py-2.5 text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition flex items-center justify-center gap-2 whitespace-nowrap order-1 sm:order-2">
+                    <i class="fa-solid fa-check"></i> Salvar Todas as Configurações
+                </button>
             </div>
         </div>
     </div>
@@ -4951,6 +4953,10 @@
                     activeStoreCredApp = curApp;
                     updateStoreCredsUI();
 
+                    if (document.getElementById('select-app-preset')) {
+                        document.getElementById('select-app-preset').value = `${curApp}.json`;
+                    }
+
                     if (data.app_name && document.getElementById('input-app-name')) document.getElementById('input-app-name').value = data.app_name;
                     if (data.organization_name && document.getElementById('input-org-name')) document.getElementById('input-org-name').value = data.organization_name;
                     if (data.google_play_package && document.getElementById('input-gp-package')) document.getElementById('input-gp-package').value = data.google_play_package;
@@ -5122,8 +5128,8 @@
                     })
                 });
                 closeSettingsModal();
-                showAlert("Configurações e credenciais de todas as aplicações salvas com sucesso!");
-                await loadStats();
+                showAlert("Configurações e credenciais salvas com sucesso!");
+                setTimeout(() => window.location.reload(), 400);
             } catch (err) {
                 showAlert("Erro ao salvar configurações.", "error");
             }
@@ -5161,6 +5167,7 @@
             if (document.getElementById('input-gp-package')) document.getElementById('input-gp-package').value = p.gp_package;
             if (document.getElementById('input-apple-id')) document.getElementById('input-apple-id').value = p.apple_id;
             if (document.getElementById('input-support-url-app')) document.getElementById('input-support-url-app').value = p.support_url;
+            if (document.getElementById('input-support-email')) document.getElementById('input-support-email').value = p.support_url;
         }
 
         async function quickSwitchApp(presetId) {

@@ -179,8 +179,11 @@ def save_app_config(new_config: Dict[str, Any]) -> bool:
             set_setting("app_name", str(new_config["app_name"]))
         if "organization_name" in new_config:
             set_setting("organization_name", str(new_config["organization_name"]))
+        target_app = str(new_config.get("app_id") or current.get("app_id") or "minha_escola_mg")
         if "support_url" in new_config:
-            set_setting("support_contact_url", str(new_config["support_url"]))
+            s_url = str(new_config["support_url"])
+            set_setting("support_contact_url", s_url)
+            set_setting(f"support_contact_url_{target_app}", s_url)
         if "google_play" in new_config and "package_name" in new_config["google_play"]:
             set_setting("google_play_package", str(new_config["google_play"]["package_name"]))
         if "apple_store" in new_config and "app_id" in new_config["apple_store"]:
@@ -192,9 +195,22 @@ def save_app_config(new_config: Dict[str, Any]) -> bool:
         return False
 
 # Helpers utilitários rápidos
+def normalize_app_id(app_id: Optional[str]) -> str:
+    if not app_id:
+        return "minha_escola_mg"
+    clean = str(app_id).strip().lower()
+    if clean.endswith(".json"):
+        clean = clean[:-5]
+    if clean in ("minha_escola_mg", "minhaescola", "minha_escola", "minha-escola", "minha-escola-mg", "education"):
+        return "minha_escola_mg"
+    if clean in ("mg_app_cidadao", "mgapp", "mg_app", "mg-app", "mg-app-cidadao", "cidadao", "public_services"):
+        return "mg_app_cidadao"
+    return clean
+
 def get_app_id() -> str:
     cfg = get_app_config()
-    return cfg.get("app_id") or cfg.get("app_short_name", "minha_escola_mg")
+    raw = cfg.get("app_id") or cfg.get("app_short_name") or "minha_escola_mg"
+    return normalize_app_id(raw)
 
 def get_app_domain() -> str:
     cfg = get_app_config()
@@ -203,7 +219,12 @@ def get_app_domain() -> str:
 def get_domain() -> str:
     return get_app_domain()
 
-def get_app_name() -> str:
+def get_app_name(app_id: Optional[str] = None) -> str:
+    target_app = normalize_app_id(app_id or get_app_id())
+    if target_app == "minha_escola_mg":
+        return "Minha Escola MG"
+    elif target_app == "mg_app_cidadao":
+        return "MG App Cidadão"
     return get_app_config().get("app_name", "Minha Escola MG")
 
 def get_organization_name() -> str:
@@ -212,8 +233,66 @@ def get_organization_name() -> str:
 def get_developer_name() -> str:
     return get_app_config().get("developer_name", "Prodemge")
 
-def get_support_url() -> str:
-    return get_app_config().get("support_url", "https://forms.cloud.microsoft/r/JmZhSzXtwG")
+def get_support_url(app_id: Optional[str] = None) -> str:
+    """
+    Retorna o Canal de Suporte Oficial configurado especificamente para o app_id.
+    Prioridades de resolução:
+    1. Banco SQLite: support_contact_url_{app_id} ou support_url_{app_id}
+    2. Variável de ambiente: SUPPORT_CHANNEL_URL_{APP_ID} ou SUPPORT_URL_{APP_ID}
+    3. Arquivo Preset: presets/{app_id}.json ('support_url')
+    4. Se for o app atualmente ativo: valor global em settings / app_config.json
+    5. Fallback padrão por aplicativo conhecido:
+       - minha_escola_mg: https://forms.cloud.microsoft/r/JmZhSzXtwG
+       - mg_app_cidadao: https://www.mg.gov.br/atendimento
+    """
+    target_app = normalize_app_id(app_id or get_app_id())
+    target_app_upper = target_app.upper()
+
+    # 1. Banco de dados específico por app
+    try:
+        from database.db import get_setting
+        db_val = get_setting(f"support_contact_url_{target_app}", "") or get_setting(f"support_url_{target_app}", "")
+        if db_val and db_val.strip() and "@" not in db_val:
+            return db_val.strip()
+    except Exception:
+        pass
+
+    # 2. Variável de ambiente específica por app
+    env_val = os.getenv(f"SUPPORT_CHANNEL_URL_{target_app_upper}") or os.getenv(f"SUPPORT_URL_{target_app_upper}")
+    if env_val and env_val.strip() and "@" not in env_val:
+        return env_val.strip()
+
+    # 3. Preset do aplicativo
+    preset_path = os.path.join(PRESETS_DIR, f"{target_app}.json")
+    if os.path.exists(preset_path):
+        try:
+            with open(preset_path, "r", encoding="utf-8") as f:
+                pdata = json.load(f)
+                if pdata.get("support_url") and "@" not in pdata["support_url"]:
+                    return pdata["support_url"].strip()
+        except Exception:
+            pass
+
+    # 4. Se for o app atualmente ativo, confere o app_config.json / setting global
+    if target_app == get_app_id():
+        try:
+            from database.db import get_setting
+            global_val = get_setting("support_contact_url", "") or get_setting("support_email", "")
+            if global_val and global_val.strip() and "@" not in global_val:
+                return global_val.strip()
+        except Exception:
+            pass
+        file_cfg = get_app_config()
+        if file_cfg.get("support_url") and "@" not in file_cfg["support_url"]:
+            return file_cfg["support_url"].strip()
+
+    # 5. Defaults oficiais por aplicativo conhecido
+    if target_app == "minha_escola_mg":
+        return "https://forms.cloud.microsoft/r/JmZhSzXtwG"
+    elif target_app == "mg_app_cidadao":
+        return "https://www.mg.gov.br/atendimento"
+
+    return "https://forms.cloud.microsoft/r/JmZhSzXtwG"
 
 def get_google_play_package() -> str:
     gp = get_app_config().get("google_play", {})

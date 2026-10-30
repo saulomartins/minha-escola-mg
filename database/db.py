@@ -547,12 +547,13 @@ def get_reviews(
     search: Optional[str] = None,
     stuck_android_12: Optional[bool] = None,
     limit: int = 100,
-    offset: int = 0
+    offset: int = 0,
+    app_id: Optional[str] = None
 ) -> List[Dict[str, Any]]:
     conn = get_connection()
     cursor = conn.cursor()
     
-    current_app_id = (lambda: (__import__('config').get_app_id()))()
+    current_app_id = (app_id or (lambda: (__import__('config').get_app_id()))()).strip()
     query = "SELECT * FROM reviews WHERE app_id = ?"
     params = [current_app_id]
     

@@ -8,30 +8,29 @@ from config import get_app_name, get_organization_name, get_support_url
 
 logger = logging.getLogger(__name__)
 
-def get_official_support_url() -> str:
+def get_official_support_url(app_id: Optional[str] = None) -> str:
     """
     Retorna dinamicamente a URL do canal de suporte oficial
-    definido nas configurações do sistema ou no app_config.json.
+    definido nas configurações do sistema especificamente para o aplicativo.
     """
     try:
-        url = get_setting("support_contact_url") or get_setting("support_email") or get_support_url()
-        if "@" in url or not url.strip():
-            url = get_support_url()
-        return url.strip()
+        from config import get_support_url as cfg_get_support_url
+        return cfg_get_support_url(app_id)
     except Exception:
-        return get_support_url()
+        return "https://forms.cloud.microsoft/r/JmZhSzXtwG" if app_id == "minha_escola_mg" else "https://www.mg.gov.br/atendimento"
 
-def build_system_prompt(support_url: str) -> str:
-    app_name = get_app_name()
-    org_name = get_organization_name()
-    return f"""Você é o assistente oficial de suporte e atendimento ao usuário do aplicativo "{app_name}" (aplicativo oficial desenvolvido por {org_name}).
+def build_system_prompt(support_url: str, app_name: Optional[str] = None, org_name: Optional[str] = None) -> str:
+    from config import get_app_name as cfg_get_app_name, get_organization_name as cfg_get_org_name
+    name = app_name or cfg_get_app_name()
+    org = org_name or cfg_get_org_name()
+    return f"""Você é o assistente oficial de suporte e atendimento ao usuário do aplicativo "{name}" (aplicativo oficial desenvolvido por {org}).
 Sua missão é analisar avaliações e comentários de usuários nas lojas Google Play Store e Apple App Store, categorizar o problema e redigir uma resposta oficial, cordial, prestativa e empática em Português do Brasil.
 
 Diretrizes obrigatórias para as respostas:
 1. Seja sempre educado, acolhedor e profissional.
 2. Cumprimente o usuário pelo nome (se disponível) ou cordialmente ("Olá!", "Olá, usuário!").
 3. REGRA CRÍTICA DO CANAL DE SUPORTE OFICIAL:
-   - REGRA ABSOLUTA PARA 5 ESTRELAS: Para TODAS as avaliações com nota 5 estrelas, NUNCA inclua link de formulário nem mencione "Canal de Suporte Oficial". Apenas agradeça de forma calorosa, cordial e prestativa pela avaliação e pela nota máxima no {app_name}!
+   - REGRA ABSOLUTA PARA 5 ESTRELAS: Para TODAS as avaliações com nota 5 estrelas, NUNCA inclua link de formulário nem mencione "Canal de Suporte Oficial". Apenas agradeça de forma calorosa, cordial e prestativa pela avaliação e pela nota máxima no {name}!
    - Para TODAS as avaliações com nota de 1 a 3 estrelas (1, 2 ou 3 estrelas): a resposta DEVE OBRIGATORIAMENTE indicar e solicitar que o usuário utilize exatamente:
      Canal de Suporte Oficial: 👉 {support_url}
    - Para avaliações de 4 estrelas: se contiver menção ou contexto de problema, falha ou lentidão, solicite o Canal de Suporte Oficial: 👉 {support_url}. Se for apenas elogio, agradeça cordialmente sem incluir o canal de suporte.
@@ -118,6 +117,8 @@ def strip_support_link(text: str) -> str:
             "forms.office.com" in lower_chunk or
             "suporte oficial" in lower_chunk or
             "jmzhszxtwg" in lower_chunk or
+            "mg.gov.br/atendimento" in lower_chunk or
+            "mg.gov.br" in lower_chunk or
             "notamos que você mencionou" in lower_chunk or
             "notamos que voce mencionou" in lower_chunk or
             "instabilidade ou dificuldade" in lower_chunk or
@@ -145,7 +146,7 @@ def strip_support_link(text: str) -> str:
         
     return result
 
-def ensure_official_support_link(suggested_response: str, content: str, rating: int) -> str:
+def ensure_official_support_link(suggested_response: str, content: str, rating: int, app_id: Optional[str] = None) -> str:
     """
     Garante que qualquer avaliação de 1 a 3 estrelas OU com qualquer contexto de problema
     contenham obrigatoriamente a indicação do Canal de Suporte Oficial no formato exato:
@@ -154,17 +155,17 @@ def ensure_official_support_link(suggested_response: str, content: str, rating: 
     REGRA ABSOLUTA PARA 5 ESTRELAS: Para comentários com 5 estrelas, NUNCA coloca o formulário
     nem o link nem o canal de suporte. Apenas agradece pelo retorno positivo.
     """
-    support_url = get_official_support_url()
+    support_url = get_official_support_url(app_id)
     cleaned = re.sub(r'[\w\.-]+@[\w\.-]+\.\w+', '', suggested_response).strip()
     
     # Substitui formatos legados para o formato padrão exato
     cleaned = re.sub(
-        r'Canal de Suporte Oficial citado pela IA \(Formulário Prodemge\):\s*(👉\s*)?',
+        r'Canal de Suporte Oficial citado pela IA.*?(👉\s*)?',
         'Canal de Suporte Oficial: 👉 ',
         cleaned
     )
     cleaned = re.sub(
-        r'Canal de Suporte Oficial \(Formulário Prodemge\):\s*(👉\s*)?',
+        r'Canal de Suporte Oficial \(.*?\):\s*(👉\s*)?',
         'Canal de Suporte Oficial: 👉 ',
         cleaned
     )
@@ -176,8 +177,12 @@ def ensure_official_support_link(suggested_response: str, content: str, rating: 
     is_problem = has_problem_context(content, rating)
     
     if is_problem:
-        # Se for 1-3 estrelas OU 4 estrelas COM relato de problema, GARANTE o link
-        if support_url not in cleaned and "forms.cloud.microsoft" not in cleaned:
+        # Se for 1-3 estrelas OU 4 estrelas COM relato de problema, GARANTE o link específico
+        if support_url not in cleaned:
+            # Remove qualquer link de suporte de outro app caso tenha ficado
+            cleaned = re.sub(r'https?://forms\.cloud\.microsoft\S*', '', cleaned)
+            cleaned = re.sub(r'https?://www\.mg\.gov\.br/atendimento\S*', '', cleaned)
+            cleaned = cleaned.rstrip(' :👉-')
             cleaned = (
                 f"{cleaned} Para que possamos analisar e solucionar sua situação, por favor "
                 f"acesse o Canal de Suporte Oficial: 👉 {support_url}"
@@ -187,18 +192,20 @@ def ensure_official_support_link(suggested_response: str, content: str, rating: 
             
     return cleaned
 
-def heuristic_fallback_analysis(user_name: str, rating: int, content: str) -> Dict[str, Any]:
+def heuristic_fallback_analysis(user_name: str, rating: int, content: str, app_id: Optional[str] = None) -> Dict[str, Any]:
     """
     Análise heurística quando não há chave do Gemini configurada ou em caso de fallback.
     REGRA ABSOLUTA: Para avaliações de 5 estrelas, SEMPRE retorna agradecimento positivo sem formulário.
     """
-    support_url = get_official_support_url()
+    target_app = (app_id or (lambda: (__import__('config').get_app_id()))()).strip()
+    support_url = get_official_support_url(target_app)
     content_lower = (content or "").lower()
     name_greeting = f"Olá, {user_name}!" if user_name and "usuário" not in user_name.lower() else "Olá!"
     
     # REGRA ABSOLUTA: 5 estrelas é sempre elogio caloroso sem link
-    app_name = get_app_name()
-    org_name = get_organization_name()
+    from config import get_app_name as cfg_get_app_name, get_organization_name as cfg_get_org_name
+    app_name = cfg_get_app_name(target_app)
+    org_name = cfg_get_org_name()
     if rating >= 5:
         return {
             "sentiment": "POSITIVO",
@@ -222,23 +229,35 @@ def heuristic_fallback_analysis(user_name: str, rating: int, content: str) -> Di
     else:
         sentiment = "NEGATIVO"
         
-    # Categoria e Resposta
+    # Categoria e Resposta contextualizada por aplicativo
     if any(w in content_lower for w in ["senha", "login", "entrar", "gov", "cpf", "acesso", "conta", "recuperar"]):
         category = "Login/Acesso"
+        if target_app == "minha_escola_mg":
+            orientacao = "Verifique se o seu CPF e dados cadastrais estão atualizados junto à secretaria da sua escola. Se a dificuldade persistir, utilize a opção 'Esqueci minha senha' ou solicite suporte pelo"
+        else:
+            orientacao = "Verifique se o seu CPF e credenciais de acesso no portal Gov.br ou no cadastro estadual estão regulares. Se a dificuldade persistir, utilize a recuperação de conta ou acione o"
         response = (
             f"{name_greeting} Sentimos muito pela dificuldade de acesso. "
-            f"Verifique se o seu CPF e dados cadastrais estão atualizados junto à secretaria da sua escola. "
-            f"Se a dificuldade persistir, utilize a opção 'Esqueci minha senha' ou solicite suporte pelo "
+            f"{orientacao} "
             f"Canal de Suporte Oficial: 👉 {support_url}"
         )
-    elif any(w in content_lower for w in ["nota", "boletim", "falta", "frequência", "frequencia", "bimestre", "ponto"]):
-        category = "Boletim/Notas"
-        response = (
-            f"{name_greeting} Agradecemos pelo seu relato. As notas e frequências exibidas no Minha Escola MG "
-            f"dependem da sincronização dos lançamentos feitos pelos professores no Diário Escolar Digital. "
-            f"Caso haja divergências não resolvidas pela escola, por favor informe pelo "
-            f"Canal de Suporte Oficial: 👉 {support_url}"
-        )
+    elif any(w in content_lower for w in ["nota", "boletim", "falta", "frequência", "frequencia", "bimestre", "ponto", "serviço", "servico", "agendamento", "documento", "certidão", "certidao"]):
+        if target_app == "minha_escola_mg":
+            category = "Boletim/Notas"
+            response = (
+                f"{name_greeting} Agradecemos pelo seu relato. As notas e frequências exibidas no Minha Escola MG "
+                f"dependem da sincronização dos lançamentos feitos pelos professores no Diário Escolar Digital. "
+                f"Caso haja divergências não resolvidas pela escola, por favor informe pelo "
+                f"Canal de Suporte Oficial: 👉 {support_url}"
+            )
+        else:
+            category = "Serviços Digitais"
+            response = (
+                f"{name_greeting} Agradecemos pelo seu relato. Os serviços e consultas no {app_name} "
+                f"são integrados diretamente às bases dos órgãos estaduais de Minas Gerais. "
+                f"Caso a divergência ou indisponibilidade persista, por favor reporte pelo "
+                f"Canal de Suporte Oficial: 👉 {support_url}"
+            )
     elif any(w in content_lower for w in ["trava", "fecha", "bug", "erro", "carrega", "preta", "lento", "ruim", "péssimo", "atualização"]):
         category = "Falha Técnica"
         response = (
@@ -248,7 +267,10 @@ def heuristic_fallback_analysis(user_name: str, rating: int, content: str) -> Di
         )
     elif rating >= 4 and not is_problem:
         category = "Elogio"
-        response = f"{name_greeting} Ficamos muito felizes com a sua avaliação de {rating} estrelas e carinho! Nosso objetivo é sempre facilitar o dia a dia da comunidade escolar mineira. Conte conosco!"
+        if target_app == "minha_escola_mg":
+            response = f"{name_greeting} Ficamos muito felizes com a sua avaliação de {rating} estrelas e carinho! Nosso objetivo é sempre facilitar o dia a dia da comunidade escolar mineira. Conte conosco!"
+        else:
+            response = f"{name_greeting} Ficamos muito felizes com a sua avaliação de {rating} estrelas e carinho! Nosso objetivo é prestar serviços públicos cada vez melhores ao cidadão mineiro. Conte conosco!"
     elif rating >= 4 and is_problem:
         category = "Falha Técnica" if any(w in content_lower for w in ["trava", "lento", "bug", "fecha"]) else "Usabilidade"
         response = (
@@ -276,14 +298,18 @@ def analyze_review(review: Dict[str, Any], api_key: Optional[str] = None) -> Dic
     Garante o direcionamento ao Canal de Suporte Oficial no formato exato:
     'Canal de Suporte Oficial: 👉 {support_url}'
     """
-    support_url = get_official_support_url()
+    target_app = (review.get("app_id") or (lambda: (__import__('config').get_app_id()))()).strip()
+    support_url = get_official_support_url(target_app)
+    from config import get_app_name as cfg_get_app_name, get_organization_name as cfg_get_org_name
+    app_name = cfg_get_app_name(target_app)
+    org_name = cfg_get_org_name()
+
     user_name = review.get("user_name", "Usuário")
     rating = review.get("rating", 3)
     content = review.get("content", "")
     store = review.get("store", "Loja")
     
     # Se não tiver conteúdo de texto e for só nota
-    app_name = get_app_name()
     if not content.strip():
         if rating >= 4:
             return {
@@ -305,7 +331,7 @@ def analyze_review(review: Dict[str, Any], api_key: Optional[str] = None) -> Dic
     effective_api_key = api_key or os.environ.get("GEMINI_API_KEY", "")
     
     if not effective_api_key:
-        return heuristic_fallback_analysis(user_name, rating, content)
+        return heuristic_fallback_analysis(user_name, rating, content, app_id=target_app)
         
     try:
         from google import genai
@@ -327,7 +353,7 @@ Retorne o JSON estrito com sentiment, category e suggested_response."""
             model="gemini-2.5-flash",
             contents=prompt,
             config={
-                "system_instruction": build_system_prompt(support_url),
+                "system_instruction": build_system_prompt(support_url, app_name=app_name, org_name=org_name),
                 "response_mime_type": "application/json"
             }
         )
@@ -335,7 +361,7 @@ Retorne o JSON estrito com sentiment, category e suggested_response."""
         text = response.text.strip()
         data = json.loads(text)
         raw_suggested = data.get("suggested_response", "")
-        final_suggested = ensure_official_support_link(raw_suggested, content, rating)
+        final_suggested = ensure_official_support_link(raw_suggested, content, rating, app_id=target_app)
         
         return {
             "sentiment": data.get("sentiment", "NEUTRO"),
@@ -344,7 +370,7 @@ Retorne o JSON estrito com sentiment, category e suggested_response."""
         }
     except Exception as e:
         logger.warning(f"Falha ao chamar Gemini API ({e}). Usando fallback heurístico.")
-        return heuristic_fallback_analysis(user_name, rating, content)
+        return heuristic_fallback_analysis(user_name, rating, content, app_id=target_app)
 
 def test_gemini_key(api_key: str) -> tuple[bool, str]:
     """

@@ -23,10 +23,10 @@
     "header_subtext": "SEE/MG & Prodemge",
     "badge_text": "OFICIAL"
   },
+  "guest_token": "MEMG-2026",
   "features": {
     "enable_fale_conosco": true,
     "enable_hardware_matrix": true,
     "enable_ai_suggestions": true
-  },
-  "guest_token": "MEMG-2026"
+  }
 }

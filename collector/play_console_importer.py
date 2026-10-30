@@ -3,7 +3,7 @@ import csv
 import io
 import re
 import logging
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Optional
 from datetime import datetime
 
 from database.db import get_connection, upsert_review
@@ -122,7 +122,7 @@ def normalize_device_model(device_raw: str) -> Tuple[str, str]:
             
     return brand, model
 
-def import_play_console_csv(file_content_or_bytes) -> Dict[str, Any]:
+def import_play_console_csv(file_content_or_bytes, app_id: Optional[str] = None) -> Dict[str, Any]:
     """
     Processa e importa o relatorio oficial de avaliacoes exportado do Google Play Console.
     Atualiza 100% dos comentarios correspondentes com os dados de telemetria oficial.
@@ -143,10 +143,13 @@ def import_play_console_csv(file_content_or_bytes) -> Dict[str, Any]:
     new_count = 0
     total_processed = 0
     
+    from config import normalize_app_id, get_app_id
+    target_app = normalize_app_id(app_id or get_app_id())
+
     conn = get_connection()
     cursor = conn.cursor()
     
-    cursor.execute("SELECT id, review_id, content, user_name FROM reviews WHERE store = 'google'")
+    cursor.execute("SELECT id, review_id, content, user_name FROM reviews WHERE store = 'google' AND app_id = ?", (target_app,))
     existing_db = cursor.fetchall()
     
     by_review_id = {}
@@ -262,13 +265,13 @@ def import_play_console_csv(file_content_or_bytes) -> Dict[str, Any]:
                         id, store, review_id, user_name, rating, content, review_date,
                         device_brand, device_model, os_name, os_version,
                         app_version, app_version_code, reviewer_language, device_source,
-                        status, created_at, updated_at
-                    ) VALUES (?, 'google', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'play_console_official', 'pendente', ?, ?)
+                        status, created_at, updated_at, app_id
+                    ) VALUES (?, 'google', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'play_console_official', 'pendente', ?, ?, ?)
                 """, (
                     new_id, raw_review_id or new_id, raw_user, rating_int, raw_content,
                     raw_date or now_iso, brand, model, os_name, os_version,
                     raw_app_version, raw_app_code, raw_lang,
-                    now_iso, now_iso
+                    now_iso, now_iso, target_app
                 ))
                 new_count += 1
                 if raw_review_id:

@@ -649,12 +649,12 @@ async def index(request: Request):
     return response
 
 @app.get("/api/stats")
-def api_stats():
-    return get_stats()
+def api_stats(app_id: Optional[str] = None):
+    return get_stats(app_id=app_id)
 
 @app.get("/api/analytics/problems")
-def api_analytics_problems():
-    return get_detailed_problem_analytics()
+def api_analytics_problems(app_id: Optional[str] = None):
+    return get_detailed_problem_analytics(app_id=app_id)
 
 @app.get("/api/analytics/templates")
 def api_analytics_templates():
@@ -662,23 +662,24 @@ def api_analytics_templates():
     return PROBLEM_TEMPLATES_CONFIG
 
 @app.get("/api/analytics/devices")
-def api_analytics_devices():
+def api_analytics_devices(app_id: Optional[str] = None):
     """Retorna diagnóstico completo sobre modelos de celulares, sistemas operacionais e versões"""
-    return get_device_diagnostic()
+    return get_device_diagnostic(app_id=app_id)
 
 @app.get("/api/analytics/temporal")
-def api_analytics_temporal():
+def api_analytics_temporal(app_id: Optional[str] = None):
     """Retorna diagnóstico temporal completo: linha do tempo, faixas de envelhecimento, evolução mês a mês e tendências por causa-raiz"""
-    return get_temporal_diagnostics()
+    return get_temporal_diagnostics(app_id=app_id)
 
 @app.get("/api/analytics/hardware-root-cause")
 def api_analytics_hardware_root_cause(
     brand: Optional[str] = None,
-    root_cause_id: Optional[str] = None
+    root_cause_id: Optional[str] = None,
+    app_id: Optional[str] = None
 ):
     """Retorna análise cruzada de hardware (fabricantes e modelos) com causas-raiz de problemas."""
     from analytics.hardware_root_cause import get_hardware_root_cause_analytics
-    return get_hardware_root_cause_analytics(filter_brand=brand, filter_root_cause_id=root_cause_id)
+    return get_hardware_root_cause_analytics(filter_brand=brand, filter_root_cause_id=root_cause_id, app_id=app_id)
 
 @app.get("/api/analytics/keyword-scan")
 def api_analytics_keyword_scan(q: str = ""):
@@ -741,7 +742,8 @@ def api_reviews(
     search: Optional[str] = None,
     stuck_android_12: Optional[bool] = None,
     limit: int = 100,
-    offset: int = 0
+    offset: int = 0,
+    app_id: Optional[str] = None
 ):
     reviews = get_reviews(
         store=store,
@@ -754,7 +756,8 @@ def api_reviews(
         search=search,
         stuck_android_12=stuck_android_12,
         limit=limit,
-        offset=offset
+        offset=offset,
+        app_id=app_id
     )
     return {"reviews": reviews, "count": len(reviews)}
 
@@ -1015,14 +1018,14 @@ def api_export_reviews(
 
 
 @app.post("/api/reviews/import-play-console")
-async def api_import_play_console(file: UploadFile = File(...)):
+async def api_import_play_console(file: UploadFile = File(...), app_id: Optional[str] = None):
     """
     Importa relatório CSV oficial exportado do Google Play Developer Console.
     Atualiza 100% dos comentários com telemetria oficial (Aparelho, Marca, SO Android e Código da Versão).
     """
     try:
         content = await file.read()
-        res = import_play_console_csv(content)
+        res = import_play_console_csv(content, app_id=app_id)
         return res
     except Exception as e:
         logger.error(f"Erro ao importar CSV do Play Console: {e}")
