@@ -114,8 +114,6 @@
                             <select onchange="quickSwitchApp(this.value)" class="bg-indigo-900 text-white font-bold text-xs rounded px-2 py-0.5 border border-indigo-500/60 cursor-pointer focus:outline-none focus:ring-1 focus:ring-amber-400">
                                 <option value="minha_escola_mg.json" {% if app_config.app_id == 'minha_escola_mg' %}selected{% endif %}>Minha Escola MG</option>
                                 <option value="mg_app_cidadao.json" {% if app_config.app_id == 'mg_app_cidadao' %}selected{% endif %}>MG App Cidadão</option>
-                                <option value="fintech_banco.json" {% if app_config.app_id == 'fintech_banco' %}selected{% endif %}>Banco Digital & Fintech</option>
-                                <option value="app_generico.json" {% if app_config.app_id == 'app_generico' %}selected{% endif %}>Meu App Mobile</option>
                             </select>
                         </div>
                     </div>
@@ -2685,8 +2683,7 @@
                         <select id="select-app-preset" onchange="onPresetSelectedChange(this.value)" class="flex-1 px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 bg-white">
                             <option value="minha_escola_mg.json" {% if app_config.app_id == 'minha_escola_mg' %}selected{% endif %}>Minha Escola MG (SEE/MG & Prodemge)</option>
                             <option value="mg_app_cidadao.json" {% if app_config.app_id == 'mg_app_cidadao' %}selected{% endif %}>MG App Cidadão (Governo de Minas Gerais)</option>
-                            <option value="fintech_banco.json" {% if app_config.app_id == 'fintech_banco' %}selected{% endif %}>Banco Digital & Fintech</option>
-                            <option value="app_generico.json" {% if app_config.app_id == 'app_generico' %}selected{% endif %}>Meu Aplicativo Mobile (Genérico)</option>
+                            
                         </select>
                         <button type="button" onclick="applySelectedPreset()" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-xs transition shadow-sm flex items-center gap-1.5 shrink-0">
                             <i class="fa-solid fa-cloud-arrow-down"></i> Ativar Perfil
@@ -4936,24 +4933,6 @@
                 gp_package: "br.gov.prodemge.projetosocialminas",
                 apple_id: "1057649491",
                 support_url: "https://www.mg.gov.br/atendimento"
-            },
-            "fintech_banco.json": {
-                app_id: "fintech_banco",
-                app_name: "Banco Digital & Cartões",
-                domain: "fintech",
-                org_name: "Instituição Financeira / Fintech",
-                gp_package: "com.fintech.banco",
-                apple_id: "1234567890",
-                support_url: "https://ajuda.banco.com.br"
-            },
-            "app_generico.json": {
-                app_id: "app_generico",
-                app_name: "Meu Aplicativo Mobile",
-                domain: "general",
-                org_name: "Minha Empresa / Instituição",
-                gp_package: "com.exemplo.meuapp",
-                apple_id: "1234567890",
-                support_url: "https://suporte.exemplo.com"
             }
         };
 

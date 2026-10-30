@@ -158,12 +158,6 @@ def get_app_config() -> Dict[str, Any]:
         apple_id = config.get("apple_store", {}).get("app_id")
         if not apple_id or apple_id == "1158925514":
             config.setdefault("apple_store", {})["app_id"] = "1057649491"
-    elif curr_id == "fintech_banco":
-        if "banco" not in config.get("app_name", "").lower() and "fintech" not in config.get("app_name", "").lower():
-            config["app_name"] = "Banco Digital & Cartões"
-        config["domain"] = "fintech"
-    elif curr_id == "app_generico":
-        config["domain"] = "general"
 
     return config
 
