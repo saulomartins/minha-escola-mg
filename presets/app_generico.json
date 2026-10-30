@@ -1,6 +1,8 @@
 {
+  "app_id": "app_generico",
   "app_name": "Meu Aplicativo Mobile",
   "app_short_name": "meuapp",
+  "domain": "general",
   "organization_name": "Minha Empresa / Instituição",
   "developer_name": "Equipe de Engenharia e Suporte Mobile",
   "app_tagline": "Central de Inteligência de Avaliações e Satisfação",
@@ -25,5 +27,6 @@
     "enable_fale_conosco": false,
     "enable_hardware_matrix": true,
     "enable_ai_suggestions": true
-  }
+  },
+  "guest_token": "ACESSO-2026"
 }

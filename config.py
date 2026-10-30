@@ -9,8 +9,10 @@ CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app_conf
 PRESETS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "presets")
 
 DEFAULT_CONFIG: Dict[str, Any] = {
+    "app_id": "minha_escola_mg",
     "app_name": "Minha Escola MG",
     "app_short_name": "minhaescola",
+    "domain": "education",
     "organization_name": "Governo de Minas Gerais / Prodemge",
     "developer_name": "Prodemge - Secretaria de Estado de Educação de MG",
     "app_tagline": "Central de Inteligência e Diagnóstico de Avaliações",
@@ -31,6 +33,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "header_subtext": "SEE/MG & Prodemge",
         "badge_text": "OFICIAL"
     },
+    "guest_token": "MEMG-2026",
     "features": {
         "enable_fale_conosco": True,
         "enable_hardware_matrix": True,
@@ -66,6 +69,10 @@ def get_app_config() -> Dict[str, Any]:
     try:
         from database.db import get_all_settings
         db_settings = get_all_settings()
+        if db_settings.get("app_id"):
+            config["app_id"] = db_settings["app_id"]
+        if db_settings.get("domain"):
+            config["domain"] = db_settings["domain"]
         if db_settings.get("app_name"):
             config["app_name"] = db_settings["app_name"]
         if db_settings.get("organization_name"):
@@ -88,6 +95,14 @@ def get_app_config() -> Dict[str, Any]:
         pass
 
     # 3. Variáveis de ambiente têm prioridade máxima (ideal para Docker / Render)
+    env_app_id = os.getenv("APP_ID")
+    if env_app_id:
+        config["app_id"] = env_app_id.strip()
+
+    env_domain = os.getenv("APP_DOMAIN")
+    if env_domain:
+        config["domain"] = env_domain.strip()
+
     env_app_name = os.getenv("APP_NAME")
     if env_app_name:
         config["app_name"] = env_app_name.strip()
@@ -138,6 +153,10 @@ def save_app_config(new_config: Dict[str, Any]) -> bool:
 
         # Atualiza também no banco para persistência imediata
         from database.db import set_setting
+        if "app_id" in new_config:
+            set_setting("app_id", str(new_config["app_id"]))
+        if "domain" in new_config:
+            set_setting("domain", str(new_config["domain"]))
         if "app_name" in new_config:
             set_setting("app_name", str(new_config["app_name"]))
         if "organization_name" in new_config:
@@ -155,6 +174,14 @@ def save_app_config(new_config: Dict[str, Any]) -> bool:
         return False
 
 # Helpers utilitários rápidos
+def get_app_id() -> str:
+    cfg = get_app_config()
+    return cfg.get("app_id") or cfg.get("app_short_name", "minha_escola_mg")
+
+def get_app_domain() -> str:
+    cfg = get_app_config()
+    return cfg.get("domain", "education" if get_app_id() == "minha_escola_mg" else "general")
+
 def get_app_name() -> str:
     return get_app_config().get("app_name", "Minha Escola MG")
 
@@ -178,3 +205,7 @@ def get_apple_store_id() -> str:
 def get_apple_store_country() -> str:
     ap = get_app_config().get("apple_store", {})
     return ap.get("country", "br")
+
+
+def get_guest_token() -> str:
+    return get_app_config().get("guest_token") or "CONVIDADO-2026"

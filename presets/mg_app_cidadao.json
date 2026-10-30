@@ -1,6 +1,8 @@
 {
+  "app_id": "mg_app_cidadao",
   "app_name": "MG App Cidadão",
   "app_short_name": "mgapp",
+  "domain": "public_services",
   "organization_name": "Governo de Minas Gerais / Prodemge",
   "developer_name": "Prodemge - Tecnologia da Informação do Estado de MG",
   "app_tagline": "Central de Inteligência e Avaliações de Serviços Públicos",
@@ -25,5 +27,6 @@
     "enable_fale_conosco": false,
     "enable_hardware_matrix": true,
     "enable_ai_suggestions": true
-  }
+  },
+  "guest_token": "MGAPP-2026"
 }

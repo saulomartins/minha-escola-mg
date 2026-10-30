@@ -1,7 +1,9 @@
 import re
 import unicodedata
-from typing import Dict, List, Any
+from collections import defaultdict
+from typing import Dict, List, Any, Optional
 from database.db import get_connection
+from analytics.taxonomy import get_root_causes_config, get_root_causes_map
 
 def norm(text: str) -> str:
     if not text:
@@ -9,157 +11,23 @@ def norm(text: str) -> str:
     n = unicodedata.normalize('NFKD', text).encode('ASCII', 'ignore').decode('utf-8')
     return n.lower().strip()
 
-ROOT_CAUSES_CONFIG = [
-    {
-        "id": "login_sessao_recorrente",
-        "name": "Instabilidade de Login, Conexão e Sessão",
-        "keywords": [
-            "login", "logar", "fazer login", "faca login", "faz login", "tentativas",
-            "tentativa", "tentando entrar", "tentar entrar", "desloga", "deslogando", "deslogou",
-            "deslogar", "desconecta", "desconectando", "desconectou", "desconectar", "sai toda hora",
-            "toda hora sai", "sai da conta", "toda vez pede login", "pede login toda", "toda vez tem que fazer login",
-            "toda vez que entro", "coloco a conta", "nao entra", "nao consigo entrar",
-            "nao consigo acessar", "nao da pra acessar", "sem acesso", "perdi o acesso",
-            "erro ao entrar", "erro ao acessar", "erro de login", "erro ao logar",
-            "nao passa da tela de login", "trava no login", "bug no login", "problemas para conectar",
-            "nao conecta", "impossivel fazer login", "sessao expirada", "sessao expirou", "token",
-            "nao autentica", "tela de login", "bloqueou meu acesso", "acessar minha conta",
-            "entrar no aplicativo", "entrar no app", "nem entrar", "nao consigo nem entrar",
-            "nao abre a conta", "nao reconhece a conta", "tentar logar", "tentativas ate o app",
-            "bloqueou", "bloqueada", "bloqueio", "nao entra de primeira", "so entra quando quer",
-            "para entrar", "pra entrar", "ao entrar", "senha e usuario", "usuario e senha", "minha conta",
-            "dificil de abrir", "nao abre de jeito nenhum", "conectar", "conexao", "autenticacao",
-            "erro de autenticacao", "fora do ar"
-        ],
-        "severity": "Crítica",
-        "severity_color": "#dc2626", # red
-        "complexity": "Média",
-        "complexity_score": 2,
-        "recommendation": "Persistir token de refresh de forma segura (AccountManager/Keychain), aumentar tolerância a timeout no gateway Prodemge e tratar desconexões com reconexão automática silenciosa sem deslogar o usuário."
-    },
-    {
-        "id": "gov_br_cpf",
-        "name": "Falha no Gov.br e Vínculo de CPF",
-        "keywords": [
-            "gov.br", "gov", "conta gov", "login gov", "gov br",
-            "cpf", "vincular cpf", "vinculo de cpf", "nao reconhece cpf",
-            "cpf nao encontrado", "cpf incorreto", "dados divergentes", "dados invalidos",
-            "dataprev", "simade"
-        ],
-        "severity": "Crítica",
-        "severity_color": "#dc2626", # red
-        "complexity": "Alta",
-        "complexity_score": 3,
-        "recommendation": "Aprimorar tratamento de erros da integração OAuth Gov.br/Dataprev com mensagens instrutivas e suporte a múltiplos perfis de acesso."
-    },
-    {
-        "id": "senha_recuperacao",
-        "name": "Recuperação de Senha e Redefinição",
-        "keywords": [
-            "esqueci a senha", "esqueci minha senha", "redefinir senha", "recuperar senha",
-            "trocar senha", "mudar senha", "id do aluno", "idaluno", "senha temporaria",
-            "redefinicao", "codigo de recuperacao", "redefinir a senha"
-        ],
-        "severity": "Alta",
-        "severity_color": "#ea580c", # orange
-        "complexity": "Média",
-        "complexity_score": 2,
-        "recommendation": "Implementar recuperação de senha por SMS/WhatsApp e permitir que o próprio estudante ou responsável valide o e-mail cadastrado."
-    },
-    {
-        "id": "boletim_notas",
-        "name": "Boletim em Branco e Notas Ausentes",
-        "keywords": [
-            "nota", "notas", "boletim", "bimestre", "nao carrega nota", "boletim em branco",
-            "nota zerada", "nao aparece nota", "nota sumiu", "lancamento de notas", "ver as notas",
-            "sem nota", "notas nao aparecem", "quadro de notas", "ver notas", "consultar nota"
-        ],
-        "severity": "Alta",
-        "severity_color": "#ea580c",
-        "complexity": "Alta",
-        "complexity_score": 3,
-        "recommendation": "Desenvolver cache offline no app e exibir um indicador claro com a data/hora da última sincronização do Diário Escolar Digital (DED)."
-    },
-    {
-        "id": "faltas_frequencia",
-        "name": "Faltas e Frequência Divergentes",
-        "keywords": [
-            "falta", "faltas", "frequencia", "presenca", "falta errada", "computou falta",
-            "sem presenca", "marcou falta", "quadro de faltas", "abono de falta",
-            "dias que eu fui", "dias de aula"
-        ],
-        "severity": "Média",
-        "severity_color": "#eab308", # yellow
-        "complexity": "Média",
-        "complexity_score": 2,
-        "recommendation": "Exibir extrato detalhado de faltas com disciplina, data e motivo de abono homologado pela coordenação."
-    },
-    {
-        "id": "crash_fechamento",
-        "name": "Crash e Fechamento Inesperado",
-        "keywords": [
-            "fecha sozinho", "fechando sozinho", "fechando", "fecha", "sai do app", "crash",
-            "trava ao abrir", "nem abre", "parou de funcionar", "app parou", "nao abre",
-            "fica fechando", "fecha do nada", "aplicativo fecha", "falha ao abrir"
-        ],
-        "severity": "Crítica",
-        "severity_color": "#dc2626",
-        "complexity": "Alta",
-        "complexity_score": 3,
-        "recommendation": "Monitorar stack traces no Crashlytics e corrigir vazamentos de memória na tela de inicialização em versões antigas do Android/iOS."
-    },
-    {
-        "id": "lentidao_tela_preta",
-        "name": "Lentidão Extrema e Tela Preta",
-        "keywords": [
-            "tela preta", "tela branca", "lento", "lentidao", "travando", "trava",
-            "carregando infinito", "roda roda", "nao passa da tela", "atualizacao piorou",
-            "carregamento infinito", "demora demais", "congelando", "congela", "fica carregando",
-            "demora para carregar", "demora pra carregar", "nunca carrega", "demora pra atualizar",
-            "fica rodando", "carregar e nunca carrega"
-        ],
-        "severity": "Alta",
-        "severity_color": "#ea580c",
-        "complexity": "Média",
-        "complexity_score": 2,
-        "recommendation": "Otimizar assets, implementar carregamento assíncrono (lazy loading) e timeouts amigáveis com botão de 'Tentar Novamente'."
-    },
-    {
-        "id": "acesso_responsaveis",
-        "name": "Acesso dos Pais / Múltiplos Alunos",
-        "keywords": [
-            "responsavel", "pais", "mae", "pai", "filho", "filhos", "ver meu filho",
-            "dependente", "outro filho", "dois filhos", "duas filhas", "minha filha"
-        ],
-        "severity": "Média",
-        "severity_color": "#eab308",
-        "complexity": "Média",
-        "complexity_score": 2,
-        "recommendation": "Criar seletor dinâmico de dependentes no topo do app para responsáveis com mais de um aluno matriculado na rede estadual."
-    },
-    {
-        "id": "elogios_satisfacao",
-        "name": "Elogios e Avaliações Positivas",
-        "keywords": [
-            "otimo", "muito bom", "excelente", "parabens", "ajuda muito", "facil", "gostei",
-            "adorei", "perfeito", "bom", "top", "maravilha", "pratico", "nota 10"
-        ],
-        "severity": "Baixa",
-        "severity_color": "#16a34a", # green
-        "complexity": "Baixa",
-        "complexity_score": 1,
-        "recommendation": "Manter respostas automáticas cordiais para fortalecer a pontuação geral do app nas lojas."
-    }
-]
+# Compatibilidade retroativa direta
+ROOT_CAUSES_CONFIG = get_root_causes_config()
 
-def classify_text_issue(content: str, title: str = "", rating: int = 3) -> Dict[str, Any]:
+def classify_text_issue(content: str, title: str = "", rating: int = 3, domain: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Classifica uma avaliação em uma Causa-Raiz utilizando a taxonomia configurada para o domínio do app ativo.
+    """
     raw_text = f"{title or ''} {content or ''}".strip()
     text = norm(raw_text)
+
+    causes = get_root_causes_config(domain=domain)
+    elogio_cfg = next((c for c in causes if c["id"] == "elogios_satisfacao"), causes[-1])
 
     # Avaliação sem texto (apenas nota de estrelas)
     if not text:
         if rating >= 4:
-            return next(c for c in ROOT_CAUSES_CONFIG if c["id"] == "elogios_satisfacao")
+            return elogio_cfg
         else:
             return {
                 "id": "avaliacao_sem_comentario",
@@ -172,108 +40,98 @@ def classify_text_issue(content: str, title: str = "", rating: int = 3) -> Dict[
             }
 
     # Elogios puros de 4 ou 5 estrelas sem termos negativos
-    if rating >= 4 and not any(w in text for w in ["mas", "porem", "trava", "fecha", "erro", "ruim", "pessimo", "nao", "bug", "problema", "odiei", "horrivel", "bomba", "defeito"]):
-        return next(c for c in ROOT_CAUSES_CONFIG if c["id"] == "elogios_satisfacao")
-
-    # 1. Gov.br e CPF
-    gov_cfg = next(c for c in ROOT_CAUSES_CONFIG if c["id"] == "gov_br_cpf")
-    if any(k in text for k in gov_cfg["keywords"]):
-        return gov_cfg
-
-    # 2. Recuperação de Senha / ID do Aluno
-    senha_cfg = next(c for c in ROOT_CAUSES_CONFIG if c["id"] == "senha_recuperacao")
-    if any(k in text for k in senha_cfg["keywords"]):
-        return senha_cfg
-
-    # 3. Boletim e Notas
-    boletim_cfg = next(c for c in ROOT_CAUSES_CONFIG if c["id"] == "boletim_notas")
-    if any(k in text for k in boletim_cfg["keywords"]):
-        return boletim_cfg
-
-    # 4. Faltas e Frequência
-    faltas_cfg = next(c for c in ROOT_CAUSES_CONFIG if c["id"] == "faltas_frequencia")
-    if any(k in text for k in faltas_cfg["keywords"]):
-        return faltas_cfg
-
-    # 5. Instabilidade de Login, Conexão e Sessão Recorrente (Prioridade máxima sobre palavras genéricas)
-    login_cfg = next(c for c in ROOT_CAUSES_CONFIG if c["id"] == "login_sessao_recorrente")
-    login_regexes = [
-        r"login", r"logar", r"tentativ", r"deslog", r"desconect",
-        r"toda\s*(hora|vez).*(sai|pede|tem\s*que)",
-        r"(sai|caiu|desfez).*(da\s*conta|o\s*login)",
-        r"(nao|nem|nunca|sem|dificil|impossivel).*(consig|consegu|da\s*pra|passa\s*da).*(acess|entr|log|autentic|abrir|conect)",
-        r"(erro|falha|bug|problema).*(ao|de|no|para|pra)?\s*(entr|acess|log|autentic|conect|abrir)",
-        r"erro\s*(interno|de\s*sessao|de\s*token)",
-        r"(sessao|token).*(expir|invalid)",
-        r"(usuario|email).*(e|ou)\s*senha",
-        r"senha.*(invalida|incorreta|nao\s*confere)",
-        r"codigo.*(nunca|nao|sms|email)",
-        r"(fora\s*do\s*ar|fora\s*de\s*ar)",
-        r"(nao|nunca).*(entra|conecta|autentica)",
-        r"(tentar|tento|tentando|tentei).*(entrar|acessar|logar|abrir)",
-        r"(bloqueou|bloqueada|bloqueado).*(conta|acesso|login)",
-        r"acessar\s*(minha|a)?\s*conta",
-        r"so\s*abre\s*quando\s*quer"
+    negative_signals = [
+        "mas", "porem", "trava", "fecha", "erro", "ruim", "pessimo", "nao", "bug", 
+        "problema", "odiei", "horrivel", "bomba", "defeito", "falha", "lento"
     ]
-    for pat in login_regexes:
-        if re.search(pat, text):
-            return login_cfg
+    if rating >= 4 and not any(w in text for w in negative_signals):
+        return elogio_cfg
 
-    # 6. Crash e Fechamento Inesperado
-    crash_cfg = next(c for c in ROOT_CAUSES_CONFIG if c["id"] == "crash_fechamento")
-    if any(k in text for k in crash_cfg["keywords"]):
-        return crash_cfg
+    # Prioridade para Instabilidade de Login / Sessão se houver termos característicos
+    login_cfg = next((c for c in causes if c["id"] == "login_sessao_recorrente"), None)
+    if login_cfg:
+        login_regexes = [
+            r"login", r"logar", r"tentativ", r"deslog", r"desconect",
+            r"toda\s*(hora|vez).*(sai|pede|tem\s*que)",
+            r"(sai|caiu|desfez).*(da\s*conta|o\s*login)",
+            r"(nao|nem|nunca|sem|dificil|impossivel).*(consig|consegu|da\s*pra|passa\s*da).*(acess|entr|log|autentic|abrir|conect)",
+            r"(erro|falha|bug|problema).*(ao|de|no|para|pra)?\s*(entr|acess|log|autentic|conect|abrir)",
+            r"erro\s*(interno|de\s*sessao|de\s*token)",
+            r"(sessao|token).*(expir|invalid)",
+            r"(usuario|email).*(e|ou)\s*senha",
+            r"senha.*(invalida|incorreta|nao\s*confere)",
+            r"(fora\s*do\s*ar|fora\s*de\s*ar)",
+            r"(nao|nunca).*(entra|conecta|autentica)",
+            r"(tentar|tento|tentando|tentei).*(entrar|acessar|logar|abrir)",
+            r"(bloqueou|bloqueada|bloqueado).*(conta|acesso|login)",
+            r"acessar\s*(minha|a)?\s*conta",
+            r"so\s*abre\s*quando\s*quer"
+        ]
+        for pat in login_regexes:
+            if re.search(pat, text):
+                return login_cfg
 
-    # 7. Acesso Pais e Responsáveis
-    resp_cfg = next(c for c in ROOT_CAUSES_CONFIG if c["id"] == "acesso_responsaveis")
-    if any(k in text for k in resp_cfg["keywords"]):
-        return resp_cfg
+    # Percorre as causas do domínio e universais testando as palavras-chave
+    for cfg in causes:
+        if cfg["id"] in ("elogios_satisfacao", "outros_problemas"):
+            continue
+        keywords = cfg.get("keywords", [])
+        if any(k in text for k in keywords):
+            return cfg
 
-    # 8. Lentidão, Travamento e Tela Preta
-    lent_cfg = next(c for c in ROOT_CAUSES_CONFIG if c["id"] == "lentidao_tela_preta")
-    if any(k in text for k in lent_cfg["keywords"]):
-        return lent_cfg
+    # Fallback
+    if rating >= 4:
+        return elogio_cfg
 
-    # Se sobrou nota baixa (1 ou 2 estrelas)
-    if rating <= 2:
-        return {
-            "id": "outros_problemas",
-            "name": "Problemas Gerais e Dúvidas",
-            "severity": "Média",
-            "severity_color": "#eab308",
-            "complexity": "Baixa",
-            "complexity_score": 1,
-            "recommendation": "Analisar caso a caso no atendimento da escola e coletar marca/modelo do aparelho."
-        }
+    outros_cfg = next((c for c in causes if c["id"] == "outros_problemas"), causes[-1])
+    return outros_cfg
 
-    return {
-        "id": "geral_outros",
-        "name": "Geral / Sugestões Diversas",
-        "severity": "Baixa",
-        "severity_color": "#16a34a",
-        "complexity": "Baixa",
-        "complexity_score": 1,
-        "recommendation": "Triar sugestões de novos recursos com o comitê pedagógico da SEE-MG."
-    }
-
-def get_detailed_problem_analytics() -> Dict[str, Any]:
+def get_detailed_problem_analytics(app_id: Optional[str] = None, domain: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Retorna a matriz de complexidade técnica, causas-raiz ofensoras e diagnóstico
+    cruzado por Sistema Operacional especificamente para o aplicativo ativo (app_id).
+    """
+    target_app_id = app_id or (lambda: (__import__('config').get_app_id()))()
+    target_domain = domain or (lambda: (__import__('config').get_domain()))()
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, store, user_name, rating, title, content, review_date, os_name, os_version, device_brand, device_model, root_cause_id FROM reviews")
+    cursor.execute("""
+        SELECT id, store, user_name, rating, title, content, review_date, 
+               os_name, os_version, device_brand, device_model, root_cause_id 
+        FROM reviews 
+        WHERE app_id = ?
+    """, (target_app_id,))
     rows = [dict(r) for r in cursor.fetchall()]
     conn.close()
 
     total_reviews = len(rows)
     if total_reviews == 0:
-        return {}
+        return {
+            "total_reviews": 0,
+            "total_complaints": 0,
+            "groups": [],
+            "severity_distribution": {"Crítica": 0, "Alta": 0, "Média": 0, "Baixa": 0},
+            "complexity_distribution": {"Crítica": 0, "Alta": 0, "Média": 0, "Baixa": 0},
+            "backlog": [],
+            "pareto": [],
+            "os_breakdown": {
+                "total_android": 0,
+                "total_ios": 0,
+                "android_complaints": 0,
+                "ios_complaints": 0,
+                "causes_table": []
+            }
+        }
 
-    groups = {}
+    causes = get_root_causes_config(domain=target_domain)
+    causes_map = {c["id"]: c for c in causes}
+
+    groups: Dict[str, Dict[str, Any]] = {}
     for r in rows:
-        cluster = classify_text_issue(r.get("content", ""), r.get("title", ""), r.get("rating", 3))
+        cluster = classify_text_issue(r.get("content", ""), r.get("title", ""), r.get("rating", 3), domain=target_domain)
         cid = cluster["id"]
         if cid not in groups:
-            from ai.auto_reply_templates import PROBLEM_TEMPLATES_CONFIG
-            cfg_tmpl = PROBLEM_TEMPLATES_CONFIG.get(cid, {})
+            cfg_info = causes_map.get(cid, cluster)
             groups[cid] = {
                 "id": cid,
                 "name": cluster["name"],
@@ -282,18 +140,17 @@ def get_detailed_problem_analytics() -> Dict[str, Any]:
                 "complexity": cluster["complexity"],
                 "complexity_score": cluster.get("complexity_score", 1),
                 "recommendation": cluster["recommendation"],
-                "description": cfg_tmpl.get("description", "Reclamações gerais ou relatos de uso do aplicativo."),
-                "keywords": cfg_tmpl.get("keywords", cluster.get("keywords", [])),
-                "templates": cfg_tmpl.get("templates", {}),
+                "description": cfg_info.get("description", "Reclamações relatadas no uso do aplicativo."),
+                "keywords": cfg_info.get("keywords", cluster.get("keywords", [])),
+                "templates": cfg_info.get("templates", {}),
                 "count": 0,
                 "ratings": [],
                 "sample_reviews": []
             }
-        
+
         groups[cid]["count"] += 1
         groups[cid]["ratings"].append(r["rating"])
-        
-        # Salva até 3 exemplos reais com texto
+
         if r.get("content") and len(groups[cid]["sample_reviews"]) < 3:
             groups[cid]["sample_reviews"].append({
                 "user_name": r.get("user_name", "Usuário"),
@@ -305,8 +162,6 @@ def get_detailed_problem_analytics() -> Dict[str, Any]:
 
     # Ordena por frequência
     sorted_groups = sorted(groups.values(), key=lambda x: x["count"], reverse=True)
-
-    # Métricas agregadas
     total_complaints = sum(g["count"] for g in sorted_groups if g["id"] != "elogios_satisfacao")
 
     # Adiciona médias e percentuais
@@ -314,8 +169,6 @@ def get_detailed_problem_analytics() -> Dict[str, Any]:
         g["percentage"] = round((g["count"] / total_reviews) * 100, 1)
         g["complaint_percentage"] = round((g["count"] / total_complaints * 100), 1) if total_complaints > 0 and g["id"] != "elogios_satisfacao" else 0
         g["avg_rating"] = round(sum(g["ratings"]) / len(g["ratings"]), 2) if g["ratings"] else 0.0
-        
-        # Prioridade = Volume * (5 - nota média) / complexidade
         urgency = max(1.0, 5.0 - g["avg_rating"])
         g["priority_score"] = round(g["count"] * urgency, 1)
 
@@ -331,17 +184,15 @@ def get_detailed_problem_analytics() -> Dict[str, Any]:
         if g["complexity"] in complexity_dist:
             complexity_dist[g["complexity"]] += g["count"]
 
-    # Top 5 Problemas para Backlog
+    # Top Problemas para Backlog
     problem_backlog = [g for g in sorted_groups if g["id"] not in ("elogios_satisfacao", "avaliacao_sem_comentario")]
     problem_backlog.sort(key=lambda x: x["priority_score"], reverse=True)
 
-    # Dados para Gráficos
     pareto_items = [g for g in sorted_groups if g["id"] != "elogios_satisfacao"][:6]
 
     # -------------------------------------------------------------
-    # Diagnóstico Cruzado: Causas-Raiz e Complexidade por Sistema Operacional (Android vs iOS)
+    # Diagnóstico Cruzado: Causas-Raiz por Sistema Operacional (Android vs iOS)
     # -------------------------------------------------------------
-    from collections import defaultdict
     android_rows = [r for r in rows if r.get("os_name") == "Android" or r.get("store") == "google"]
     ios_rows = [r for r in rows if r.get("os_name") == "iOS" or r.get("store") == "apple"]
 
@@ -376,36 +227,24 @@ def get_detailed_problem_analytics() -> Dict[str, Any]:
             dominant = "iOS"
             dominant_label = "🍎 iOS Sofre Mais"
             dominant_color = "rose"
+            diag = f"Incidência proporcionalmente maior no iOS ({i_pct}% vs {a_pct}% no Android). Recomenda-se auditar compatibilidade no WebKit/Safari e ciclo de vida no iOS."
         elif a_pct > i_pct * 1.25:
             dominant = "Android"
             dominant_label = "🤖 Android Sofre Mais"
             dominant_color = "emerald"
+            diag = f"Incidência concentrada no Android ({a_pct}% vs {i_pct}% no iOS). Aponta para diversidade de fabricantes, restrições de memória RAM e versões legadas de SO."
         else:
             dominant = "Equilibrado"
             dominant_label = "⚖️ Equilibrado em Ambos"
             dominant_color = "amber"
-
-        diag = ""
-        if cid == "gov_br_cpf":
-            diag = "No iOS o fluxo OAuth perde cookies de redirecionamento no Safari; no Android há bloqueio de CPF divergente."
-        elif cid == "login_sessao_recorrente":
-            diag = "No iOS o Keychain desloga usuário em background; no Android há lentidão de handshake e timeout do gateway."
-        elif cid == "boletim_notas":
-            diag = "Quase 3x mais comum no Android por falhas de sincronização em cache local e conexões 3G/4G instáveis."
-        elif cid in ("lentidao_tela_preta", "crash_fechamento"):
-            diag = "Exclusivo do Android: Falta de memória RAM e WebView pesada em aparelhos econômicos com Android <= 12."
-        elif cid == "faltas_frequencia":
-            diag = "Incidência similar em ambos: divergência de sincronização com o diário eletrônico escolar."
-        else:
-            diag = "Dúvidas operacionais e suporte geral da aplicação."
+            diag = f"Distribuição equilibrada ({a_pct}% Android vs {i_pct}% iOS), indicando que a causa decorre de serviços de backend ou regras de negócio centrais da aplicação."
 
         os_causes_table.append({
             "id": cid,
             "name": g["name"],
             "severity": g["severity"],
-            "severity_color": g.get("severity_color", "#dc2626"),
+            "severity_color": g["severity_color"],
             "complexity": g["complexity"],
-            "complexity_score": g.get("complexity_score", 1),
             "android_count": a_cnt,
             "android_pct": a_pct,
             "ios_count": i_cnt,
@@ -413,63 +252,23 @@ def get_detailed_problem_analytics() -> Dict[str, Any]:
             "dominant": dominant,
             "dominant_label": dominant_label,
             "dominant_color": dominant_color,
-            "diagnosis": diag
+            "recommendation": g["recommendation"],
+            "diagnostic": diag
         })
 
-    os_breakdown = {
-        "android": {
-            "total_reviews": tot_android,
-            "total_complaints": android_complaints_count,
-            "complaint_rate": round(android_complaints_count / tot_android * 100, 1) if tot_android > 0 else 0.0,
-            "avg_rating": round(sum(r.get("rating", 3) for r in android_rows) / tot_android, 2) if tot_android > 0 else 0.0,
-            "high_complexity_pct": 31.4,
-            "med_complexity_pct": 43.1,
-            "low_complexity_pct": 25.6
-        },
-        "ios": {
-            "total_reviews": tot_ios,
-            "total_complaints": ios_complaints_count,
-            "complaint_rate": round(ios_complaints_count / tot_ios * 100, 1) if tot_ios > 0 else 0.0,
-            "avg_rating": round(sum(r.get("rating", 3) for r in ios_rows) / tot_ios, 2) if tot_ios > 0 else 0.0,
-            "high_complexity_pct": 40.0,
-            "med_complexity_pct": 44.0,
-            "low_complexity_pct": 16.0
-        },
-        "causes_comparison": os_causes_table,
-        "chart_data": {
-            "labels": [c["name"] for c in os_causes_table],
-            "android_pcts": [c["android_pct"] for c in os_causes_table],
-            "ios_pcts": [c["ios_pct"] for c in os_causes_table]
-        }
-    }
-
     return {
-        "os_breakdown": os_breakdown,
         "total_reviews": total_reviews,
         "total_complaints": total_complaints,
-        "problems_ranking": sorted_groups,
+        "groups": sorted_groups,
         "severity_distribution": severity_dist,
         "complexity_distribution": complexity_dist,
-        "top_offenders": problem_backlog[:5],
-        "charts": {
-            "pareto": {
-                "labels": [g["name"] for g in pareto_items],
-                "counts": [g["count"] for g in pareto_items],
-                "percentages": [g["complaint_percentage"] for g in pareto_items]
-            },
-            "complexity": {
-                "labels": ["Baixa", "Média", "Alta", "Crítica"],
-                "data": [complexity_dist.get("Baixa", 0), complexity_dist.get("Média", 0), complexity_dist.get("Alta", 0), complexity_dist.get("Crítica", 0)],
-                "colors": ["#16a34a", "#eab308", "#ea580c", "#dc2626"]
-            },
-            "severity": {
-                "labels": ["Crítica", "Alta", "Média", "Baixa"],
-                "data": [severity_dist.get("Crítica", 0), severity_dist.get("Alta", 0), severity_dist.get("Média", 0), severity_dist.get("Baixa", 0)],
-                "colors": ["#dc2626", "#ea580c", "#eab308", "#16a34a"]
-            },
-            "rating_impact": {
-                "labels": [g["name"] for g in pareto_items],
-                "ratings": [g["avg_rating"] for g in pareto_items]
-            }
+        "backlog": problem_backlog,
+        "pareto": pareto_items,
+        "os_breakdown": {
+            "total_android": tot_android,
+            "total_ios": tot_ios,
+            "android_complaints": android_complaints_count,
+            "ios_complaints": ios_complaints_count,
+            "causes_table": os_causes_table
         }
     }

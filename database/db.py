@@ -414,14 +414,15 @@ def upsert_review(review: Dict[str, Any]) -> bool:
         initial_status = 'respondida' if has_dev_resp else review.get('status', 'pendente')
         initial_published = 1 if has_dev_resp else (1 if review.get('published_to_store') else 0)
 
+        current_app_id = review.get('app_id') or (lambda: (__import__('config').get_app_id()))()
         cursor.execute("""
         INSERT INTO reviews (
             id, store, review_id, user_name, rating, title, content, 
             review_date, developer_response, developer_response_date, 
             sentiment, category, root_cause_id, ai_suggested_response, status, published_to_store,
             device_brand, device_model, os_name, os_version, app_version, device_source,
-            created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            created_at, updated_at, app_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             review['id'],
             review['store'],
@@ -446,7 +447,8 @@ def upsert_review(review: Dict[str, Any]) -> bool:
             review.get('app_version', None),
             review.get('device_source', None),
             now,
-            now
+            now,
+            current_app_id
         ))
     else:
         dev_resp = review.get('developer_response')
@@ -550,8 +552,9 @@ def get_reviews(
     conn = get_connection()
     cursor = conn.cursor()
     
-    query = "SELECT * FROM reviews WHERE 1=1"
-    params = []
+    current_app_id = (lambda: (__import__('config').get_app_id()))()
+    query = "SELECT * FROM reviews WHERE app_id = ?"
+    params = [current_app_id]
     
     if store and store != 'todas':
         query += " AND store = ?"
@@ -620,58 +623,59 @@ def get_reviews(
     return enriched_rows
 
 
-def get_stats() -> Dict[str, Any]:
+def get_stats(app_id: Optional[str] = None) -> Dict[str, Any]:
     conn = get_connection()
     cursor = conn.cursor()
+    current_app_id = app_id or (lambda: (__import__('config').get_app_id()))()
     
     # Total geral e por loja
-    cursor.execute("SELECT COUNT(*) as total FROM reviews")
+    cursor.execute("SELECT COUNT(*) as total FROM reviews WHERE app_id = ?", (current_app_id,))
     total = cursor.fetchone()['total']
     
-    cursor.execute("SELECT COUNT(*) as total FROM reviews WHERE store = 'google'")
+    cursor.execute("SELECT COUNT(*) as total FROM reviews WHERE store = 'google' AND app_id = ?", (current_app_id,))
     google_total = cursor.fetchone()['total']
     
-    cursor.execute("SELECT COUNT(*) as total FROM reviews WHERE store = 'apple'")
+    cursor.execute("SELECT COUNT(*) as total FROM reviews WHERE store = 'apple' AND app_id = ?", (current_app_id,))
     apple_total = cursor.fetchone()['total']
     
     # Média de notas
-    cursor.execute("SELECT AVG(rating) as avg_rating FROM reviews")
+    cursor.execute("SELECT AVG(rating) as avg_rating FROM reviews WHERE app_id = ?", (current_app_id,))
     avg_total = cursor.fetchone()['avg_rating'] or 0.0
     
-    cursor.execute("SELECT AVG(rating) as avg_rating FROM reviews WHERE store = 'google'")
+    cursor.execute("SELECT AVG(rating) as avg_rating FROM reviews WHERE store = 'google' AND app_id = ?", (current_app_id,))
     avg_google = cursor.fetchone()['avg_rating'] or 0.0
     
-    cursor.execute("SELECT AVG(rating) as avg_rating FROM reviews WHERE store = 'apple'")
+    cursor.execute("SELECT AVG(rating) as avg_rating FROM reviews WHERE store = 'apple' AND app_id = ?", (current_app_id,))
     avg_apple = cursor.fetchone()['avg_rating'] or 0.0
     
     # Sentimentos
-    cursor.execute("SELECT sentiment, COUNT(*) as count FROM reviews WHERE sentiment IS NOT NULL GROUP BY sentiment")
+    cursor.execute("SELECT sentiment, COUNT(*) as count FROM reviews WHERE sentiment IS NOT NULL AND app_id = ? GROUP BY sentiment", (current_app_id,))
     sentiments = {row['sentiment']: row['count'] for row in cursor.fetchall()}
     
     # Categorias
-    cursor.execute("SELECT category, COUNT(*) as count FROM reviews WHERE category IS NOT NULL GROUP BY category")
+    cursor.execute("SELECT category, COUNT(*) as count FROM reviews WHERE category IS NOT NULL AND app_id = ? GROUP BY category", (current_app_id,))
     categories = {row['category']: row['count'] for row in cursor.fetchall()}
     
     # Status
-    cursor.execute("SELECT status, COUNT(*) as count FROM reviews GROUP BY status")
+    cursor.execute("SELECT status, COUNT(*) as count FROM reviews WHERE app_id = ? GROUP BY status", (current_app_id,))
     statuses = {row['status']: row['count'] for row in cursor.fetchall()}
     
     # Distribuição de estrelas
-    cursor.execute("SELECT rating, COUNT(*) as count FROM reviews GROUP BY rating ORDER BY rating ASC")
+    cursor.execute("SELECT rating, COUNT(*) as count FROM reviews WHERE app_id = ? GROUP BY rating ORDER BY rating ASC", (current_app_id,))
     ratings_dist = {row['rating']: row['count'] for row in cursor.fetchall()}
 
     # Publicação nas lojas
-    cursor.execute("SELECT COUNT(*) as count FROM reviews WHERE status = 'respondida' AND published_to_store = 1")
+    cursor.execute("SELECT COUNT(*) as count FROM reviews WHERE status = 'respondida' AND published_to_store = 1 AND app_id = ?", (current_app_id,))
     published_store_count = cursor.fetchone()['count']
 
-    cursor.execute("SELECT COUNT(*) as count FROM reviews WHERE status = 'respondida' AND (published_to_store = 0 OR published_to_store IS NULL)")
+    cursor.execute("SELECT COUNT(*) as count FROM reviews WHERE status = 'respondida' AND (published_to_store = 0 OR published_to_store IS NULL) AND app_id = ?", (current_app_id,))
     pending_store_count = cursor.fetchone()['count']
     
     # Distribuição básica de SO e Marcas
-    cursor.execute("SELECT os_name, COUNT(*) as count FROM reviews WHERE os_name IS NOT NULL GROUP BY os_name")
+    cursor.execute("SELECT os_name, COUNT(*) as count FROM reviews WHERE os_name IS NOT NULL AND app_id = ? GROUP BY os_name", (current_app_id,))
     os_dist = {row['os_name']: row['count'] for row in cursor.fetchall()}
     
-    cursor.execute("SELECT device_brand, COUNT(*) as count FROM reviews WHERE device_brand IS NOT NULL AND device_brand != 'Android Geral' GROUP BY device_brand ORDER BY count DESC")
+    cursor.execute("SELECT device_brand, COUNT(*) as count FROM reviews WHERE device_brand IS NOT NULL AND device_brand != 'Android Geral' AND app_id = ? GROUP BY device_brand ORDER BY count DESC", (current_app_id,))
     brand_dist = {row['device_brand']: row['count'] for row in cursor.fetchall()}
 
     # Metadados oficiais das lojas em tempo real
@@ -780,20 +784,49 @@ def get_stats() -> Dict[str, Any]:
         "brand_distribution": brand_dist
     }
 
-def get_device_diagnostic() -> Dict[str, Any]:
+def get_device_diagnostic(app_id: Optional[str] = None) -> Dict[str, Any]:
     """
-    Retorna diagnóstico analítico completo e aprofundado sobre:
-    - Modelos de celulares e fabricantes identificados
-    - Sistemas Operacionais (Android vs iOS) e suas distribuições
-    - Versões de Sistema Operacional com índices de insatisfação / falhas técnicas
-    - Alertas de incompatibilidade por aparelho
+    Retorna diagnóstico analítico completo e dinâmico sobre:
+    - Modelos de celulares e fabricantes identificados para o app ativo
+    - Sistemas Operacionais (Android vs iOS) e suas distribuições reais
+    - Versões de SO com índices reais de insatisfação / falhas técnicas
+    - Alertas dinâmicos de incompatibilidade gerados a partir dos dados do app
     """
     conn = get_connection()
     cursor = conn.cursor()
+    current_app_id = app_id or (lambda: (__import__('config').get_app_id()))()
     
-    cursor.execute("SELECT COUNT(*) as total FROM reviews")
-    total_reviews = cursor.fetchone()['total'] or 1
+    cursor.execute("SELECT COUNT(*) as total FROM reviews WHERE app_id = ?", (current_app_id,))
+    real_total = cursor.fetchone()['total']
     
+    if real_total == 0:
+        conn.close()
+        return {
+            "total_reviews": 0,
+            "explicit_devices_count": 0,
+            "os_breakdown": [],
+            "brands": [],
+            "top_models": [],
+            "models_by_brand": {},
+            "os_versions": [],
+            "app_versions": [],
+            "explicit_reviews": [],
+            "alerts": [{
+                "type": "info",
+                "title": "Aguardando Sincronização do Aplicativo",
+                "description": "Nenhuma avaliação encontrada ainda para este aplicativo. Clique no botão 'Sincronizar Lojas' ou importe os dados do console para gerar a matriz de hardware real."
+            }],
+            "stuck_android_12_diagnostic": {
+                "total_stuck_reviews": 0,
+                "total_stuck_models": 0,
+                "models": [],
+                "reviews": [],
+                "critical_notice": "Aguardando sincronização de avaliações."
+            }
+        }
+        
+    total_reviews = real_total
+
     # 1. Distribuição de Sistemas Operacionais
     cursor.execute("""
         SELECT 
@@ -802,8 +835,9 @@ def get_device_diagnostic() -> Dict[str, Any]:
             AVG(rating) as avg_rating,
             SUM(CASE WHEN rating <= 2 THEN 1 ELSE 0 END) as negative_count
         FROM reviews
+        WHERE app_id = ?
         GROUP BY os
-    """)
+    """, (current_app_id,))
     os_rows = cursor.fetchall()
     os_breakdown = []
     for r in os_rows:
@@ -825,10 +859,13 @@ def get_device_diagnostic() -> Dict[str, Any]:
             AVG(rating) as avg_rating,
             SUM(CASE WHEN rating <= 2 THEN 1 ELSE 0 END) as negative_count
         FROM reviews
-        WHERE device_brand IS NOT NULL AND device_brand != '' AND device_brand != 'Não especificado'
+        WHERE app_id = ? 
+          AND device_brand IS NOT NULL 
+          AND device_brand != '' 
+          AND device_brand != 'Não especificado'
         GROUP BY device_brand
         ORDER BY count DESC
-    """)
+    """, (current_app_id,))
     brand_rows = cursor.fetchall()
     brands = []
     for r in brand_rows:
@@ -845,13 +882,14 @@ def get_device_diagnostic() -> Dict[str, Any]:
         SELECT 
             id, store, device_brand, device_model, os_name, os_version, rating, content, root_cause_id
         FROM reviews
-        WHERE device_model IS NOT NULL 
+        WHERE app_id = ?
+          AND device_model IS NOT NULL 
           AND device_model != '' 
           AND device_model != 'Não especificado'
           AND device_model != 'Não informado'
           AND device_model NOT IN ('Dispositivo Android', 'Android Geral')
         ORDER BY review_date DESC
-    """)
+    """, (current_app_id,))
     explicit_reviews = [dict(row) for row in cursor.fetchall()]
     
     # Agrupamento de modelos citados
@@ -897,7 +935,6 @@ def get_device_diagnostic() -> Dict[str, Any]:
             "last_official_os": life.get("last_official_os") or life.get("max_os", "Verificar com fabricante"),
             "is_stuck_android_12": life.get("is_stuck_android_12", False),
             "support_status": life.get("support_status", "Em análise"),
-
             "status_badge": life.get("status_badge", "slate"),
             "google_oem_notes": life.get("google_oem_notes", ""),
             "dev_recommendation": life.get("dev_recommendation", ""),
@@ -913,12 +950,13 @@ def get_device_diagnostic() -> Dict[str, Any]:
             AVG(rating) as avg_rating,
             SUM(CASE WHEN rating <= 2 THEN 1 ELSE 0 END) as negative_count
         FROM reviews
-        WHERE os_version IS NOT NULL 
+        WHERE app_id = ?
+          AND os_version IS NOT NULL 
           AND os_version != '' 
           AND os_version NOT IN ('Android (Geral)', 'iOS (Geral)', 'Android', 'iOS', 'Não especificado')
         GROUP BY os_version
         ORDER BY count DESC
-    """)
+    """, (current_app_id,))
     os_versions = []
     for r in cursor.fetchall():
         os_life = get_os_lifecycle(r['os_version'])
@@ -939,51 +977,86 @@ def get_device_diagnostic() -> Dict[str, Any]:
             COUNT(*) as count,
             AVG(rating) as avg_rating
         FROM reviews
-        WHERE app_version IS NOT NULL AND app_version != ''
+        WHERE app_id = ? AND app_version IS NOT NULL AND app_version != ''
         GROUP BY app_version
         ORDER BY count DESC
         LIMIT 5
-    """)
+    """, (current_app_id,))
     app_versions = [
         {"version": r['app_version'], "count": r['count'], "avg_rating": round(r['avg_rating'] or 0.0, 2)}
         for r in cursor.fetchall()
     ]
     
-    # 6. Diagnóstico e Recomendações Automáticas
+    # 6. Diagnóstico e Recomendações Automáticas 100% DINÂMICAS E BASEADAS EM DADOS REAIS
     alerts = []
-    # Verifica menções de Android 12
-    a12 = next((v for v in os_versions if "12" in v["version"]), None)
-    if a12:
+    
+    # A. Detecção Dinâmica de Gargalo por Versão de SO (Pior Nota Média com volume relevante)
+    critical_os = [v for v in os_versions if v.get("count", 0) >= 3 and v.get("avg_rating", 5) <= 2.8]
+    if critical_os:
+        worst_os = min(critical_os, key=lambda x: x["avg_rating"])
         alerts.append({
             "type": "error",
-            "title": "Atenção Crítica: O Gargalo do Android 12 e Fim de Suporte do Google/Fabricantes",
-            "description": f"Usuários no Android 12 (nota média {a12['avg_rating']} ⭐) relatam travamentos, mas a Google não disponibiliza suporte ativo e fabricantes como Motorola (ex: Moto G22, Moto G32) não liberaram Android 14. O usuário NÃO tem como atualizar o celular; a correção de memória e renderização deve ser feita obrigatoriamente dentro do aplicativo Minha Escola MG pela Prodemge."
+            "title": f"Gargalo de Desempenho no {worst_os['version']}",
+            "description": f"Usuários na versão {worst_os['version']} registram o menor índice de satisfação ({worst_os['avg_rating']} ⭐ em {worst_os['count']} avaliações). Recomendado auditoria técnica de consumo de RAM e compatibilidade de bibliotecas nessa versão."
+        })
+    elif os_versions:
+        top_os = max(os_versions, key=lambda x: x["count"])
+        alerts.append({
+            "type": "info",
+            "title": f"Versão de SO Predominante: {top_os['version']}",
+            "description": f"A versão {top_os['version']} lidera o volume de usuários com {top_os['count']} avaliações (média {top_os['avg_rating']} ⭐)."
         })
         
-    # Verifica modelos Motorola Moto G
-    moto_issues = [m for m in top_models if "Moto" in m["model"] or "G04" in m["model"] or "G32" in m["model"]]
-    if moto_issues:
-        names = ", ".join([m["model"] for m in moto_issues[:3]])
+    # B. Detecção Dinâmica de Modelo de Aparelho Ofensor (Pior Nota Média)
+    critical_models = [m for m in top_models if m.get("count", 0) >= 2 and m.get("avg_rating", 5) <= 2.5]
+    if critical_models:
+        worst_model = min(critical_models, key=lambda x: (x["avg_rating"], -x["count"]))
         alerts.append({
             "type": "warning",
-            "title": f"Gargalo de Compatibilidade em Aparelhos Motorola ({names})",
-            "description": "Reclamações apontam encerramento inesperado ou indisponibilidade na Play Store para a linha Moto G."
+            "title": f"Gargalo de Compatibilidade: {worst_model['model']} ({worst_model['brand']})",
+            "description": f"O modelo {worst_model['model']} concentra o maior índice de queixas técnicas com nota média de {worst_model['avg_rating']} ⭐ ({worst_model['count']} avaliações). Recomendado testes dedicados de renderização e tela para este aparelho."
+        })
+    elif top_models:
+        top_m = top_models[0]
+        alerts.append({
+            "type": "info",
+            "title": f"Aparelho com Maior Volume de Usuários: {top_m['model']} ({top_m['brand']})",
+            "description": f"O modelo {top_m['model']} representa o maior contingente de avaliações ({top_m['count']} relatos, média {top_m['avg_rating']} ⭐)."
         })
         
-    alerts.append({
-        "type": "warning",
-        "title": "Atenção: A política da Apple",
-        "description": "A Apple tem uma política rigorosa de privacidade. Ela considera que revelar qual iPhone a pessoa tem (ex: iPhone 13, iPhone 15 Pro) ou qual iOS ela usa (ex: iOS 17.4) em um comentário público fere a privacidade do usuário."
-    })
-    
+    # C. Comparativo Dinâmico de Satisfação entre Plataformas (Android vs iOS)
+    if os_breakdown and len(os_breakdown) >= 2:
+        and_info = next((o for o in os_breakdown if 'android' in o['os_name'].lower()), None)
+        ios_info = next((o for o in os_breakdown if 'ios' in o['os_name'].lower() or 'apple' in o['os_name'].lower()), None)
+        if and_info and ios_info:
+            diff = round(and_info['avg_rating'] - ios_info['avg_rating'], 2)
+            if abs(diff) >= 0.4:
+                melhor = "Android" if diff > 0 else "iOS"
+                pior = "iOS" if diff > 0 else "Android"
+                pior_rating = ios_info['avg_rating'] if diff > 0 else and_info['avg_rating']
+                melhor_rating = and_info['avg_rating'] if diff > 0 else ios_info['avg_rating']
+                alerts.append({
+                    "type": "warning",
+                    "title": f"Disparidade Entre Plataformas: {pior} com Avaliação Inferior",
+                    "description": f"A satisfação média no {melhor} ({melhor_rating} ⭐) supera a do {pior} ({pior_rating} ⭐). Recomendado auditar as diretrizes de interface e fluxos nativos da versão {pior}."
+                })
+
+    # D. Nota sobre Privacidade Apple
+    if any('ios' in o['os_name'].lower() or 'apple' in o['os_name'].lower() for o in os_breakdown):
+        alerts.append({
+            "type": "info",
+            "title": "Política de Privacidade Apple iOS",
+            "description": "A Apple não divulga em comentários públicos o modelo específico de iPhone nem a versão exata do iOS para proteger a privacidade dos usuários."
+        })
+
     # 7. Diagnóstico Especial: Aparelhos e Comentários sem Atualização para Android 13+ (Presos no Android <= 12)
     from analytics.device_lifecycle import evaluate_stuck_android_12
-    
     cursor.execute("""
         SELECT id, store, user_name, rating, content, review_date, device_brand, device_model, os_name, os_version
         FROM reviews
+        WHERE app_id = ?
         ORDER BY review_date DESC
-    """)
+    """, (current_app_id,))
     all_revs = [dict(row) for row in cursor.fetchall()]
     
     stuck_reviews = []
@@ -1010,8 +1083,8 @@ def get_device_diagnostic() -> Dict[str, Any]:
                 "os_version": r.get("os_version") or "Android 12 ou anterior",
                 "max_os": eval_res["max_os"],
                 "reason": eval_res["reason"],
-                "support_status": eval_res["support_status"],
-                "review_date": r.get("review_date")
+                "status_badge": eval_res.get("badge_color", "slate"),
+                "date": r.get("review_date")
             }
             stuck_reviews.append(r_entry)
             
@@ -1019,17 +1092,18 @@ def get_device_diagnostic() -> Dict[str, Any]:
                 stuck_models_map[m_name] = {
                     "model": m_name,
                     "brand": b_name,
-                    "max_os": eval_res["max_os"],
-                    "support_status": eval_res["support_status"],
-                    "google_oem_notes": eval_res["google_oem_notes"],
-                    "dev_recommendation": eval_res["recommendation"],
                     "count": 0,
                     "total_rating": 0,
+                    "max_os": eval_res["max_os"],
+                    "support_status": eval_res.get("support_status", "Legado"),
+                    "google_oem_notes": eval_res.get("google_oem_notes", ""),
+                    "dev_recommendation": eval_res.get("dev_recommendation", ""),
                     "comments": []
                 }
             stuck_models_map[m_name]["count"] += 1
             stuck_models_map[m_name]["total_rating"] += r.get("rating", 1)
-            stuck_models_map[m_name]["comments"].append(r_entry)
+            if r.get("content"):
+                stuck_models_map[m_name]["comments"].append(r["content"])
 
     stuck_models_list = []
     for k, v in stuck_models_map.items():
@@ -1047,12 +1121,13 @@ def get_device_diagnostic() -> Dict[str, Any]:
         })
     stuck_models_list.sort(key=lambda x: x["count"], reverse=True)
     
+    app_name_curr = (lambda: (__import__('config').get_app_name()))()
     stuck_android_12_diagnostic = {
         "total_stuck_reviews": len(stuck_reviews),
         "total_stuck_models": len(stuck_models_list),
         "models": stuck_models_list,
         "reviews": stuck_reviews,
-        "critical_notice": "Atenção: Os aparelhos listados nesta seção foram congelados pelas fabricantes (Motorola, Samsung, Xiaomi, LG) no Android 12 ou versões anteriores e nunca receberam atualização para o Android 13+. Como o Google também encerrou o suporte ativo a essas versões, os cidadãos NÃO POSSUEM alternativa de upgrade do celular. Portanto, a equipe de engenharia da Prodemge deve obrigatoriamente manter compatibilidade retroativa no Minha Escola MG."
+        "critical_notice": f"Aparelhos listados foram congelados pelas fabricantes no Android 12 ou versões anteriores. Como não há update oficial do fabricante, a equipe técnica do {app_name_curr} deve garantir compatibilidade retroativa e WebView otimizada."
     }
 
     conn.close()
@@ -2011,18 +2086,21 @@ def load_seed_tokens_into_cursor(cursor, now_iso: str):
         except Exception as e:
             print(f"Aviso ao processar GUEST_ACCESS_TOKEN env: {e}")
 
-    # 3. Fallback: apenas se não tem seed_tokens.json, não tem env_token, e a tabela está vazia
+    # 3. Fallback dinâmico: apenas se não tem seed_tokens.json, não tem env_token, e a tabela está vazia
     cursor.execute("SELECT COUNT(*) FROM access_tokens")
     if cursor.fetchone()[0] == 0:
+        app_cfg = (lambda: (__import__('config').get_app_config()))()
+        default_token = (app_cfg.get("guest_token") or f"{app_cfg.get('app_short_name', 'APP').upper()}-2026").strip().upper().replace(" ", "-")
+        default_label = f"Acesso Geral - {app_cfg.get('app_name', 'Painel')}"
         cursor.execute("""
         INSERT INTO access_tokens (
             id, token, label, created_by, created_at, expires_at, is_active, last_used_at, usage_count
         ) VALUES (?, ?, ?, ?, ?, ?, 1, NULL, 0)
         """, (
             "tok_default_initial",
-            "MEMG-2026",
-            "Acesso Geral SEE / Prodemge",
-            "mgminhaescola@gmail.com",
+            default_token,
+            default_label,
+            app_cfg.get("support_email", "admin@app.com"),
             now_iso,
             None
         ))
@@ -2040,7 +2118,8 @@ def create_access_token(
     now_iso = now.isoformat()
     
     if not token_code or not token_code.strip():
-        token_code = "SEE-" + secrets.token_hex(4).upper()
+        app_prefix = (lambda: (__import__('config').get_app_config().get('app_short_name', 'KEY').upper()[:4]))()
+        token_code = f"{app_prefix}-" + secrets.token_hex(3).upper()
     else:
         token_code = token_code.strip().upper().replace(" ", "-")
         
@@ -2062,6 +2141,11 @@ def create_access_token(
     conn.close()
     
     sync_seed_tokens()
+    try:
+        from config import save_app_config
+        save_app_config({"guest_token": clean_tok})
+    except Exception:
+        pass
     return row
 
 def update_access_token(
@@ -2129,10 +2213,26 @@ def get_access_token_by_token(token_str: str) -> Optional[Dict[str, Any]]:
         return dict(row)
 
     # Resiliência Permanente para Chaves Mestres (Sobrevive a qualquer reinicialização no Render)
-    if clean_tok == "MEMG-2026":
+    app_cfg = (lambda: (__import__('config').get_app_config()))()
+    cfg_token = (app_cfg.get("guest_token") or "").strip().upper().replace(" ", "-")
+    if cfg_token and clean_tok == cfg_token:
+        return {
+            "id": "tok_config_master",
+            "token": cfg_token,
+            "label": f"Acesso Geral - {app_cfg.get('app_name', 'Painel')}",
+            "created_by": "config",
+            "created_at": "2026-01-01T00:00:00",
+            "expires_at": None,
+            "is_active": 1,
+            "last_used_at": None,
+            "usage_count": 1
+        }
+
+    # Compatibilidade com chaves legadas do Minha Escola MG
+    if clean_tok in ("MEMG-2026", "MINHAESCOLA-SEE-2026"):
         return {
             "id": "tok_default_initial",
-            "token": "MEMG-2026",
+            "token": clean_tok,
             "label": "Acesso Geral SEE / Prodemge",
             "created_by": "mgminhaescola@gmail.com",
             "created_at": "2026-10-07T14:25:23.976240",
@@ -2140,18 +2240,6 @@ def get_access_token_by_token(token_str: str) -> Optional[Dict[str, Any]]:
             "is_active": 1,
             "last_used_at": "2026-10-28T10:00:00.000000",
             "usage_count": 5
-        }
-    elif clean_tok == "MINHAESCOLA-SEE-2026":
-        return {
-            "id": "tok_legacy_alias",
-            "token": "MINHAESCOLA-SEE-2026",
-            "label": "Acesso Geral SEE / Prodemge (Chave Anterior)",
-            "created_by": "mgminhaescola@gmail.com",
-            "created_at": "2026-10-07T14:25:23.976240",
-            "expires_at": None,
-            "is_active": 1,
-            "last_used_at": "2026-10-27T18:00:00.000000",
-            "usage_count": 2
         }
 
     return None

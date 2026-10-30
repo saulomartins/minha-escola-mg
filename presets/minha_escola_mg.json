@@ -1,6 +1,8 @@
 {
+  "app_id": "minha_escola_mg",
   "app_name": "Minha Escola MG",
   "app_short_name": "minhaescola",
+  "domain": "education",
   "organization_name": "Governo de Minas Gerais / Prodemge",
   "developer_name": "Prodemge - Secretaria de Estado de Educação de MG",
   "app_tagline": "Central de Inteligência e Diagnóstico de Avaliações",
@@ -25,5 +27,6 @@
     "enable_fale_conosco": true,
     "enable_hardware_matrix": true,
     "enable_ai_suggestions": true
-  }
+  },
+  "guest_token": "MEMG-2026"
 }

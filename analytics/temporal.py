@@ -85,7 +85,20 @@ def format_relative_time(days: int) -> str:
         years = round(days / 365.25, 1)
         return f"Há {years} anos"
 
-def get_temporal_diagnostics() -> Dict[str, Any]:
+def get_temporal_diagnostics(app_id: Optional[str] = None, domain: Optional[str] = None) -> Dict[str, Any]:
+    current_app_id = app_id or (lambda: (__import__('config').get_app_id()))()
+    current_domain = domain or (lambda: (__import__('config').get_domain()))()
+    
+    from analytics.taxonomy import get_root_causes_map
+    causes_map = get_root_causes_map(domain=current_domain)
+    local_names = dict(ROOT_CAUSE_NAMES)
+    local_colors = dict(ROOT_CAUSE_COLORS)
+    local_icons = dict(ROOT_CAUSE_ICONS)
+    for cid, cdata in causes_map.items():
+        local_names[cid] = cdata.get("name", local_names.get(cid, cid))
+        if cdata.get("severity_color"):
+            local_colors[cid] = cdata["severity_color"]
+
     db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "reviews.db")
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
@@ -94,10 +107,40 @@ def get_temporal_diagnostics() -> Dict[str, Any]:
         SELECT id, store, user_name, rating, title, content, review_date, root_cause_id, sentiment, 
                device_brand, device_model, status, developer_response, developer_response_date, ai_suggested_response
         FROM reviews
+        WHERE app_id = ?
         ORDER BY review_date ASC
-    """)
+    """, (current_app_id,))
     raw_reviews = [dict(r) for r in cursor.fetchall()]
     conn.close()
+    
+    if not raw_reviews:
+        return {
+            "ai_metrics": {
+                "total_reviews": 0, "total_responded": 0, "total_with_ai_suggestion": 0,
+                "ai_adoption_pct": 0.0, "response_rate_pct": 0.0, "time_saved_hours": 0.0,
+                "time_saved_badge": "0h economizadas"
+            },
+            "satisfaction_vs_ratings": {
+                "csat_score": 0.0, "csat_label": "Sem dados", "nps_like": 0.0,
+                "sentiment_ratio": {"positive": 0, "negative": 0, "neutral": 0},
+                "total_evaluated": 0, "satisfaction_by_star": {}
+            },
+            "trend_analysis": {
+                "status": "estavel", "badge": "Sem Dados", "color": "slate",
+                "headline": "Aguardando avaliações", "detail": "Nenhuma avaliação encontrada para este aplicativo.",
+                "diff_mom": 0.0, "latest_rating": 0.0, "previous_rating": 0.0,
+                "trough_rating": 0.0, "rebound_gain": "Sem dados", "series": []
+            },
+            "summary": {
+                "total_reviews": 0, "total_months": 0, "date_range_label": "Sem período",
+                "peak_month": None, "latest_case": None, "latest_case_days_ago": None,
+                "latest_case_days_text": "-", "latest_case_cause": "-",
+                "recent_30d_total": 0, "rising_causes_count": 0, "falling_causes_count": 0,
+                "top_rising_cause": "Nenhuma", "top_falling_cause": "Nenhuma"
+            },
+            "latest_case": None, "cause_trends_by_recency": [], "aging_buckets": {},
+            "months_labels": [], "monthly_series": [], "cause_trends": [], "top_problem_causes_chart": []
+        }
 
     now = datetime.now()
 
@@ -211,9 +254,9 @@ def get_temporal_diagnostics() -> Dict[str, Any]:
             "days_ago": d_ago,
             "days_ago_text": format_relative_time(d_ago),
             "root_cause_id": rc_id,
-            "root_cause_name": ROOT_CAUSE_NAMES.get(rc_id, "Outros Problemas"),
-            "root_cause_color": ROOT_CAUSE_COLORS.get(rc_id, "#6366f1"),
-            "root_cause_icon": ROOT_CAUSE_ICONS.get(rc_id, "fa-circle-exclamation"),
+            "root_cause_name": local_names.get(rc_id, "Outros Problemas"),
+            "root_cause_color": local_colors.get(rc_id, "#6366f1"),
+            "root_cause_icon": local_icons.get(rc_id, "fa-circle-exclamation"),
             "device_brand": latest_review.get("device_brand") or "",
             "device_model": latest_review.get("device_model") or "Aparelho não informado",
             "model": latest_review.get("device_model") or "Desconhecido",
@@ -243,7 +286,7 @@ def get_temporal_diagnostics() -> Dict[str, Any]:
             top_tup = max(problem_causes, key=lambda x: x[1])
             top_problem = {
                 "id": top_tup[0],
-                "name": ROOT_CAUSE_NAMES.get(top_tup[0], top_tup[0]),
+                "name": local_names.get(top_tup[0], top_tup[0]),
                 "count": top_tup[1],
                 "pct": round((top_tup[1] / tot) * 100, 1)
             }
@@ -251,7 +294,7 @@ def get_temporal_diagnostics() -> Dict[str, Any]:
             top_tup = max(data["root_causes"].items(), key=lambda x: x[1])
             top_problem = {
                 "id": top_tup[0],
-                "name": ROOT_CAUSE_NAMES.get(top_tup[0], top_tup[0]),
+                "name": local_names.get(top_tup[0], top_tup[0]),
                 "count": top_tup[1],
                 "pct": round((top_tup[1] / tot) * 100, 1)
             }
@@ -515,8 +558,8 @@ def get_temporal_diagnostics() -> Dict[str, Any]:
         "diff_mom": diff_mom,
         "latest_rating": monthly_series[-1]["avg_rating"] if monthly_series else 0.0,
         "previous_rating": monthly_series[-2]["avg_rating"] if len(monthly_series) >= 2 else 0.0,
-        "trough_rating": 1.56,  # Agosto/2026
-        "rebound_gain": "+2.32 ⭐ desde o ponto mínimo de Agosto/26",
+        "trough_rating": min((m["avg_rating"] for m in monthly_series), default=0.0),
+        "rebound_gain": f"+{round(monthly_series[-1]['avg_rating'] - min(m['avg_rating'] for m in monthly_series), 2):.2f} ⭐ desde a menor nota" if monthly_series and (monthly_series[-1]['avg_rating'] > min(m['avg_rating'] for m in monthly_series)) else "Estável",
         "series": [
             {
                 "label": m["label"],
