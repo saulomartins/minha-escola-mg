@@ -12,12 +12,20 @@ logger = logging.getLogger(__name__)
 
 PACKAGE_NAME = "com.prodemge.minhaescolamg"
 
-def reply_to_google_play(review_id: str, reply_text: str, service_account_info_or_path: Any) -> Tuple[bool, str]:
+def reply_to_google_play(review_id: str, reply_text: str, service_account_info_or_path: Any, package_name: Optional[str] = None) -> Tuple[bool, str]:
     """
     Publica a resposta na Google Play Store usando a API Google Play Developer (v3).
     """
     if not service_account_info_or_path:
         return False, "Credenciais do Google Play Console (Service Account) não configuradas."
+
+    pkg = package_name
+    if not pkg:
+        try:
+            from config import get_google_play_package
+            pkg = get_google_play_package()
+        except Exception:
+            pkg = PACKAGE_NAME
 
     try:
         # Se for string com caminho de arquivo ou string com conteúdo JSON
@@ -52,7 +60,7 @@ def reply_to_google_play(review_id: str, reply_text: str, service_account_info_o
         creds.refresh(GoogleAuthRequest())
         token = creds.token
 
-        url = f"https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{PACKAGE_NAME}/reviews/{review_id}:reply"
+        url = f"https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{pkg}/reviews/{review_id}:reply"
         headers = {
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json"
@@ -155,9 +163,10 @@ def reply_to_apple_store(review_id: str, reply_text: str, key_id: str, issuer_id
         logger.error(f"Exceção ao responder na App Store: {e}")
         return False, f"Falha na conexão com Apple App Store: {str(e)}"
 
-def test_google_play_credentials(service_account_info_or_path: Any) -> Tuple[bool, str]:
+def test_google_play_credentials(service_account_info_or_path: Any, package_name: Optional[str] = None) -> Tuple[bool, str]:
     """
-    Testa se as credenciais do Google Play são válidas gerando um token de acesso OAuth2.
+    Testa se as credenciais do Google Play são válidas gerando um token de acesso OAuth2
+    e, se um package_name for fornecido, testa o acesso de leitura à API desse app.
     """
     if not service_account_info_or_path:
         return False, "Nenhuma credencial informada."
@@ -180,12 +189,29 @@ def test_google_play_credentials(service_account_info_or_path: Any) -> Tuple[boo
                 scopes=['https://www.googleapis.com/auth/androidpublisher']
             )
         else:
-            return False, "Formato inválido."
+            return False, "Formato de credencial inválido."
 
         creds.refresh(GoogleAuthRequest())
-        if creds.token:
-            return True, f"Google Play Console conectado com sucesso! (Conta: {creds.service_account_email})"
-        return False, "Não foi possível obter o token de acesso."
+        if not creds.token:
+            return False, "Não foi possível obter o token de acesso OAuth2."
+
+        email = getattr(creds, "service_account_email", "Service Account")
+
+        if package_name:
+            test_url = f"https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{package_name}/reviews?maxResults=1"
+            headers = {"Authorization": f"Bearer {creds.token}"}
+            try:
+                resp = requests.get(test_url, headers=headers, timeout=12)
+                if resp.status_code == 200:
+                    return True, f"Google Play Console conectado e autorizado para '{package_name}'! (Conta: {email})"
+                elif resp.status_code == 403:
+                    return False, f"Chave autenticada ({email}), mas o Play Console recusou acesso (403) para o app '{package_name}'. Conceda permissão a esta conta no Play Console deste app ou configure o JSON específico dele."
+                elif resp.status_code == 404:
+                    return False, f"Chave autenticada ({email}), mas o app '{package_name}' não foi encontrado no Play Console (404)."
+            except Exception as e:
+                logger.warning(f"Não foi possível validar permissão específica do pacote {package_name}: {e}")
+
+        return True, f"Google Play Console conectado com sucesso! (Conta: {email})"
     except Exception as e:
         return False, f"Erro ao validar Google Play: {str(e)}"
 

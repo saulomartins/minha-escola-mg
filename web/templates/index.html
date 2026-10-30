@@ -2608,7 +2608,7 @@
                     <p class="font-bold flex items-center gap-1.5 mb-1">
                         <i class="fa-solid fa-triangle-exclamation"></i> Envio Oficial para as Lojas
                     </p>
-                    <p>Essas credenciais são necessárias <b>apenas</b> se você for publicar as respostas diretamente nas lojas pela API. Para apenas ler e redigir rascunhos com IA, não é necessário preencher.</p>
+                    <p>Essas credenciais são necessárias <b>apenas</b> se você for publicar as respostas diretamente nas lojas pela API. Cada aplicativo monitorado pode ter seu próprio arquivo JSON de Service Account da Google Play e chaves da Apple Store.</p>
                 </div>
 
                 <div class="flex items-center space-x-2 bg-slate-50 p-3 rounded-lg border border-slate-200">
@@ -2618,16 +2618,52 @@
                     </label>
                 </div>
 
+                <!-- Seletor do Aplicativo para Configuração de Credenciais -->
+                <div class="bg-indigo-50/70 border border-indigo-200/80 rounded-xl p-3 space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
+                            <i class="fa-solid fa-sliders text-indigo-600"></i> Selecione o App para Configurar Credenciais:
+                        </label>
+                        <span id="label-active-app-badge" class="text-[10px] bg-indigo-200 text-indigo-900 font-bold px-2 py-0.5 rounded-full">Isolamento por App</span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <button type="button" onclick="switchStoreAppCreds('minha_escola_mg')" id="btn-creds-minha_escola_mg" class="p-2.5 rounded-xl border text-left transition flex items-center justify-between bg-white border-indigo-500 shadow-sm text-indigo-900">
+                            <div>
+                                <div class="font-bold text-xs flex items-center gap-1.5">
+                                    <i class="fa-solid fa-graduation-cap text-indigo-600"></i> Minha Escola MG
+                                </div>
+                                <div class="text-[10px] text-slate-500 font-mono mt-0.5 truncate max-w-[200px]">com.prodemge.minhaescolamg</div>
+                            </div>
+                            <span id="dot-creds-minha_escola_mg" class="w-2.5 h-2.5 rounded-full bg-slate-300 shrink-0" title="Google Play Conexão"></span>
+                        </button>
+                        <button type="button" onclick="switchStoreAppCreds('mg_app_cidadao')" id="btn-creds-mg_app_cidadao" class="p-2.5 rounded-xl border text-left transition flex items-center justify-between bg-slate-50 border-slate-200 text-slate-600 hover:bg-white">
+                            <div>
+                                <div class="font-bold text-xs flex items-center gap-1.5">
+                                    <i class="fa-solid fa-landmark text-emerald-600"></i> MG App Cidadão
+                                </div>
+                                <div class="text-[10px] text-slate-500 font-mono mt-0.5 truncate max-w-[200px]">br.gov.prodemge.projetosocialminas</div>
+                            </div>
+                            <span id="dot-creds-mg_app_cidadao" class="w-2.5 h-2.5 rounded-full bg-slate-300 shrink-0" title="Google Play Conexão"></span>
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Google Play Console -->
                 <div class="border border-slate-200 rounded-xl p-4 space-y-3 bg-white">
                     <div class="flex justify-between items-center">
-                        <h4 class="font-bold text-slate-800 flex items-center gap-2 text-sm">
-                            <i class="fa-brands fa-google-play text-green-600 text-base"></i> Google Play Console
-                        </h4>
+                        <div>
+                            <h4 class="font-bold text-slate-800 flex items-center gap-2 text-sm">
+                                <i class="fa-brands fa-google-play text-green-600 text-base"></i> Google Play Console • <span id="label-google-target-app" class="text-indigo-700">Minha Escola MG</span>
+                            </h4>
+                            <div class="text-[11px] text-slate-500 mt-0.5">
+                                Pacote: <code id="label-google-target-package" class="bg-slate-100 px-1 py-0.5 rounded font-mono text-indigo-700">com.prodemge.minhaescolamg</code>
+                            </div>
+                        </div>
                         <button type="button" onclick="testGoogleConnection()" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded border border-slate-300">
                             Testar Conexão
                         </button>
                     </div>
+                    <div id="label-google-client-email" class="hidden text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 p-2 rounded-lg"></div>
                     <div class="flex items-center justify-between">
                         <label class="block text-xs text-slate-600">Arquivo JSON da Conta de Serviço (Service Account) com acesso à API <code>androidpublisher</code>:</label>
                         <label class="cursor-pointer text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
@@ -2642,9 +2678,14 @@
                 <!-- Apple App Store Connect -->
                 <div class="border border-slate-200 rounded-xl p-4 space-y-3 bg-white">
                     <div class="flex justify-between items-center">
-                        <h4 class="font-bold text-slate-800 flex items-center gap-2 text-sm">
-                            <i class="fa-brands fa-apple text-slate-900 text-base"></i> Apple App Store Connect
-                        </h4>
+                        <div>
+                            <h4 class="font-bold text-slate-800 flex items-center gap-2 text-sm">
+                                <i class="fa-brands fa-apple text-slate-900 text-base"></i> Apple App Store Connect • <span id="label-apple-target-app" class="text-indigo-700">Minha Escola MG</span>
+                            </h4>
+                            <div class="text-[11px] text-slate-500 mt-0.5">
+                                App ID: <code id="label-apple-target-id" class="bg-slate-100 px-1 py-0.5 rounded font-mono text-indigo-700">6749247611</code>
+                            </div>
+                        </div>
                         <button type="button" onclick="testAppleConnection()" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded border border-slate-300">
                             Testar Conexão
                         </button>
@@ -2664,6 +2705,18 @@
                         <textarea id="input-apple-p8" rows="3" placeholder="-----BEGIN PRIVATE KEY-----&#10;...&#10;-----END PRIVATE KEY-----" class="w-full p-2 border border-slate-300 rounded-lg text-xs font-mono"></textarea>
                     </div>
                     <div id="apple-test-result" class="hidden text-xs font-semibold"></div>
+                </div>
+
+                <!-- Dica para Nuvem / Render -->
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-600 space-y-1.5">
+                    <p class="font-bold text-slate-800 flex items-center gap-1.5">
+                        <i class="fa-solid fa-cloud text-indigo-600"></i> Variáveis de Ambiente no Render (Deploy em Nuvem):
+                    </p>
+                    <p>Você também pode definir as credenciais diretamente no painel de Environment Variables do Render para cada app:</p>
+                    <div class="font-mono text-[11px] bg-white p-2.5 rounded-lg border border-slate-200 space-y-1 text-slate-700">
+                        <div>• Minha Escola MG: <b class="text-indigo-700">GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_MINHA_ESCOLA_MG</b></div>
+                        <div>• MG App Cidadão: <b class="text-indigo-700">GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_MG_APP_CIDADAO</b></div>
+                    </div>
                 </div>
             </div>
 
@@ -4749,17 +4802,154 @@
             }
         }
 
+        let appCredentialsState = {
+            "minha_escola_mg": {
+                name: "Minha Escola MG",
+                package: "com.prodemge.minhaescolamg",
+                apple_id: "6749247611",
+                google_sa: "",
+                google_connected: false,
+                google_client_email: "",
+                apple_key_id: "",
+                apple_issuer_id: "",
+                apple_p8: "",
+                apple_connected: false
+            },
+            "mg_app_cidadao": {
+                name: "MG App Cidadão",
+                package: "br.gov.prodemge.projetosocialminas",
+                apple_id: "1057649491",
+                google_sa: "",
+                google_connected: false,
+                google_client_email: "",
+                apple_key_id: "",
+                apple_issuer_id: "",
+                apple_p8: "",
+                apple_connected: false
+            }
+        };
+        let activeStoreCredApp = 'minha_escola_mg';
+
+        function switchStoreAppCreds(targetApp) {
+            saveCurrentCredsToState();
+            activeStoreCredApp = targetApp;
+            updateStoreCredsUI();
+        }
+
+        function saveCurrentCredsToState() {
+            if (!appCredentialsState[activeStoreCredApp]) return;
+            const googleSa = document.getElementById('input-google-sa') ? document.getElementById('input-google-sa').value : '';
+            const appleKeyId = document.getElementById('input-apple-key-id') ? document.getElementById('input-apple-key-id').value : '';
+            const appleIssuerId = document.getElementById('input-apple-issuer-id') ? document.getElementById('input-apple-issuer-id').value : '';
+            const appleP8 = document.getElementById('input-apple-p8') ? document.getElementById('input-apple-p8').value : '';
+
+            appCredentialsState[activeStoreCredApp].google_sa = googleSa;
+            appCredentialsState[activeStoreCredApp].apple_key_id = appleKeyId;
+            appCredentialsState[activeStoreCredApp].apple_issuer_id = appleIssuerId;
+            appCredentialsState[activeStoreCredApp].apple_p8 = appleP8;
+        }
+
+        function updateStoreCredsUI() {
+            const data = appCredentialsState[activeStoreCredApp] || {};
+            
+            // Botões de alternância de aplicativo
+            const btnMe = document.getElementById('btn-creds-minha_escola_mg');
+            const btnMg = document.getElementById('btn-creds-mg_app_cidadao');
+            if (btnMe && btnMg) {
+                if (activeStoreCredApp === 'minha_escola_mg') {
+                    btnMe.className = "p-2.5 rounded-xl border text-left transition flex items-center justify-between bg-white border-indigo-500 shadow-sm text-indigo-900";
+                    btnMg.className = "p-2.5 rounded-xl border text-left transition flex items-center justify-between bg-slate-50 border-slate-200 text-slate-600 hover:bg-white";
+                } else {
+                    btnMg.className = "p-2.5 rounded-xl border text-left transition flex items-center justify-between bg-white border-emerald-500 shadow-sm text-emerald-950";
+                    btnMe.className = "p-2.5 rounded-xl border text-left transition flex items-center justify-between bg-slate-50 border-slate-200 text-slate-600 hover:bg-white";
+                }
+            }
+
+            // Indicadores de status
+            for (const [appId, item] of Object.entries(appCredentialsState)) {
+                const dot = document.getElementById(`dot-creds-${appId}`);
+                if (dot) {
+                    if (item.google_connected) {
+                        dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0";
+                        dot.title = `Google Play Conectado (${item.google_client_email || 'Ativo'})`;
+                    } else {
+                        dot.className = "w-2.5 h-2.5 rounded-full bg-slate-300 shrink-0";
+                        dot.title = "Google Play não configurado";
+                    }
+                }
+            }
+
+            // Labels dinâmicos no cabeçalho dos blocos
+            const targetNameEl = document.getElementById('label-google-target-app');
+            if (targetNameEl) targetNameEl.innerText = data.name || activeStoreCredApp;
+            const targetPkgEl = document.getElementById('label-google-target-package');
+            if (targetPkgEl) targetPkgEl.innerText = data.package || '';
+
+            const appleTargetNameEl = document.getElementById('label-apple-target-app');
+            if (appleTargetNameEl) appleTargetNameEl.innerText = data.name || activeStoreCredApp;
+            const appleTargetIdEl = document.getElementById('label-apple-target-id');
+            if (appleTargetIdEl) appleTargetIdEl.innerText = data.apple_id || '';
+
+            const emailBox = document.getElementById('label-google-client-email');
+            if (emailBox) {
+                if (data.google_connected && data.google_client_email) {
+                    emailBox.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 mr-1.5"></i> Conectado: <b>${escapeHtml(data.google_client_email)}</b>`;
+                    emailBox.classList.remove('hidden');
+                } else {
+                    emailBox.classList.add('hidden');
+                }
+            }
+
+            // Preenche os campos de formulário
+            if (document.getElementById('input-google-sa')) {
+                document.getElementById('input-google-sa').value = data.google_sa || '';
+                document.getElementById('input-google-sa').placeholder = `Cole o conteúdo do arquivo JSON da Service Account para ${data.name}...`;
+            }
+            if (document.getElementById('input-apple-key-id')) {
+                document.getElementById('input-apple-key-id').value = data.apple_key_id || '';
+            }
+            if (document.getElementById('input-apple-issuer-id')) {
+                document.getElementById('input-apple-issuer-id').value = data.apple_issuer_id || '';
+            }
+            if (document.getElementById('input-apple-p8')) {
+                document.getElementById('input-apple-p8').value = data.apple_p8 || '';
+            }
+
+            // Limpa mensagens anteriores de teste
+            const gRes = document.getElementById('google-test-result');
+            if (gRes) gRes.classList.add('hidden');
+            const aRes = document.getElementById('apple-test-result');
+            if (aRes) aRes.classList.add('hidden');
+        }
+
         function openSettingsModal() {
             fetch('/api/settings')
                 .then(r => r.json())
                 .then(data => {
                     if (data.gemini_api_key) document.getElementById('input-gemini-key').value = data.gemini_api_key;
                     if (data.support_email) document.getElementById('input-support-email').value = data.support_email;
-                    if (data.google_play_service_account) document.getElementById('input-google-sa').value = data.google_play_service_account;
-                    if (data.apple_key_id) document.getElementById('input-apple-key-id').value = data.apple_key_id;
-                    if (data.apple_issuer_id) document.getElementById('input-apple-issuer-id').value = data.apple_issuer_id;
-                    if (data.apple_private_key_p8) document.getElementById('input-apple-p8').value = data.apple_private_key_p8;
-                    
+
+                    // Carrega dados específicos por aplicativo
+                    if (data.apps_credentials) {
+                        for (const [k, v] of Object.entries(data.apps_credentials)) {
+                            if (appCredentialsState[k]) {
+                                appCredentialsState[k].google_sa = v.google_play_service_account || '';
+                                appCredentialsState[k].google_connected = v.google_connected || false;
+                                appCredentialsState[k].google_client_email = v.google_client_email || '';
+                                appCredentialsState[k].apple_key_id = v.apple_key_id || '';
+                                appCredentialsState[k].apple_issuer_id = v.apple_issuer_id || '';
+                                appCredentialsState[k].apple_p8 = v.apple_private_key_p8 || '';
+                                appCredentialsState[k].apple_connected = v.apple_connected || false;
+                                if (v.google_play_package) appCredentialsState[k].package = v.google_play_package;
+                                if (v.apple_store_id) appCredentialsState[k].apple_id = v.apple_store_id;
+                                if (v.app_name) appCredentialsState[k].name = v.app_name;
+                            }
+                        }
+                    }
+
+                    const curApp = data.current_app_id || 'minha_escola_mg';
+                    activeStoreCredApp = curApp;
+                    updateStoreCredsUI();
 
                     if (data.app_name && document.getElementById('input-app-name')) document.getElementById('input-app-name').value = data.app_name;
                     if (data.organization_name && document.getElementById('input-org-name')) document.getElementById('input-org-name').value = data.organization_name;
@@ -4778,8 +4968,6 @@
         function closeSettingsModal() {
             document.getElementById('modal-settings').classList.add('hidden');
         }
-
-        
 
         async function testGeminiConnection() {
             const key = document.getElementById('input-gemini-key').value.trim();
@@ -4808,21 +4996,32 @@
         }
 
         async function testGoogleConnection() {
+            saveCurrentCredsToState();
             const sa = document.getElementById('input-google-sa').value.trim();
             const resBox = document.getElementById('google-test-result');
             resBox.className = "text-xs font-semibold mt-1.5 text-blue-600 block";
-            resBox.innerText = "Testando conexão com Google Play API...";
+            resBox.innerText = `Testando conexão oficial para ${appCredentialsState[activeStoreCredApp]?.name || activeStoreCredApp}...`;
+
+            const currentPkg = appCredentialsState[activeStoreCredApp]?.package;
 
             try {
                 const res = await fetch('/api/settings/test-google', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ service_account: sa })
+                    body: JSON.stringify({ 
+                        service_account: sa,
+                        app_id: activeStoreCredApp,
+                        package_name: currentPkg
+                    })
                 });
                 const data = await res.json();
                 if (data.success) {
                     resBox.className = "text-xs font-semibold mt-1.5 text-emerald-600 block";
                     resBox.innerText = "✓ " + data.message;
+                    if (appCredentialsState[activeStoreCredApp]) {
+                        appCredentialsState[activeStoreCredApp].google_connected = true;
+                        updateStoreCredsUI();
+                    }
                 } else {
                     resBox.className = "text-xs font-semibold mt-1.5 text-rose-600 block";
                     resBox.innerText = "✗ " + data.message;
@@ -4834,18 +5033,24 @@
         }
 
         async function testAppleConnection() {
+            saveCurrentCredsToState();
             const keyId = document.getElementById('input-apple-key-id').value.trim();
             const issuerId = document.getElementById('input-apple-issuer-id').value.trim();
             const p8 = document.getElementById('input-apple-p8').value.trim();
             const resBox = document.getElementById('apple-test-result');
             resBox.className = "text-xs font-semibold mt-1.5 text-blue-600 block";
-            resBox.innerText = "Validando credenciais da App Store Connect...";
+            resBox.innerText = `Validando credenciais da App Store Connect para ${appCredentialsState[activeStoreCredApp]?.name || activeStoreCredApp}...`;
 
             try {
                 const res = await fetch('/api/settings/test-apple', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ key_id: keyId, issuer_id: issuerId, private_key_p8: p8 })
+                    body: JSON.stringify({ 
+                        key_id: keyId, 
+                        issuer_id: issuerId, 
+                        private_key_p8: p8,
+                        app_id: activeStoreCredApp
+                    })
                 });
                 const data = await res.json();
                 if (data.success) {
@@ -4862,13 +5067,10 @@
         }
 
         async function saveSettings() {
+            saveCurrentCredsToState();
+
             const geminiKey = document.getElementById('input-gemini-key').value.trim();
             const supportEmail = document.getElementById('input-support-email').value.trim();
-            const googleSa = document.getElementById('input-google-sa').value.trim();
-            const appleKeyId = document.getElementById('input-apple-key-id').value.trim();
-            const appleIssuerId = document.getElementById('input-apple-issuer-id').value.trim();
-            const appleP8 = document.getElementById('input-apple-p8').value.trim();
-            
 
             const appId = document.getElementById('input-app-id') ? document.getElementById('input-app-id').value.trim() : null;
             const appDomain = document.getElementById('input-app-domain') ? document.getElementById('input-app-domain').value.trim() : null;
@@ -4882,6 +5084,17 @@
             const auto5stars = document.getElementById('check-auto-5stars').checked ? 'true' : 'false';
             const autoSyncInterval = document.getElementById('select-auto-sync').value;
 
+            // Prepara mapa de credenciais isoladas por aplicativo
+            const appsPayload = {};
+            for (const [k, v] of Object.entries(appCredentialsState)) {
+                appsPayload[k] = {
+                    google_play_service_account: v.google_sa,
+                    apple_key_id: v.apple_key_id,
+                    apple_issuer_id: v.apple_issuer_id,
+                    apple_private_key_p8: v.apple_p8
+                };
+            }
+
             try {
                 await fetch('/api/settings', {
                     method: 'POST',
@@ -4889,10 +5102,12 @@
                     body: JSON.stringify({
                         gemini_api_key: geminiKey,
                         support_email: supportEmail,
-                        google_play_service_account: googleSa,
-                        apple_key_id: appleKeyId,
-                        apple_issuer_id: appleIssuerId,
-                        apple_private_key_p8: appleP8,
+                        target_app_id: activeStoreCredApp,
+                        google_play_service_account: appCredentialsState[activeStoreCredApp]?.google_sa || '',
+                        apple_key_id: appCredentialsState[activeStoreCredApp]?.apple_key_id || '',
+                        apple_issuer_id: appCredentialsState[activeStoreCredApp]?.apple_issuer_id || '',
+                        apple_private_key_p8: appCredentialsState[activeStoreCredApp]?.apple_p8 || '',
+                        apps_credentials: appsPayload,
                         
                         auto_publish_direct: autoPublish,
                         auto_reply_5_stars_only: auto5stars,
@@ -4907,7 +5122,7 @@
                     })
                 });
                 closeSettingsModal();
-                showAlert("Configurações salvas com sucesso!");
+                showAlert("Configurações e credenciais de todas as aplicações salvas com sucesso!");
                 await loadStats();
             } catch (err) {
                 showAlert("Erro ao salvar configurações.", "error");

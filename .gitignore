@@ -3,7 +3,10 @@ __pycache__/
 *.pyc
 cloudflared.exe
 .env
-google_play_service_account.json
+google_play_service_account*.json
 *.json.key
+*.p8
+*.pem
+*.key
 *.pptx
 gerar_apresentacao_pptx.py

@@ -47,7 +47,11 @@ from publisher.store_publisher import (
 from analytics.complexity import get_detailed_problem_analytics, classify_text_issue
 from analytics.temporal import get_temporal_diagnostics
 from ai.auto_reply_templates import PROBLEM_TEMPLATES_CONFIG, generate_auto_reply_for_review
-from config import get_app_config, save_app_config, get_app_name, get_organization_name, get_support_url, PRESETS_DIR
+from config import (
+    get_app_config, save_app_config, get_app_name, get_organization_name, 
+    get_support_url, PRESETS_DIR, get_app_id, get_app_domain, 
+    get_google_play_package, get_apple_store_id
+)
 
 logger = logging.getLogger("app_reviews")
 
@@ -106,6 +110,7 @@ class ReplyRequest(BaseModel):
 
 class SettingsRequest(BaseModel):
     app_id: Optional[str] = None
+    target_app_id: Optional[str] = None
     domain: Optional[str] = None
     app_name: Optional[str] = None
     organization_name: Optional[str] = None
@@ -117,6 +122,7 @@ class SettingsRequest(BaseModel):
     apple_key_id: Optional[str] = None
     apple_issuer_id: Optional[str] = None
     apple_private_key_p8: Optional[str] = None
+    apps_credentials: Optional[Dict[str, Any]] = None
     auto_publish_direct: Optional[str] = None
     auto_reply_5_stars_only: Optional[str] = None
     auto_sync_interval: Optional[str] = None
@@ -133,11 +139,14 @@ class TestKeyRequest(BaseModel):
 
 class TestGoogleRequest(BaseModel):
     service_account: Optional[str] = None
+    app_id: Optional[str] = None
+    package_name: Optional[str] = None
 
 class TestAppleRequest(BaseModel):
     key_id: Optional[str] = None
     issuer_id: Optional[str] = None
     private_key_p8: Optional[str] = None
+    app_id: Optional[str] = None
 
 # Modelos de Autenticação e Usuários
 class GoogleAuthRequest(BaseModel):
@@ -1272,14 +1281,14 @@ def run_sync_and_auto_analyze():
 
             # Se configurado para publicar direto nas lojas
             if auto_publish:
+                target_app = r.get("app_id") or get_app_id()
+                pkg = "com.prodemge.minhaescolamg" if target_app == "minha_escola_mg" else ("br.gov.prodemge.projetosocialminas" if target_app == "mg_app_cidadao" else get_google_play_package())
                 if r["store"] == "google":
-                    sa = get_setting("google_play_service_account", "")
+                    sa = resolve_google_play_service_account(target_app)
                     if sa:
-                        reply_to_google_play(r["review_id"], resp_text, sa)
+                        reply_to_google_play(r["review_id"], resp_text, sa, package_name=pkg)
                 elif r["store"] == "apple":
-                    k_id = get_setting("apple_key_id", "")
-                    iss = get_setting("apple_issuer_id", "")
-                    p8 = get_setting("apple_private_key_p8", "")
+                    k_id, iss, p8 = resolve_apple_credentials(target_app)
                     if k_id and iss and p8:
                         reply_to_apple_store(r["review_id"], resp_text, k_id, iss, p8)
 
@@ -1291,15 +1300,71 @@ def run_sync_and_auto_analyze():
             )
             update_review_status(r["id"], "respondida", resp_text)
 
-def resolve_google_play_service_account() -> str:
-    """Busca a chave em configurações, variáveis de ambiente (com tolerância a nomes), arquivos secretos do Render ou raiz"""
-    # 1. Configurações salvas no app
-    sa = get_setting("google_play_service_account", "")
-    if sa:
-        return sa
-    
-    # 2. Variáveis de ambiente possíveis
-    candidate_keys = [
+def resolve_google_play_service_account(app_id: Optional[str] = None) -> str:
+    """
+    Busca a chave de Service Account do Google Play em cascata:
+    1. Específica do app salva no SQLite: google_play_service_account_{app_id}
+    2. Variável de ambiente específica: GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_{APP_ID}
+    3. Arquivo secreto específico do app: /etc/secrets/google_play_service_account_{app_id}.json ou local
+    4. Fallback genérico salvo no SQLite: google_play_service_account
+    5. Fallback genérico de variáveis de ambiente: GOOGLE_PLAY_SERVICE_ACCOUNT_JSON, etc.
+    6. Fallback genérico de arquivos secretos: /etc/secrets/google_play_service_account.json ou local
+    """
+    target_app = (app_id or get_app_id()).strip()
+    target_app_upper = target_app.upper()
+
+    # 1. Configuração específica do app salva no banco
+    sa_app = get_setting(f"google_play_service_account_{target_app}", "")
+    if sa_app and sa_app.strip():
+        return sa_app.strip()
+
+    # 2. Variáveis de ambiente específicas do app
+    candidate_app_keys = [
+        f"GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_{target_app_upper}",
+        f"GOOGLE_PLAY_SERVICE_ACCOUNT_{target_app_upper}",
+        f"GOOGLE_SERVICE_ACCOUNT_JSON_{target_app_upper}",
+        f"PLAY_SERVICE_ACCOUNT_JSON_{target_app_upper}",
+        f"SERVICE_ACCOUNT_JSON_{target_app_upper}",
+    ]
+    for k in candidate_app_keys:
+        val = os.environ.get(k, "").strip()
+        if val:
+            return val
+
+    # 3. Arquivos secretos específicos do app
+    candidate_app_files = [
+        f"/etc/secrets/google_play_service_account_{target_app}.json",
+        f"/etc/secrets/{target_app}.json",
+        f"google_play_service_account_{target_app}.json",
+        f"{target_app}.json"
+    ]
+    for p in candidate_app_files:
+        if os.path.exists(p):
+            return p
+
+    def _is_compatible(candidate_val_or_path: str) -> bool:
+        if not candidate_val_or_path:
+            return False
+        content = candidate_val_or_path
+        if os.path.exists(candidate_val_or_path):
+            try:
+                with open(candidate_val_or_path, "r", encoding="utf-8") as f:
+                    content = f.read(500)
+            except Exception:
+                pass
+        if target_app != "minha_escola_mg" and ("minha-escola" in content or "minhaescolamg" in content):
+            return False
+        if target_app == "minha_escola_mg" and ("mgapp" in content or "projetosocial" in content):
+            return False
+        return True
+
+    # 4. Fallback genérico salvo no banco
+    sa_generic = get_setting("google_play_service_account", "")
+    if sa_generic and sa_generic.strip() and _is_compatible(sa_generic.strip()):
+        return sa_generic.strip()
+
+    # 5. Fallback genérico em variáveis de ambiente
+    candidate_generic_keys = [
         "GOOGLE_PLAY_SERVICE_ACCOUNT_JSON",
         "GOOGLE_PLAY_SERVICE_ACCOUNT",
         "GOOGLE_SERVICE_ACCOUNT_JSON",
@@ -1307,64 +1372,102 @@ def resolve_google_play_service_account() -> str:
         "PLAY_SERVICE_ACCOUNT_JSON",
         "GOOGLE_APPLICATION_CREDENTIALS"
     ]
-    for k in candidate_keys:
+    for k in candidate_generic_keys:
         val = os.environ.get(k, "").strip()
-        if val:
+        if val and _is_compatible(val):
             return val
-            
+
     # Procura qualquer variável de ambiente que contenha SERVICE_ACCOUNT
     for k, v in os.environ.items():
-        if "SERVICE_ACCOUNT" in k.upper() and v.strip().startswith("{"):
+        if "SERVICE_ACCOUNT" in k.upper() and v.strip().startswith("{") and _is_compatible(v.strip()):
             return v.strip()
 
-    # 3. Secret Files padrão do Render (/etc/secrets/) e arquivos locais
-    candidate_files = [
+    # 6. Secret Files padrão do Render (/etc/secrets/) e arquivos locais genéricos
+    candidate_generic_files = [
         "/etc/secrets/google_play_service_account.json",
         "/etc/secrets/service_account.json",
         "/etc/secrets/google-play-key.json",
         "google_play_service_account.json"
     ]
-    for p in candidate_files:
-        if os.path.exists(p):
+    for p in candidate_generic_files:
+        if os.path.exists(p) and _is_compatible(p):
             return p
-            
+
     if os.path.exists("/etc/secrets"):
         try:
             for fname in os.listdir("/etc/secrets"):
                 if fname.endswith(".json"):
-                    return os.path.join("/etc/secrets", fname)
+                    cand = os.path.join("/etc/secrets", fname)
+                    if _is_compatible(cand):
+                        return cand
         except Exception:
             pass
 
     return ""
 
+def resolve_apple_credentials(app_id: Optional[str] = None) -> Tuple[str, str, str]:
+    target_app = (app_id or get_app_id()).strip()
+    target_app_upper = target_app.upper()
+
+    k_id = (
+        get_setting(f"apple_key_id_{target_app}", "")
+        or os.environ.get(f"APPLE_KEY_ID_{target_app_upper}", "").strip()
+        or get_setting("apple_key_id", "")
+        or os.environ.get("APPLE_KEY_ID", "").strip()
+    )
+    iss = (
+        get_setting(f"apple_issuer_id_{target_app}", "")
+        or os.environ.get(f"APPLE_ISSUER_ID_{target_app_upper}", "").strip()
+        or get_setting("apple_issuer_id", "")
+        or os.environ.get("APPLE_ISSUER_ID", "").strip()
+    )
+    p8 = (
+        get_setting(f"apple_private_key_p8_{target_app}", "")
+        or os.environ.get(f"APPLE_PRIVATE_KEY_P8_{target_app_upper}", "").strip()
+        or get_setting("apple_private_key_p8", "")
+        or os.environ.get("APPLE_PRIVATE_KEY_P8", "").strip()
+    )
+    return k_id, iss, p8
+
 @app.post("/api/sync")
 def api_sync():
-    google_sa = resolve_google_play_service_account()
+    active_app = get_app_id()
+    cfg = get_app_config()
+    target_pkg = cfg.get("google_play", {}).get("package_name") or get_google_play_package()
+    target_apple_id = cfg.get("apple_store", {}).get("app_id") or get_apple_store_id()
+
+    google_sa = resolve_google_play_service_account(active_app)
     google_reviews = []
     if google_sa:
         try:
             from collector.google_play import fetch_google_play_api_reviews
-            google_reviews = fetch_google_play_api_reviews(google_sa)
+            google_reviews = fetch_google_play_api_reviews(
+                google_sa,
+                package_name=target_pkg,
+                app_id=active_app
+            )
         except Exception as e:
-            logger.error(f"Falha ao sincronizar via Google Play API: {e}")
+            logger.error(f"Falha ao sincronizar via Google Play API ({active_app}): {e}")
 
     # 1. Coleta avaliações públicas para manter a base ampla
-    public_reviews = fetch_google_play_reviews(count=150)
+    public_reviews = fetch_google_play_reviews(count=150, package_name=target_pkg, app_id=active_app)
     new_google = 0
     for r in public_reviews:
+        r["app_id"] = active_app
         if upsert_review(r):
             new_google += 1
 
     # 2. Sobrescreve e enriquece com telemetria oficial da Google Play Developer API
     if google_reviews:
         for r in google_reviews:
+            r["app_id"] = active_app
             if upsert_review(r):
                 new_google += 1
-            
-    apple_reviews = fetch_apple_store_reviews(max_pages=5)
+
+    apple_reviews = fetch_apple_store_reviews(max_pages=5, app_id=target_apple_id, target_app_id=active_app)
     new_apple = 0
     for r in apple_reviews:
+        r["app_id"] = active_app
         if upsert_review(r):
             new_apple += 1
 
@@ -1400,39 +1503,43 @@ def api_sync():
     }
 
 @app.get("/api/test-google-play-api")
-def api_test_google_play():
+def api_test_google_play(app_id: Optional[str] = None):
     """Diagnóstico para validar se a Service Account está configurada e respondendo"""
-    google_sa = resolve_google_play_service_account()
+    target_app = app_id or get_app_id()
+    cfg = get_app_config()
+    target_pkg = "com.prodemge.minhaescolamg" if target_app == "minha_escola_mg" else ("br.gov.prodemge.projetosocialminas" if target_app == "mg_app_cidadao" else (cfg.get("google_play", {}).get("package_name") or get_google_play_package()))
+
+    google_sa = resolve_google_play_service_account(target_app)
     if not google_sa:
         all_env_keys = [k for k in os.environ.keys() if any(sub in k.upper() for sub in ["GOOGLE", "PLAY", "SERVICE", "ACCOUNT"])]
         return {
             "configured": False,
             "status": "missing_variable",
-            "message": "Nenhuma variável de ambiente de Service Account ou arquivo foi encontrado no servidor.",
+            "message": f"Nenhuma variável de Service Account ou arquivo foi encontrado para o app '{target_app}'.",
             "detected_env_keys": all_env_keys
         }
     
     try:
         from collector.google_play import fetch_google_play_api_reviews
-        reviews = fetch_google_play_api_reviews(google_sa, max_results=5)
+        reviews = fetch_google_play_api_reviews(google_sa, max_results=5, package_name=target_pkg, app_id=target_app)
         if reviews:
             return {
                 "configured": True,
                 "status": "success",
-                "message": f"Conexão oficial com a Google Play Developer API funcionando perfeitamente! Foram coletadas {len(reviews)} avaliações com telemetria direta da loja.",
+                "message": f"Conexão oficial com a Google Play Developer API ({target_pkg}) funcionando perfeitamente! Foram coletadas {len(reviews)} avaliações com telemetria direta da loja.",
                 "sample_devices": [f"{r.get('user_name')}: {r.get('device_brand')} {r.get('device_model')}" for r in reviews[:5]]
             }
         else:
             return {
                 "configured": True,
                 "status": "empty_or_failed",
-                "message": "A chave existe, mas a chamada à API não retornou dados. Verifique permissões."
+                "message": f"A chave existe para '{target_app}', mas a chamada à API para o pacote '{target_pkg}' não retornou dados. Verifique permissões no Play Console."
             }
     except Exception as e:
         return {
             "configured": True,
             "status": "error",
-            "message": f"Erro ao conectar na Google Play API: {str(e)}"
+            "message": f"Erro ao conectar na Google Play API para '{target_pkg}': {str(e)}"
         }
 
 @app.post("/api/analyze/{review_id}")
@@ -1517,10 +1624,13 @@ def api_reply(req: ReplyRequest, request: Request):
                 detail="Apenas o usuário autorizado mgminhaescola@gmail.com possui permissão para mandar publicar respostas na loja oficial."
             )
 
+        target_app = review.get("app_id") or get_app_id()
+        pkg = "com.prodemge.minhaescolamg" if target_app == "minha_escola_mg" else ("br.gov.prodemge.projetosocialminas" if target_app == "mg_app_cidadao" else get_google_play_package())
+
         if review["store"] == "google":
-            sa_creds = resolve_google_play_service_account()
+            sa_creds = resolve_google_play_service_account(target_app)
             if sa_creds and sa_creds.strip():
-                success, msg = reply_to_google_play(review["review_id"], req.response_text, sa_creds)
+                success, msg = reply_to_google_play(review["review_id"], req.response_text, sa_creds, package_name=pkg)
                 if success:
                     published = True
                 else:
@@ -1528,7 +1638,7 @@ def api_reply(req: ReplyRequest, request: Request):
                         "success": False,
                         "published_to_store": False,
                         "error_type": "api_error",
-                        "message": f"Erro retornado pela Google Play API: {msg}"
+                        "message": f"Erro retornado pela Google Play API ({target_app}): {msg}"
                     }
             else:
                 return {
@@ -1536,12 +1646,10 @@ def api_reply(req: ReplyRequest, request: Request):
                     "missing_credentials": True,
                     "store": "google",
                     "review_id": req.review_id,
-                    "message": "Credenciais da Google Play (Service Account JSON da PRODEMGE) não configuradas! Conecte sua conta para mandar publicar diretamente na loja."
+                    "message": f"Credenciais da Google Play (Service Account JSON para {target_app}) não configuradas! Conecte sua conta para mandar publicar diretamente na loja."
                 }
         elif review["store"] == "apple":
-            k_id = get_setting("apple_key_id", "")
-            iss = get_setting("apple_issuer_id", "")
-            p8 = get_setting("apple_private_key_p8", "")
+            k_id, iss, p8 = resolve_apple_credentials(target_app)
             if k_id and iss and p8:
                 success, msg = reply_to_apple_store(review["review_id"], req.response_text, k_id, iss, p8)
                 if success:
@@ -1551,7 +1659,7 @@ def api_reply(req: ReplyRequest, request: Request):
                         "success": False,
                         "published_to_store": False,
                         "error_type": "api_error",
-                        "message": f"Erro retornado pela Apple App Store API: {msg}"
+                        "message": f"Erro retornado pela Apple App Store API ({target_app}): {msg}"
                     }
             else:
                 return {
@@ -1559,7 +1667,7 @@ def api_reply(req: ReplyRequest, request: Request):
                     "missing_credentials": True,
                     "store": "apple",
                     "review_id": req.review_id,
-                    "message": "Credenciais da Apple App Store (App Store Connect API) não configuradas! Conecte sua conta para mandar publicar diretamente na loja."
+                    "message": f"Credenciais da Apple App Store (App Store Connect para {target_app}) não configuradas! Conecte sua conta para mandar publicar diretamente na loja."
                 }
 
     update_review_status(
@@ -1655,12 +1763,23 @@ def api_publish_batch(request: Request, store: Optional[str] = None):
         if not resp_text:
             continue
             
+        target_app = r.get("app_id") or get_app_id()
+        pkg = "com.prodemge.minhaescolamg" if target_app == "minha_escola_mg" else ("br.gov.prodemge.projetosocialminas" if target_app == "mg_app_cidadao" else get_google_play_package())
+        
         success = False
         msg = ""
         if r["store"] == "google":
-            success, msg = reply_to_google_play(r["review_id"], resp_text, google_sa)
+            app_sa = resolve_google_play_service_account(target_app)
+            if app_sa:
+                success, msg = reply_to_google_play(r["review_id"], resp_text, app_sa, package_name=pkg)
+            else:
+                success, msg = False, f"Credencial Google Play não configurada para o app '{target_app}'."
         elif r["store"] == "apple":
-            success, msg = reply_to_apple_store(r["review_id"], resp_text, apple_k_id, apple_iss, apple_p8)
+            k_id, iss, p8 = resolve_apple_credentials(target_app)
+            if k_id and iss and p8:
+                success, msg = reply_to_apple_store(r["review_id"], resp_text, k_id, iss, p8)
+            else:
+                success, msg = False, f"Credenciais Apple não configuradas para o app '{target_app}'."
             
         if success:
             update_review_status(
@@ -1688,26 +1807,62 @@ def api_ignore(review_id: str):
     return {"success": True, "message": "Avaliação marcada como ignorada."}
 
 @app.get("/api/settings")
-def api_get_settings():
+def api_get_settings(app_id: Optional[str] = None):
     settings = get_all_settings()
     masked = dict(settings)
     if masked.get("gemini_api_key"):
         k = masked["gemini_api_key"]
         masked["gemini_api_key_masked"] = k[:6] + "..." + k[-4:] if len(k) > 10 else "***"
         
-    sa = settings.get("google_play_service_account", "")
-    masked["google_connected"] = bool(sa and sa.strip())
-    if sa and sa.strip():
-        try:
-            sa_data = json.loads(sa)
-            masked["google_client_email"] = sa_data.get("client_email", "")
-        except Exception:
-            masked["google_client_email"] = "Configurado"
-            
-    k_id = settings.get("apple_key_id", "")
-    iss = settings.get("apple_issuer_id", "")
-    p8 = settings.get("apple_private_key_p8", "")
-    masked["apple_connected"] = bool(k_id and iss and p8)
+    current_app = get_app_id()
+    selected_app = (app_id or current_app).strip()
+
+    # Dicionário detalhado por app
+    known_apps = ["minha_escola_mg", "mg_app_cidadao"]
+    apps_credentials = {}
+
+    for a_id in known_apps:
+        a_sa = resolve_google_play_service_account(a_id)
+        g_email = ""
+        if a_sa and a_sa.strip():
+            try:
+                if os.path.exists(a_sa):
+                    with open(a_sa, "r", encoding="utf-8") as f:
+                        sa_data = json.load(f)
+                else:
+                    sa_data = json.loads(a_sa)
+                g_email = sa_data.get("client_email", "Configurado")
+            except Exception:
+                g_email = "Configurado (Arquivo/Texto)"
+
+        k_id, iss, p8 = resolve_apple_credentials(a_id)
+        
+        apps_credentials[a_id] = {
+            "google_connected": bool(a_sa and a_sa.strip()),
+            "google_client_email": g_email,
+            "google_play_service_account": a_sa if not (a_sa and os.path.exists(a_sa)) else f"Arquivo: {a_sa}",
+            "has_google_sa": bool(a_sa and a_sa.strip()),
+            "apple_connected": bool(k_id and iss and p8),
+            "apple_key_id": k_id,
+            "apple_issuer_id": iss,
+            "has_apple_p8": bool(p8 and p8.strip()),
+            "google_play_package": "com.prodemge.minhaescolamg" if a_id == "minha_escola_mg" else "br.gov.prodemge.projetosocialminas",
+            "apple_store_id": "6749247611" if a_id == "minha_escola_mg" else "1057649491",
+            "app_name": "Minha Escola MG" if a_id == "minha_escola_mg" else "MG App Cidadão"
+        }
+
+    masked["apps_credentials"] = apps_credentials
+    masked["current_app_id"] = current_app
+    masked["selected_app_id"] = selected_app
+
+    # Valores para o app selecionado na raiz (compatibilidade direta com a UI)
+    cur_app_creds = apps_credentials.get(selected_app, apps_credentials.get(current_app, {}))
+    masked["google_connected"] = cur_app_creds.get("google_connected", False)
+    masked["google_client_email"] = cur_app_creds.get("google_client_email", "")
+    masked["google_play_service_account"] = cur_app_creds.get("google_play_service_account", "")
+    masked["apple_connected"] = cur_app_creds.get("apple_connected", False)
+    masked["apple_key_id"] = cur_app_creds.get("apple_key_id", "")
+    masked["apple_issuer_id"] = cur_app_creds.get("apple_issuer_id", "")
     
     cfg = get_app_config()
     support_val = settings.get("support_contact_url") or settings.get("support_email") or cfg.get("support_url")
@@ -1722,6 +1877,8 @@ def api_get_settings():
 
 @app.post("/api/settings")
 def api_update_settings(req: SettingsRequest):
+    target_app = (req.target_app_id or req.app_id or get_app_id()).strip()
+
     if req.app_id is not None:
         set_setting("app_id", req.app_id.strip())
     if req.domain is not None:
@@ -1732,21 +1889,62 @@ def api_update_settings(req: SettingsRequest):
         set_setting("organization_name", req.organization_name.strip())
     if req.google_play_package is not None:
         set_setting("google_play_package", req.google_play_package.strip())
+        set_setting(f"google_play_package_{target_app}", req.google_play_package.strip())
     if req.apple_store_id is not None:
         set_setting("apple_store_id", req.apple_store_id.strip())
+        set_setting(f"apple_store_id_{target_app}", req.apple_store_id.strip())
     if req.support_contact_url is not None:
         set_setting("support_contact_url", req.support_contact_url.strip())
         set_setting("support_email", req.support_contact_url.strip())
     if req.gemini_api_key is not None:
         set_setting("gemini_api_key", req.gemini_api_key)
+
+    # Atualizações em lote de credenciais por aplicativo
+    if req.apps_credentials:
+        for a_id, creds in req.apps_credentials.items():
+            if isinstance(creds, dict):
+                if "google_play_service_account" in creds and creds["google_play_service_account"] is not None:
+                    g_val = creds["google_play_service_account"].strip()
+                    if not g_val.startswith("Arquivo: "):
+                        set_setting(f"google_play_service_account_{a_id}", g_val)
+                        if a_id == get_app_id():
+                            set_setting("google_play_service_account", g_val)
+                if "apple_key_id" in creds and creds["apple_key_id"] is not None:
+                    set_setting(f"apple_key_id_{a_id}", creds["apple_key_id"].strip())
+                    if a_id == get_app_id(): set_setting("apple_key_id", creds["apple_key_id"].strip())
+                if "apple_issuer_id" in creds and creds["apple_issuer_id"] is not None:
+                    set_setting(f"apple_issuer_id_{a_id}", creds["apple_issuer_id"].strip())
+                    if a_id == get_app_id(): set_setting("apple_issuer_id", creds["apple_issuer_id"].strip())
+                if "apple_private_key_p8" in creds and creds["apple_private_key_p8"] is not None:
+                    p8_val = creds["apple_private_key_p8"].strip()
+                    if p8_val:
+                        set_setting(f"apple_private_key_p8_{a_id}", p8_val)
+                        if a_id == get_app_id(): set_setting("apple_private_key_p8", p8_val)
+
     if req.google_play_service_account is not None:
-        set_setting("google_play_service_account", req.google_play_service_account)
+        g_val = req.google_play_service_account.strip()
+        if not g_val.startswith("Arquivo: "):
+            set_setting(f"google_play_service_account_{target_app}", g_val)
+            if target_app == get_app_id():
+                set_setting("google_play_service_account", g_val)
+
     if req.apple_key_id is not None:
-        set_setting("apple_key_id", req.apple_key_id)
+        set_setting(f"apple_key_id_{target_app}", req.apple_key_id.strip())
+        if target_app == get_app_id():
+            set_setting("apple_key_id", req.apple_key_id.strip())
+
     if req.apple_issuer_id is not None:
-        set_setting("apple_issuer_id", req.apple_issuer_id)
+        set_setting(f"apple_issuer_id_{target_app}", req.apple_issuer_id.strip())
+        if target_app == get_app_id():
+            set_setting("apple_issuer_id", req.apple_issuer_id.strip())
+
     if req.apple_private_key_p8 is not None:
-        set_setting("apple_private_key_p8", req.apple_private_key_p8)
+        p8_val = req.apple_private_key_p8.strip()
+        if p8_val:
+            set_setting(f"apple_private_key_p8_{target_app}", p8_val)
+            if target_app == get_app_id():
+                set_setting("apple_private_key_p8", p8_val)
+
     if req.auto_publish_direct is not None:
         set_setting("auto_publish_direct", req.auto_publish_direct)
     if req.auto_reply_5_stars_only is not None:
@@ -1792,15 +1990,27 @@ def api_test_gemini(req: TestKeyRequest):
 
 @app.post("/api/settings/test-google")
 def api_test_google(req: TestGoogleRequest):
-    sa = req.service_account if (req.service_account and req.service_account.strip()) else get_setting("google_play_service_account", "")
-    ok, msg = test_google_play_credentials(sa)
+    target_app = (req.app_id or get_app_id()).strip()
+    sa = req.service_account if (req.service_account and req.service_account.strip()) else resolve_google_play_service_account(target_app)
+    
+    pkg = req.package_name
+    if not pkg:
+        if target_app == "minha_escola_mg":
+            pkg = "com.prodemge.minhaescolamg"
+        elif target_app == "mg_app_cidadao":
+            pkg = "br.gov.prodemge.projetosocialminas"
+        else:
+            pkg = get_google_play_package()
+
+    ok, msg = test_google_play_credentials(sa, package_name=pkg)
     return {"success": ok, "message": msg}
 
 @app.post("/api/settings/test-apple")
 def api_test_apple(req: TestAppleRequest):
-    k_id = req.key_id if (req.key_id and req.key_id.strip()) else get_setting("apple_key_id", "")
-    iss = req.issuer_id if (req.issuer_id and req.issuer_id.strip()) else get_setting("apple_issuer_id", "")
-    p8 = req.private_key_p8 if (req.private_key_p8 and req.private_key_p8.strip()) else get_setting("apple_private_key_p8", "")
+    target_app = (req.app_id or get_app_id()).strip()
+    k_id = req.key_id if (req.key_id and req.key_id.strip()) else resolve_apple_credentials(target_app)[0]
+    iss = req.issuer_id if (req.issuer_id and req.issuer_id.strip()) else resolve_apple_credentials(target_app)[1]
+    p8 = req.private_key_p8 if (req.private_key_p8 and req.private_key_p8.strip()) else resolve_apple_credentials(target_app)[2]
     ok, msg = test_apple_credentials(k_id, iss, p8)
     return {"success": ok, "message": msg}
 

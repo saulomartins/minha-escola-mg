@@ -34,12 +34,13 @@ def get_google_play_metadata(package_name: Optional[str] = None) -> Dict[str, An
         logger.error(f"Erro ao obter metadados da Google Play: {e}")
         return {}
 
-def fetch_google_play_reviews(count: int = 150, full: bool = False, package_name: Optional[str] = None) -> List[Dict[str, Any]]:
+def fetch_google_play_reviews(count: int = 150, full: bool = False, package_name: Optional[str] = None, app_id: Optional[str] = None) -> List[Dict[str, Any]]:
     """
     Coleta avaliações reais escritas do Google Play Store para o app configurado.
     Por padrão busca as avaliações mais recentes rapidamente (0.5s).
     """
     pkg = package_name or get_current_package_name()
+    target_app_id = app_id or (lambda: (__import__('config').get_app_id()))()
     try:
         if full:
             raw_reviews = reviews_all(
@@ -94,7 +95,7 @@ def fetch_google_play_reviews(count: int = 150, full: bool = False, package_name
                 "os_version": dev_info["os_version"],
                 "app_version": dev_info["app_version"],
                 "device_source": dev_info["device_source"],
-                "app_id": (lambda: (__import__('config').get_app_id()))()
+                "app_id": target_app_id
             })
             
         logger.info(f"Coletadas {len(normalized)} avaliações REAIS do Google Play Store.")
@@ -103,13 +104,21 @@ def fetch_google_play_reviews(count: int = 150, full: bool = False, package_name
         logger.error(f"Erro ao coletar avaliações reais do Google Play: {e}")
         return []
 
-def fetch_google_play_api_reviews(service_account_info_or_path: Any, max_results: int = 100) -> List[Dict[str, Any]]:
+def fetch_google_play_api_reviews(
+    service_account_info_or_path: Any, 
+    max_results: int = 100, 
+    package_name: Optional[str] = None, 
+    app_id: Optional[str] = None
+) -> List[Dict[str, Any]]:
     """
     Coleta avaliações e dados oficiais de telemetria diretamente da API do Google Play Developer (androidpublisher v3).
     Acesso direto autenticado com Service Account.
     """
     if not service_account_info_or_path:
         return []
+
+    target_pkg = package_name or get_current_package_name()
+    target_app_id = app_id or (lambda: (__import__('config').get_app_id()))()
 
     try:
         import json
@@ -151,7 +160,7 @@ def fetch_google_play_api_reviews(service_account_info_or_path: Any, max_results
         creds.refresh(GoogleAuthRequest())
         token = creds.token
 
-        url = f"https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{get_current_package_name()}/reviews"
+        url = f"https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{target_pkg}/reviews"
         headers = {
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json"
@@ -258,7 +267,8 @@ def fetch_google_play_api_reviews(service_account_info_or_path: Any, max_results
                     "app_version": app_ver_name,
                     "app_version_code": app_code,
                     "reviewer_language": user_comment.get("reviewerLanguage") or "pt",
-                    "device_source": "play_console_official"
+                    "device_source": "play_console_official",
+                    "app_id": target_app_id
                 })
 
             pages_fetched += 1

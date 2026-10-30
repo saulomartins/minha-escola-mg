@@ -98,13 +98,14 @@ def fetch_apple_web_responses(app_id: Optional[str] = None, country: Optional[st
     logger.info(f"Coletadas {len(responses_map)} respostas oficiais de desenvolvedor da Apple Store.")
     return responses_map
 
-def fetch_apple_store_reviews(max_pages: int = 10, app_id: Optional[str] = None, country: Optional[str] = None) -> List[Dict[str, Any]]:
+def fetch_apple_store_reviews(max_pages: int = 10, app_id: Optional[str] = None, country: Optional[str] = None, target_app_id: Optional[str] = None) -> List[Dict[str, Any]]:
     """
     Coleta todas as avaliações reais escritas da Apple App Store para o app configurado
     utilizando a API oficial de RSS da Apple e enriquece com as respostas oficiais do desenvolvedor.
     """
     a_id = app_id or get_current_app_id()
     c = country or get_current_country()
+    current_system_app_id = target_app_id or (lambda: (__import__('config').get_app_id()))()
 
     # 1. Coleta mapa de respostas oficiais da Apple
     web_responses = fetch_apple_web_responses(app_id=a_id, country=c)
@@ -181,7 +182,7 @@ def fetch_apple_store_reviews(max_pages: int = 10, app_id: Optional[str] = None,
                     "os_version": dev_info["os_version"],
                     "app_version": dev_info["app_version"],
                     "device_source": dev_info["device_source"],
-                    "app_id": (lambda: (__import__('config').get_app_id()))()
+                    "app_id": current_system_app_id
                 })
                 
         except Exception as e:
