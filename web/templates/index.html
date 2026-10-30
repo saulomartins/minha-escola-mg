@@ -4,12 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ app_config.app_name or 'Minha Escola MG' }} - Central de Avaliações e Diagnóstico de Problemas</title>
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        body {
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            letter-spacing: -0.01em;
+        }
         .star-filled { color: #f59e0b; }
         .star-empty { color: #d1d5db; }
         .tab-btn.active {
@@ -18,9 +37,22 @@
             font-weight: 700;
         }
         .nav-view-btn.active {
-            background-color: #eef2ff;
-            color: #4338ca;
-            box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            background-color: #4f46e5 !important;
+            color: #ffffff !important;
+            box-shadow: 0 2px 5px 0 rgba(79, 70, 229, 0.3) !important;
+            border-color: #4338ca !important;
+        }
+        .nav-view-btn.active i {
+            color: #ffffff !important;
+        }
+        .nav-view-btn:not(.active) {
+            color: #475569;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+        }
+        .nav-view-btn:not(.active):hover {
+            background-color: #f1f5f9;
+            color: #0f172a;
         }
 
         #print-official-header {
@@ -92,7 +124,7 @@
 
     <!-- Header Principal -->
     <header class="bg-indigo-900 text-white shadow-md sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="max-w-[1480px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
             <div class="flex items-center space-x-3">
                 <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center text-white text-xl shadow-inner font-bold">
                     {% if app_config.domain == 'education' %}
@@ -202,7 +234,7 @@
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <main class="max-w-[1480px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
         <!-- Cabeçalho Oficial Exclusivo para Impressão / Exportação PDF -->
         <div id="print-official-header" class="hidden print-only mb-6 border-b-2 border-slate-800 pb-4">
@@ -306,33 +338,33 @@
         </div>
 
         <!-- Seletor de Visão Principal (Comentários vs Diagnóstico de Aparelhos/SO vs Complexidade vs Temporal) -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8 gap-2 bg-white p-2 rounded-xl shadow-sm border border-slate-200 no-print">
-            <button onclick="switchMainView('reviews')" id="nav-btn-reviews" class="nav-view-btn active py-2.5 px-3 rounded-lg font-bold text-xs sm:text-sm transition flex items-center justify-center gap-1.5 text-center">
+        <div id="nav-tabs-container" class="flex flex-wrap items-center gap-2 sm:gap-2.5 bg-white p-2.5 rounded-2xl shadow-sm border border-slate-200 no-print">
+            <button onclick="switchMainView('reviews')" id="nav-btn-reviews" class="nav-view-btn active py-2.5 px-4 rounded-xl font-bold text-xs sm:text-[13px] transition flex items-center justify-center gap-2 whitespace-nowrap shadow-sm text-center">
                 <i class="fa-solid fa-list-check"></i> <span>1. Comentários</span>
             </button>
-            <button onclick="switchMainView('devices')" id="nav-btn-devices" class="nav-view-btn py-2.5 px-3 rounded-lg font-bold text-xs sm:text-sm transition flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-50 text-center">
+            <button onclick="switchMainView('devices')" id="nav-btn-devices" class="nav-view-btn py-2.5 px-4 rounded-xl font-bold text-xs sm:text-[13px] transition flex items-center justify-center gap-2 whitespace-nowrap text-slate-600 hover:bg-slate-50 border border-slate-200/80 text-center">
                 <i class="fa-solid fa-mobile-screen-button text-purple-600"></i> <span>2. Celulares & SO</span>
             </button>
-            <button onclick="switchMainView('analytics')" id="nav-btn-analytics" class="nav-view-btn py-2.5 px-3 rounded-lg font-bold text-xs sm:text-sm transition flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-50 text-center">
+            <button onclick="switchMainView('analytics')" id="nav-btn-analytics" class="nav-view-btn py-2.5 px-4 rounded-xl font-bold text-xs sm:text-[13px] transition flex items-center justify-center gap-2 whitespace-nowrap text-slate-600 hover:bg-slate-50 border border-slate-200/80 text-center">
                 <i class="fa-solid fa-chart-line text-indigo-600"></i> <span>3. Causas-Raiz</span>
             </button>
-            <button onclick="switchMainView('temporal')" id="nav-btn-temporal" class="nav-view-btn py-2.5 px-3 rounded-lg font-bold text-xs sm:text-sm transition flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-50 text-center">
+            <button onclick="switchMainView('temporal')" id="nav-btn-temporal" class="nav-view-btn py-2.5 px-4 rounded-xl font-bold text-xs sm:text-[13px] transition flex items-center justify-center gap-2 whitespace-nowrap text-slate-600 hover:bg-slate-50 border border-slate-200/80 text-center">
                 <i class="fa-solid fa-calendar-days text-amber-500"></i> <span>4. Tendências</span>
             </button>
-            <button onclick="switchMainView('hardware-rc')" id="nav-btn-hardware-rc" class="nav-view-btn py-2.5 px-3 rounded-lg font-bold text-xs sm:text-sm transition flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-50 text-center">
+            <button onclick="switchMainView('hardware-rc')" id="nav-btn-hardware-rc" class="nav-view-btn py-2.5 px-4 rounded-xl font-bold text-xs sm:text-[13px] transition flex items-center justify-center gap-2 whitespace-nowrap text-slate-600 hover:bg-slate-50 border border-slate-200/80 text-center">
                 <i class="fa-solid fa-microchip text-rose-500"></i> <span>5. Matriz HW x Causa</span>
             </button>
-            <button onclick="switchMainView('scanner')" id="nav-btn-scanner" class="nav-view-btn py-2.5 px-3 rounded-lg font-bold text-xs sm:text-sm transition flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-50 text-center">
+            <button onclick="switchMainView('scanner')" id="nav-btn-scanner" class="nav-view-btn py-2.5 px-4 rounded-xl font-bold text-xs sm:text-[13px] transition flex items-center justify-center gap-2 whitespace-nowrap text-slate-600 hover:bg-slate-50 border border-slate-200/80 text-center">
                 <i class="fa-solid fa-magnifying-glass-chart text-cyan-600"></i> <span>6. Varredura</span>
             </button>
             {% if app_config.features.enable_fale_conosco %}
-            <button onclick="switchMainView('support')" id="nav-btn-support" class="nav-view-btn py-2.5 px-3 rounded-lg font-bold text-xs sm:text-sm transition flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-50 text-center">
+            <button onclick="switchMainView('support')" id="nav-btn-support" class="nav-view-btn py-2.5 px-4 rounded-xl font-bold text-xs sm:text-[13px] transition flex items-center justify-center gap-2 whitespace-nowrap text-slate-600 hover:bg-slate-50 border border-slate-200/80 text-center">
                 <i class="fa-solid fa-headset text-blue-600"></i> <span>7. Fale Conosco</span>
                 <span id="badge-support-count" class="ml-1 px-1.5 py-0.5 text-[10px] font-extrabold bg-blue-100 text-blue-800 rounded-full">1.957</span>
             </button>
             {% endif %}
             {% if current_user and current_user.role == 'admin' %}
-            <button onclick="switchMainView('users')" id="nav-btn-users" class="nav-view-btn py-2.5 px-3 rounded-lg font-bold text-xs sm:text-sm transition flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-50 text-center">
+            <button onclick="switchMainView('users')" id="nav-btn-users" class="nav-view-btn py-2.5 px-4 rounded-xl font-bold text-xs sm:text-[13px] transition flex items-center justify-center gap-2 whitespace-nowrap text-slate-600 hover:bg-slate-50 border border-slate-200/80 text-center">
                 <i class="fa-solid fa-users-gear text-emerald-600"></i> <span>8. Acessos</span>
                 <span id="badge-pending-count" class="hidden ml-1 px-2 py-0.5 text-[10px] font-extrabold bg-amber-500 text-white rounded-full animate-pulse">0</span>
             </button>
@@ -342,17 +374,17 @@
         <!-- ================= VISÃO 1: LISTA DE AVALIAÇÕES ================= -->
         <div id="view-reviews" class="space-y-6">
             <!-- Filtros e Barra de Ações -->
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3">
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-2.5">
-                    <!-- Busca Textual -->
-                    <div class="relative md:col-span-4">
-                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-sm"></i>
-                        <input type="text" id="filter-search" oninput="debounceLoadReviews()" placeholder="Buscar palavras (ex: senha, moto g, tela preta)..." class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white">
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
+                    <!-- Busca Textual (4 colunas) -->
+                    <div class="relative sm:col-span-2 lg:col-span-4">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
+                        <input type="text" id="filter-search" oninput="debounceLoadReviews()" placeholder="Buscar palavras (ex: senha, moto g, tela preta)..." class="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
                     </div>
 
-                    <!-- Filtro Causa-Raiz / Diagnóstico -->
-                    <div class="md:col-span-3">
-                        <select id="filter-root-cause" onchange="loadReviews()" class="w-full py-2 px-3 bg-indigo-50/60 border border-indigo-200 text-indigo-950 font-medium rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <!-- Filtro Causa-Raiz / Diagnóstico (3 colunas) -->
+                    <div class="sm:col-span-1 lg:col-span-3">
+                        <select id="filter-root-cause" onchange="loadReviews()" class="w-full py-2.5 px-3 bg-indigo-50/70 border border-indigo-200 text-indigo-950 font-semibold rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition cursor-pointer">
                             <option value="todos">🎯 Todas as Causas-Raiz</option>
                             <option value="login_sessao_recorrente">🔐 Instabilidade de Login, Conexão e Sessão</option>
                             <option value="gov_br_cpf">🏛️ Falha no Gov.br e Vínculo de CPF</option>
@@ -368,18 +400,18 @@
                         </select>
                     </div>
 
-                    <!-- Filtro Sistema Operacional (SO) -->
-                    <div>
-                        <select id="filter-os" onchange="loadReviews()" class="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <!-- Filtro Sistema Operacional (SO) (2 colunas) -->
+                    <div class="sm:col-span-1 lg:col-span-2">
+                        <select id="filter-os" onchange="loadReviews()" class="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition cursor-pointer">
                             <option value="todos">📱 Todos os SOs</option>
                             <option value="Android">🤖 Android (Google)</option>
                             <option value="iOS">🍏 iOS (Apple)</option>
                         </select>
                     </div>
 
-                    <!-- Filtro Marca do Celular -->
-                    <div>
-                        <select id="filter-device-brand" onchange="loadReviews()" class="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <!-- Filtro Marca do Celular (2 colunas) -->
+                    <div class="sm:col-span-1 lg:col-span-2">
+                        <select id="filter-device-brand" onchange="loadReviews()" class="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition cursor-pointer">
                             <option value="todas">📱 Todas as Marcas</option>
                             <option value="Motorola">Motorola</option>
                             <option value="Samsung">Samsung</option>
@@ -391,10 +423,10 @@
                         </select>
                     </div>
 
-                    <!-- Filtro Estrelas -->
-                    <div>
-                        <select id="filter-rating" onchange="loadReviews()" class="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            <option value="0">⭐ Todas as Estrelas</option>
+                    <!-- Filtro Estrelas (1 coluna) -->
+                    <div class="sm:col-span-1 lg:col-span-1 min-w-[125px]">
+                        <select id="filter-rating" onchange="loadReviews()" class="w-full py-2.5 px-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition cursor-pointer">
+                            <option value="0">⭐ Todas</option>
                             <option value="5">⭐⭐⭐⭐⭐ (5)</option>
                             <option value="4">⭐⭐⭐⭐ (4)</option>
                             <option value="3">⭐⭐⭐ (3)</option>
@@ -405,10 +437,10 @@
                 </div>
 
                 <!-- Segunda Linha: Status e Ação Rápida de Resposta Automática Inteligente -->
-                <div class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100">
+                <div class="flex flex-wrap items-center justify-between gap-3 pt-3.5 mt-1 border-t border-slate-100">
                     <div class="flex items-center gap-2">
-                        <span class="text-xs text-slate-500 font-semibold">Status:</span>
-                        <select id="filter-status" onchange="loadReviews()" class="py-1.5 px-3 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <span class="text-xs text-slate-500 font-bold uppercase tracking-wider">Status:</span>
+                        <select id="filter-status" onchange="loadReviews()" class="py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
                             <option value="todos" selected>Todos os Status</option>
                             <option value="pendente">Apenas Pendentes</option>
                             <option value="respondida">Já Respondidas</option>
@@ -416,25 +448,25 @@
                         </select>
                     </div>
 
-                    <div class="flex flex-wrap items-center gap-2">
-                        <span class="text-xs text-slate-500 hidden sm:inline">Ações:</span>
-                        <button onclick="toggleStuckAndroidFilter()" id="btn-filter-stuck-android" class="px-3 py-1.5 text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 rounded-lg shadow-sm transition flex items-center gap-1.5" title="Filtrar apenas comentários e aparelhos sem atualização para versão maior que Android 12">
+                    <div class="flex flex-wrap items-center gap-2.5">
+                        <span class="text-xs text-slate-500 hidden sm:inline font-bold uppercase tracking-wider">Ações:</span>
+                        <button onclick="toggleStuckAndroidFilter()" id="btn-filter-stuck-android" class="px-3.5 py-2 text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 rounded-xl shadow-sm transition flex items-center gap-1.5" title="Filtrar apenas comentários e aparelhos sem atualização para versão maior que Android 12">
                             <i class="fa-solid fa-ban text-rose-600"></i> Presos no Android ≤ 12
-                            <span id="badge-stuck-android-count" class="ml-1 px-1.5 py-0.2 bg-rose-600 text-white text-[10px] font-extrabold rounded-full">12</span>
+                            <span id="badge-stuck-android-count" class="ml-1 px-1.5 py-0.5 bg-rose-600 text-white text-[10px] font-extrabold rounded-full">12</span>
                         </button>
-                        <button onclick="applyAllAutoReplies()" id="btn-apply-auto-replies" class="px-3 py-1.5 text-xs font-bold bg-slate-800 hover:bg-slate-900 text-white rounded-lg shadow-sm transition flex items-center gap-1.5" title="Gera respostas automáticas personalizadas para todas as avaliações de 1 a 5 estrelas">
+                        <button onclick="applyAllAutoReplies()" id="btn-apply-auto-replies" class="px-3.5 py-2 text-xs font-bold bg-slate-800 hover:bg-slate-900 text-white rounded-xl shadow-sm transition flex items-center gap-1.5" title="Gera respostas automáticas personalizadas para todas as avaliações de 1 a 5 estrelas">
                             <i class="fa-solid fa-bolt text-amber-300"></i> Gerar Respostas (1 a 5 ⭐)
                         </button>
-                        <button onclick="publishBatch()" id="btn-publish-batch" class="{% if current_user and current_user.email.lower() == 'mgminhaescola@gmail.com' %}flex{% else %}hidden{% endif %} px-3.5 py-1.5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm transition items-center gap-1.5" title="Mandar publicar todas as respostas salvas diretamente nas lojas oficiais (Google Play e App Store)">
+                        <button onclick="publishBatch()" id="btn-publish-batch" class="{% if current_user and current_user.email.lower() == 'mgminhaescola@gmail.com' %}flex{% else %}hidden{% endif %} px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm transition items-center gap-1.5" title="Mandar publicar todas as respostas salvas diretamente nas lojas oficiais (Google Play e App Store)">
                             <i class="fa-solid fa-paper-plane"></i> Mandar Publicar (<span id="count-pending-publish">0</span>)
                         </button>
-                        <button onclick="exportToExcel('excel', 'all')" class="px-3.5 py-1.5 text-xs font-bold bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg shadow-sm transition flex items-center gap-1.5" title="Exportar TODOS os 500 comentários da base completa para Excel (.xlsx)">
-                            <i class="fa-solid fa-file-excel text-emerald-200"></i> Exportar Todos (Excel - 500)
+                        <button onclick="exportToExcel('excel', 'all')" class="px-3.5 py-2 text-xs font-bold bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl shadow-sm transition flex items-center gap-1.5" title="Exportar TODOS os 500 comentários da base completa para Excel (.xlsx)">
+                            <i class="fa-solid fa-file-excel text-emerald-200"></i> Exportar Todos (Excel)
                         </button>
-                        <button id="btn-export-filtered" onclick="exportToExcel('excel', 'filtered')" class="hidden px-3 py-1.5 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-lg shadow-sm transition flex items-center gap-1.5" title="Exportar apenas as avaliações que correspondem aos filtros aplicados na tela">
+                        <button id="btn-export-filtered" onclick="exportToExcel('excel', 'filtered')" class="hidden px-3.5 py-2 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-xl shadow-sm transition flex items-center gap-1.5" title="Exportar apenas as avaliações que correspondem aos filtros aplicados na tela">
                             <i class="fa-solid fa-filter"></i> Exportar Filtrados (<span id="count-export-filtered">0</span>)
                         </button>
-                        <button onclick="exportToExcel('csv', 'all')" class="px-2.5 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg border border-slate-300 transition flex items-center gap-1" title="Exportar toda a base de comentários para formato CSV (500 avaliações)">
+                        <button onclick="exportToExcel('csv', 'all')" class="px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl border border-slate-300 transition flex items-center gap-1" title="Exportar toda a base de comentários para formato CSV (500 avaliações)">
                             <i class="fa-solid fa-file-csv text-slate-600"></i> CSV (Todos)
                         </button>
                     </div>
@@ -3070,8 +3102,8 @@
             const btnSupport = document.getElementById('nav-btn-support');
             const btnUsers = document.getElementById('nav-btn-users');
 
-            const activeCls = 'nav-view-btn active flex-1 min-w-[200px] py-2.5 px-4 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2';
-            const inactiveCls = 'nav-view-btn flex-1 min-w-[200px] py-2.5 px-4 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2 text-slate-600 hover:bg-slate-50';
+            const activeCls = 'nav-view-btn active py-2.5 px-4 rounded-xl font-bold text-xs sm:text-[13px] transition flex items-center justify-center gap-2 whitespace-nowrap shadow-sm';
+            const inactiveCls = 'nav-view-btn py-2.5 px-4 rounded-xl font-bold text-xs sm:text-[13px] transition flex items-center justify-center gap-2 text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-slate-200/80 whitespace-nowrap';
 
             if (btnReviews) btnReviews.className = isReviews ? activeCls : inactiveCls;
             if (btnDevices) btnDevices.className = isDevices ? activeCls : inactiveCls;
@@ -4011,7 +4043,7 @@
                     if (hasValidDevice) {
                         const brandDisplay = r.device_brand && !r.device_model.toLowerCase().startsWith(r.device_brand.toLowerCase()) ? (r.device_brand + ': ') : '';
                         deviceIndicatorBar = `
-                            <div class="flex flex-wrap items-center gap-2.5 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs">
+                            <div class="flex flex-wrap items-center gap-3 px-4 py-2.5 bg-slate-50/90 border border-slate-200 rounded-xl text-xs text-slate-700">
                                 <div class="flex items-center gap-1.5 font-semibold text-slate-800" title="Modelo do Aparelho">
                                     <i class="fa-solid fa-mobile-screen-button text-purple-600"></i>
                                     <span>${escapeHtml(brandDisplay)}<b class="text-slate-900">${escapeHtml(r.device_model)}</b></span>
@@ -4071,7 +4103,7 @@
                     ` : '';
 
                     return `
-                        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 transition hover:border-slate-300 space-y-3.5" id="card-${r.id}">
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/90 transition hover:shadow-md hover:border-slate-300 space-y-4" id="card-${r.id}">
                             <div class="flex flex-wrap justify-between items-start gap-2 border-b border-slate-100 pb-3">
                                 <div class="flex items-center gap-3">
                                     ${storeBadge}
@@ -4094,9 +4126,9 @@
                             <!-- Alerta de Ciclo de Vida do Aparelho (se preso no Android <= 12) -->
                             ${stuckAlertBox}
 
-                            <div>
-                                ${r.title ? `<h4 class="font-bold text-sm text-slate-900 mb-1">${escapeHtml(r.title)}</h4>` : ''}
-                                <p class="text-sm text-slate-700 whitespace-pre-line leading-relaxed">${escapeHtml(r.content || 'Avaliação sem texto (apenas estrelas).')}</p>
+                            <div class="py-1">
+                                ${r.title ? `<h4 class="font-bold text-base text-slate-900 mb-1.5">${escapeHtml(r.title)}</h4>` : ''}
+                                <p class="text-[14.5px] text-slate-800 whitespace-pre-line leading-relaxed font-normal">${escapeHtml(r.content || 'Avaliação sem texto (apenas estrelas).')}</p>
                             </div>
 
                             ${hasExistingResponse ? `
@@ -4112,7 +4144,7 @@
                                         </div>
                                         ${r.developer_response_date ? `<span class="text-[11px] text-blue-600 font-medium"><i class="fa-regular fa-clock mr-1"></i>${new Date(r.developer_response_date).toLocaleDateString('pt-BR')}</span>` : ''}
                                     </div>
-                                    <p class="leading-relaxed italic text-slate-800 text-xs whitespace-pre-line">${escapeHtml(officialResponseText)}</p>
+                                    <p class="leading-relaxed text-slate-800 text-[13.5px] whitespace-pre-line font-normal">${escapeHtml(officialResponseText)}</p>
                                     <span id="response-val-${r.id}" class="hidden">${escapeHtml(officialResponseText)}</span>
 
                                     <div class="flex items-center justify-between pt-1">
@@ -4134,7 +4166,7 @@
                                         ${replyStatusBadge}
                                     </div>
 
-                                    <textarea id="reply-text-${r.id}" rows="3" class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-xs leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800" placeholder="Clique em 'Regenerar com IA' para criar uma resposta automática...">${escapeHtml(responseText)}</textarea>
+                                    <textarea id="reply-text-${r.id}" rows="3" class="w-full p-3.5 bg-white border border-slate-300 rounded-xl text-[13px] leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 shadow-sm" placeholder="Clique em 'Regenerar com IA' para criar uma resposta automática...">${escapeHtml(responseText)}</textarea>
 
                                     <div class="flex flex-wrap justify-between items-center gap-2 pt-1">
                                         <div class="flex flex-wrap gap-2">
