@@ -93,7 +93,8 @@ def fetch_google_play_reviews(count: int = 150, full: bool = False, package_name
                 "os_name": dev_info["os_name"],
                 "os_version": dev_info["os_version"],
                 "app_version": dev_info["app_version"],
-                "device_source": dev_info["device_source"]
+                "device_source": dev_info["device_source"],
+                "app_id": (lambda: (__import__('config').get_app_id()))()
             })
             
         logger.info(f"Coletadas {len(normalized)} avaliações REAIS do Google Play Store.")

@@ -10,12 +10,12 @@
   "support_url": "https://www.mg.gov.br/atendimento",
   "support_email": "atendimento@prodemge.gov.br",
   "google_play": {
-    "package_name": "br.gov.prodemge.cidadao",
+    "package_name": "br.gov.prodemge.projetosocialminas",
     "country": "br",
     "language": "pt"
   },
   "apple_store": {
-    "app_id": "1158925514",
+    "app_id": "1057649491",
     "country": "br"
   },
   "branding": {

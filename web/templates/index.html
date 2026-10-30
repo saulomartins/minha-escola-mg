@@ -106,7 +106,19 @@
                     {% endif %}
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold tracking-tight">{{ app_config.app_name or "Minha Escola MG" }} - Central de Inteligência</h1>
+                    <div class="flex items-center gap-3">
+                        <h1 class="text-xl font-bold tracking-tight">{{ app_config.app_name or "Minha Escola MG" }} - Central de Inteligência</h1>
+                        <div class="hidden sm:flex items-center gap-1.5 bg-indigo-950/80 px-2.5 py-1 rounded-lg border border-indigo-400/40 text-xs shadow-inner">
+                            <i class="fa-solid fa-repeat text-indigo-300 text-[11px]"></i>
+                            <span class="text-indigo-200 font-medium">Trocar App:</span>
+                            <select onchange="quickSwitchApp(this.value)" class="bg-indigo-900 text-white font-bold text-xs rounded px-2 py-0.5 border border-indigo-500/60 cursor-pointer focus:outline-none focus:ring-1 focus:ring-amber-400">
+                                <option value="minha_escola_mg.json" {% if app_config.app_id == 'minha_escola_mg' %}selected{% endif %}>Minha Escola MG</option>
+                                <option value="mg_app_cidadao.json" {% if app_config.app_id == 'mg_app_cidadao' %}selected{% endif %}>MG App Cidadão</option>
+                                <option value="fintech_banco.json" {% if app_config.app_id == 'fintech_banco' %}selected{% endif %}>Banco Digital & Fintech</option>
+                                <option value="app_generico.json" {% if app_config.app_id == 'app_generico' %}selected{% endif %}>Meu App Mobile</option>
+                            </select>
+                        </div>
+                    </div>
                     <p class="text-xs text-indigo-200">{{ app_config.app_tagline or "Monitoramento, Análise de Complexidade & Resposta (Google Play & App Store)" }}</p>
                 </div>
             </div>
@@ -4878,8 +4890,8 @@
                 app_name: "MG App Cidadão",
                 domain: "public_services",
                 org_name: "Governo de Minas Gerais / Prodemge",
-                gp_package: "br.gov.prodemge.cidadao",
-                apple_id: "1158925514",
+                gp_package: "br.gov.prodemge.projetosocialminas",
+                apple_id: "1057649491",
                 support_url: "https://www.mg.gov.br/atendimento"
             },
             "fintech_banco.json": {
@@ -4912,6 +4924,27 @@
             if (document.getElementById('input-gp-package')) document.getElementById('input-gp-package').value = p.gp_package;
             if (document.getElementById('input-apple-id')) document.getElementById('input-apple-id').value = p.apple_id;
             if (document.getElementById('input-support-url-app')) document.getElementById('input-support-url-app').value = p.support_url;
+        }
+
+        async function quickSwitchApp(presetId) {
+            if (!presetId) return;
+            try {
+                showAlert('Carregando dados do aplicativo selecionado...', 'info');
+                const res = await fetch('/api/presets/apply', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ preset_id: presetId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showAlert(data.message, 'success');
+                    setTimeout(() => window.location.reload(), 400);
+                } else {
+                    showAlert(data.detail || 'Erro ao trocar de aplicativo.', 'error');
+                }
+            } catch (e) {
+                showAlert('Erro de conexão ao alternar aplicativo.', 'error');
+            }
         }
 
         async function applySelectedPreset() {

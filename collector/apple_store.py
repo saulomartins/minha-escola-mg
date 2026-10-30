@@ -180,7 +180,8 @@ def fetch_apple_store_reviews(max_pages: int = 10, app_id: Optional[str] = None,
                     "os_name": dev_info["os_name"],
                     "os_version": dev_info["os_version"],
                     "app_version": dev_info["app_version"],
-                    "device_source": dev_info["device_source"]
+                    "device_source": dev_info["device_source"],
+                    "app_id": (lambda: (__import__('config').get_app_id()))()
                 })
                 
         except Exception as e:
