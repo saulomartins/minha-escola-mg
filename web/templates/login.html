@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acesso - Central de Inteligência Minha Escola MG</title>
+    <title>Acesso - Central de Inteligência {{ app_config.app_name or 'Minha Escola MG' }}</title>
     <!-- Google Identity Services -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
@@ -201,10 +201,10 @@
     <div class="login-card">
         <div class="brand-header">
             <div class="badge-gov">
-                🏛️ Governo de Minas Gerais • Prodemge
+                🏛️ {{ app_config.organization_name or "Governo de Minas Gerais • Prodemge" }}
             </div>
             <h1>Central de Inteligência</h1>
-            <p>Minha Escola MG • Diagnósticos, IA e Análise de Avaliações</p>
+            <p>{{ app_config.app_name or "Minha Escola MG" }} • Diagnósticos, IA e Análise de Avaliações</p>
         </div>
 
         <!-- Alerta de Erro ou Pendência -->

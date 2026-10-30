@@ -5,3 +5,5 @@ cloudflared.exe
 .env
 google_play_service_account.json
 *.json.key
+*.pptx
+gerar_apresentacao_pptx.py

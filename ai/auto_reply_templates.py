@@ -4,7 +4,9 @@ from database.db import get_connection, get_setting
 from ai.analyzer import has_problem_context, strip_support_link
 
 # Configuração e descrição detalhada de cada causa-raiz com templates para todas as estrelas
-OFFICIAL_SUPPORT_FORM = "https://forms.cloud.microsoft/r/JmZhSzXtwG"
+from config import get_app_name, get_organization_name, get_support_url
+
+OFFICIAL_SUPPORT_FORM = get_support_url()
 
 PROBLEM_TEMPLATES_CONFIG = {
     "login_sessao_recorrente": {
@@ -15,9 +17,9 @@ PROBLEM_TEMPLATES_CONFIG = {
         "severity": "Crítica",
         "complexity": "Média",
         "templates": {
-            "critical": "Olá, {nome}! Lamentamos muito pelo transtorno com a instabilidade de login no Minha Escola MG. Nossa equipe técnica da Prodemge está atuando na infraestrutura para estabilizar as sessões e evitar desconexões. Como procedimento imediato, por favor limpe o cache do aplicativo em Configurações > Aplicativos > Minha Escola MG > Armazenamento > Limpar Cache e tente novamente. Caso a dificuldade persista, acione o Canal de Suporte Oficial: 👉 {canal_contato}",
-            "moderate": "Olá, {nome}! Agradecemos pelo seu relato. Já estamos cientes da instabilidade no acesso e atuando para otimizar o processo de login do Minha Escola MG. Recomendamos manter o app sempre atualizado na versão mais recente da {loja}. Se precisar de auxílio adicional, conte conosco no Canal de Suporte Oficial: 👉 {canal_contato}",
-            "positive": "Olá, {nome}! Muito obrigado pela avaliação de {estrelas} estrelas no Minha Escola MG! Continuamos trabalhando para garantir um acesso rápido e seguro a todos os estudantes e responsáveis."
+            "critical": "Olá, {nome}! Lamentamos muito pelo transtorno com a instabilidade de login no {app_name}. Nossa equipe técnica da {org_name} está atuando na infraestrutura para estabilizar as sessões e evitar desconexões. Como procedimento imediato, por favor limpe o cache do aplicativo em Configurações > Aplicativos > {app_name} > Armazenamento > Limpar Cache e tente novamente. Caso a dificuldade persista, acione o Canal de Suporte Oficial: 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! Agradecemos pelo seu relato. Já estamos cientes da instabilidade no acesso e atuando para otimizar o processo de login do {app_name}. Recomendamos manter o app sempre atualizado na versão mais recente da {loja}. Se precisar de auxílio adicional, conte conosco no Canal de Suporte Oficial: 👉 {canal_contato}",
+            "positive": "Olá, {nome}! Muito obrigado pela avaliação de {estrelas} estrelas no {app_name}! Continuamos trabalhando para garantir um acesso rápido e seguro a todos os usuários."
         }
     },
     "gov_br_cpf": {
@@ -30,7 +32,7 @@ PROBLEM_TEMPLATES_CONFIG = {
         "templates": {
             "critical": "Olá, {nome}! Sentimos muito pelo transtorno no acesso Gov.br. Esse erro geralmente ocorre por divergência cadastral entre a base federal e a secretaria da escola. Recomendamos confirmar se o seu CPF e data de nascimento estão atualizados junto à coordenação da sua escola. Se o problema persistir, pedimos que acesse o Canal de Suporte Oficial: 👉 {canal_contato}",
             "moderate": "Olá, {nome}! Agradecemos pelo seu retorno. O login com Gov.br exige que os dados cadastrais estejam 100% alinhados com o cadastro escolar. Caso o acesso continue instável, orientamos relatar pelo Canal de Suporte Oficial: 👉 {canal_contato}",
-            "positive": "Olá, {nome}! Muito obrigado pela avaliação de {estrelas} estrelas no Minha Escola MG! Trabalhamos constantemente na integração com o Gov.br para manter seu acesso seguro e prático. Conte conosco!"
+            "positive": "Olá, {nome}! Muito obrigado pela avaliação de {estrelas} estrelas no {app_name}! Trabalhamos constantemente na integração com o Gov.br para manter seu acesso seguro e prático. Conte conosco!"
         }
     },
     "senha_recuperacao": {
@@ -43,7 +45,7 @@ PROBLEM_TEMPLATES_CONFIG = {
         "templates": {
             "critical": "Olá, {nome}! Sentimos muito pela dificuldade na recuperação da senha. Verifique se a mensagem não foi para a caixa de Spam/Lixo Eletrônico. Caso o e-mail cadastrado na escola seja antigo ou inacessível, solicite a atualização junto à secretaria da sua escola ou registre no Canal de Suporte Oficial: 👉 {canal_contato}",
             "moderate": "Olá, {nome}! Agradecemos pelo seu contato. Para recuperar sua senha com segurança, certifique-se de que o e-mail cadastrado na escola é o seu e-mail atual. Havendo qualquer divergência ou persistindo o erro, consulte a secretaria da escola ou registre no Canal de Suporte Oficial: 👉 {canal_contato}",
-            "positive": "Olá, {nome}! Agradecemos pela avaliação positiva de {estrelas} estrelas! Nosso objetivo é garantir que seu acesso ao Minha Escola MG seja sempre ágil e descomplicado. Um abraço da equipe!"
+            "positive": "Olá, {nome}! Agradecemos pela avaliação positiva de {estrelas} estrelas! Nosso objetivo é garantir que seu acesso ao {app_name} seja sempre ágil e descomplicado. Um abraço da equipe!"
         }
     },
     "lentidao_tela_preta": {
@@ -54,9 +56,9 @@ PROBLEM_TEMPLATES_CONFIG = {
         "severity": "Alta",
         "complexity": "Média",
         "templates": {
-            "critical": "Olá, {nome}! Lamentamos muito pela lentidão ou travamento no Minha Escola MG. Nossa equipe técnica da Prodemge lançou atualizações para otimização de performance. Recomendamos atualizar o app para a versão mais recente na {loja} e limpar o cache nas configurações do aparelho. Se persistir, informe os detalhes no Canal de Suporte Oficial: 👉 {canal_contato}",
+            "critical": "Olá, {nome}! Lamentamos muito pela lentidão ou travamento no {app_name}. Nossa equipe técnica da {org_name} lançou atualizações para otimização de performance. Recomendamos atualizar o app para a versão mais recente na {loja} e limpar o cache nas configurações do aparelho. Se persistir, informe os detalhes no Canal de Suporte Oficial: 👉 {canal_contato}",
             "moderate": "Olá, {nome}! Obrigado por nos avisar sobre a lentidão. Estamos trabalhando continuamente na estabilidade do aplicativo. Certifique-se de manter o app atualizado e, caso precise de auxílio, relate no Canal de Suporte Oficial: 👉 {canal_contato}",
-            "positive": "Olá, {nome}! Muito obrigado pela avaliação de {estrelas} estrelas! Estamos sempre otimizando a velocidade do Minha Escola MG para oferecer a melhor experiência a você. Conte com a gente!"
+            "positive": "Olá, {nome}! Muito obrigado pela avaliação de {estrelas} estrelas! Estamos sempre otimizando a velocidade do {app_name} para oferecer a melhor experiência a você. Conte com a gente!"
         }
     },
     "boletim_notas": {
@@ -67,7 +69,7 @@ PROBLEM_TEMPLATES_CONFIG = {
         "severity": "Alta",
         "complexity": "Alta",
         "templates": {
-            "critical": "Olá, {nome}! Entendemos a importância de acompanhar o boletim. As notas exibidas no Minha Escola MG dependem da sincronização e homologação feitas pelos professores no Diário Escolar Digital (DED). Caso o bimestre já tenha encerrado e as notas não apareçam, consulte a coordenação da sua escola ou relate no Canal de Suporte Oficial: 👉 {canal_contato}",
+            "critical": "Olá, {nome}! Entendemos a importância de acompanhar o boletim. As notas exibidas no {app_name} dependem da sincronização e homologação feitas pelos professores no Diário Escolar Digital (DED). Caso o bimestre já tenha encerrado e as notas não apareçam, consulte a coordenação da sua escola ou relate no Canal de Suporte Oficial: 👉 {canal_contato}",
             "moderate": "Olá, {nome}! Agradecemos pelo seu relato. A atualização das notas no aplicativo ocorre conforme os professores realizam o lançamento oficial no sistema escolar. Havendo dúvidas ou divergências não solucionadas pela escola, relate pelo Canal de Suporte Oficial: 👉 {canal_contato}",
             "positive": "Olá, {nome}! Ficamos muito felizes com a sua avaliação positiva! O acompanhamento das notas é fundamental e estamos empenhados em manter tudo sempre sincronizado para você. Bons estudos!"
         }
@@ -119,7 +121,7 @@ PROBLEM_TEMPLATES_CONFIG = {
         "severity": "Média",
         "complexity": "Baixa",
         "templates": {
-            "critical": "Olá, {nome}! Para nos ajudar a identificar e solucionar problemas no aplicativo Minha Escola MG, pedimos que acesse o Canal de Suporte Oficial: 👉 {canal_contato}",
+            "critical": "Olá, {nome}! Para nos ajudar a identificar e solucionar problemas no aplicativo {app_name}, pedimos que acesse o Canal de Suporte Oficial: 👉 {canal_contato}",
             "moderate": "Olá, {nome}! Agradecemos por compartilhar sua opinião. Se estiver enfrentando qualquer dificuldade ou dúvida técnica, pedimos que acesse o Canal de Suporte Oficial: 👉 {canal_contato}",
             "positive": "Olá, {nome}! Agradecemos pelo retorno e pelas observações. Estamos à disposição para apoiar sua jornada escolar!"
         }
@@ -132,9 +134,9 @@ PROBLEM_TEMPLATES_CONFIG = {
         "severity": "Baixa",
         "complexity": "Baixa",
         "templates": {
-            "critical": "Olá, {nome}! Agradecemos pelo seu contato. Caso esteja enfrentando qualquer instabilidade ou dificuldade no Minha Escola MG, pedimos que relate no Canal de Suporte Oficial: 👉 {canal_contato}",
+            "critical": "Olá, {nome}! Agradecemos pelo seu contato. Caso esteja enfrentando qualquer instabilidade ou dificuldade no {app_name}, pedimos que relate no Canal de Suporte Oficial: 👉 {canal_contato}",
             "moderate": "Olá, {nome}! Muito obrigado pelo retorno positivo. Se houver alguma dificuldade técnica que possamos ajudar a resolver, utilize o Canal de Suporte Oficial: 👉 {canal_contato}",
-            "positive": "Olá, {nome}! Ficamos imensamente felizes com a sua avaliação de {estrelas} estrelas no Minha Escola MG! Nosso compromisso diário é facilitar a rotina de toda a comunidade escolar mineira. Muito obrigado pelo carinho e conte sempre conosco!"
+            "positive": "Olá, {nome}! Ficamos imensamente felizes com a sua avaliação de {estrelas} estrelas no {app_name}! Nosso compromisso diário é facilitar a rotina de toda a nossos usuários. Muito obrigado pelo carinho e conte sempre conosco!"
         }
     },
     "geral_outros": {
@@ -145,9 +147,9 @@ PROBLEM_TEMPLATES_CONFIG = {
         "severity": "Baixa",
         "complexity": "Baixa",
         "templates": {
-            "critical": "Olá, {nome}! Sentimos muito por qualquer inconveniente no Minha Escola MG. Para nos ajudar a identificar e solucionar ocorrências, pedimos que acesse o Canal de Suporte Oficial: 👉 {canal_contato}",
+            "critical": "Olá, {nome}! Sentimos muito por qualquer inconveniente no {app_name}. Para nos ajudar a identificar e solucionar ocorrências, pedimos que acesse o Canal de Suporte Oficial: 👉 {canal_contato}",
             "moderate": "Olá, {nome}! Muito obrigado por compartilhar sua visão e sugestões de aprimoramento. Se notar qualquer instabilidade ou precisar de auxílio técnico, registre no Canal de Suporte Oficial: 👉 {canal_contato}",
-            "positive": "Olá, {nome}! Agradecemos pela avaliação de {estrelas} estrelas no Minha Escola MG! Trabalhamos para tornar o dia a dia escolar cada vez mais prático. Conte conosco!"
+            "positive": "Olá, {nome}! Agradecemos pela avaliação de {estrelas} estrelas no {app_name}! Trabalhamos para tornar o dia a dia escolar cada vez mais prático. Conte conosco!"
         }
     }
 }
@@ -158,7 +160,7 @@ def generate_auto_reply_for_review(review: Dict[str, Any], root_cause_id: Option
     REGRAS CRÍTICAS:
     1. Para TODAS as avaliações de 1 a 3 estrelas: SEMPRE inclui o Canal de Suporte Oficial: 👉 {canal_contato}.
     2. Para 4 ou 5 estrelas: se contiver QUALQUER contexto de problema no texto do usuário, TAMBÉM inclui o Canal de Suporte Oficial: 👉 {canal_contato}.
-    3. A URL sempre vem do campo de configuração 'Canal de Suporte Oficial citado pela IA (Formulário Prodemge)' (support_contact_url / support_email).
+    3. A URL sempre vem do campo de configuração 'Canal de Suporte Oficial citado pela IA (Formulário {org_name})' (support_contact_url / support_email).
     4. NUNCA inclui e-mails pessoais ou de desenvolvedores (ex: saulomartins.costa@gmail.com).
     """
     user_name = review.get("user_name", "").strip()
@@ -172,8 +174,8 @@ def generate_auto_reply_for_review(review: Dict[str, Any], root_cause_id: Option
     store = review.get("store", "google")
     store_name = "Google Play Store" if store == "google" else "Apple App Store"
 
-    # Obtém o canal de contato oficial configurado no campo "Canal de Suporte Oficial citado pela IA (Formulário Prodemge)"
-    canal_contato = get_setting("support_contact_url") or get_setting("support_email") or OFFICIAL_SUPPORT_FORM
+    # Obtém o canal de contato oficial configurado no campo "Canal de Suporte Oficial citado pela IA (Formulário {org_name})"
+    canal_contato = get_support_url()
     # REGRA ABSOLUTA: NUNCA usar endereços de e-mail (como saulomartins.costa@gmail.com)
     if "@" in canal_contato or not canal_contato.strip():
         canal_contato = OFFICIAL_SUPPORT_FORM
@@ -212,12 +214,16 @@ def generate_auto_reply_for_review(review: Dict[str, Any], root_cause_id: Option
         else:
             template = cfg["templates"]["positive"]
 
+    app_name = get_app_name()
+    org_name = get_organization_name()
     formatted = template.format(
         nome=greeting_name,
         loja=store_name,
         canal_contato=canal_contato,
         email=canal_contato,
-        estrelas=rating
+        estrelas=rating,
+        app_name=app_name,
+        org_name=org_name
     )
 
     # Verificação estrita de segurança:
@@ -235,12 +241,12 @@ def generate_auto_reply_for_review(review: Dict[str, Any], root_cause_id: Option
 
     # Substitui formatos legados para o formato novo padrão
     formatted = re.sub(
-        r'Canal de Suporte Oficial citado pela IA \(Formulário Prodemge\):\s*(👉\s*)?',
+        r'Canal de Suporte Oficial citado pela IA.*?(👉\s*)?',
         'Canal de Suporte Oficial: 👉 ',
         formatted
     )
     formatted = re.sub(
-        r'Canal de Suporte Oficial \(Formulário Prodemge\):\s*(👉\s*)?',
+        r'Canal de Suporte Oficial \(.*\):\s*(👉\s*)?',
         'Canal de Suporte Oficial: 👉 ',
         formatted
     )

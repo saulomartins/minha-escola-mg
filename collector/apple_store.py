@@ -3,16 +3,25 @@ import requests
 import re
 import json
 from typing import List, Dict, Any, Optional
+from config import get_apple_store_id, get_apple_store_country, get_app_name, get_organization_name
 
 logger = logging.getLogger(__name__)
 
-APP_ID = "6749247611"
-COUNTRY = "br"
+def get_current_app_id() -> str:
+    return get_apple_store_id()
 
-def get_apple_store_metadata() -> Dict[str, Any]:
+def get_current_country() -> str:
+    return get_apple_store_country()
+
+APP_ID = get_current_app_id()
+COUNTRY = get_current_country()
+
+def get_apple_store_metadata(app_id: Optional[str] = None, country: Optional[str] = None) -> Dict[str, Any]:
     """Obtém metadados oficiais reais do app na Apple App Store"""
+    a_id = app_id or get_current_app_id()
+    c = country or get_current_country()
     try:
-        url = f"https://itunes.apple.com/{COUNTRY}/lookup?id={APP_ID}"
+        url = f"https://itunes.apple.com/{c}/lookup?id={a_id}"
         resp = requests.get(url, timeout=10)
         if resp.status_code == 200:
             data = resp.json()
@@ -20,8 +29,8 @@ def get_apple_store_metadata() -> Dict[str, Any]:
             if results:
                 item = results[0]
                 return {
-                    "title": item.get("trackName", "Minha Escola MG"),
-                    "seller": item.get("sellerName", "Prodemge"),
+                    "title": item.get("trackName", get_app_name()),
+                    "seller": item.get("sellerName", get_organization_name()),
                     "score": round(float(item.get("averageUserRating", 0)), 1),
                     "ratings_count": item.get("userRatingCount", 0),
                     "icon": item.get("artworkUrl512", item.get("artworkUrl100", "")),
@@ -31,12 +40,14 @@ def get_apple_store_metadata() -> Dict[str, Any]:
         logger.error(f"Erro ao obter metadados da Apple Store: {e}")
     return {}
 
-def fetch_apple_web_responses() -> Dict[str, Dict[str, Any]]:
+def fetch_apple_web_responses(app_id: Optional[str] = None, country: Optional[str] = None) -> Dict[str, Dict[str, Any]]:
     """
-    Coleta as respostas oficiais do desenvolvedor (Prodemge) publicadas na Apple App Store.
+    Coleta as respostas oficiais do desenvolvedor publicadas na Apple App Store.
     A API RSS pública da Apple não inclui respostas, portanto esta função varre as páginas
     oficiais da loja extraindo os dados serializados do app.
     """
+    a_id = app_id or get_current_app_id()
+    c = country or get_current_country()
     responses_map: Dict[str, Dict[str, Any]] = {}
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -44,9 +55,9 @@ def fetch_apple_web_responses() -> Dict[str, Dict[str, Any]]:
 
     sorts = ["mostRecent", "mostHelpful", "highestRatings", "lowestRatings"]
     urls = [
-        f"https://apps.apple.com/{COUNTRY}/app/minha-escola-mg/id{APP_ID}?see-all=reviews",
-        f"https://apps.apple.com/{COUNTRY}/app/minha-escola-mg/id{APP_ID}"
-    ] + [f"https://apps.apple.com/{COUNTRY}/app/minha-escola-mg/id{APP_ID}?see-all=reviews&sort={s}" for s in sorts]
+        f"https://apps.apple.com/{c}/app/app/id{a_id}?see-all=reviews",
+        f"https://apps.apple.com/{c}/app/app/id{a_id}"
+    ] + [f"https://apps.apple.com/{c}/app/app/id{a_id}?see-all=reviews&sort={s}" for s in sorts]
 
     def extract_from_json(obj):
         if isinstance(obj, dict):
@@ -87,13 +98,16 @@ def fetch_apple_web_responses() -> Dict[str, Dict[str, Any]]:
     logger.info(f"Coletadas {len(responses_map)} respostas oficiais de desenvolvedor da Apple Store.")
     return responses_map
 
-def fetch_apple_store_reviews(max_pages: int = 10) -> List[Dict[str, Any]]:
+def fetch_apple_store_reviews(max_pages: int = 10, app_id: Optional[str] = None, country: Optional[str] = None) -> List[Dict[str, Any]]:
     """
-    Coleta todas as avaliações reais escritas da Apple App Store para o app Minha Escola MG
+    Coleta todas as avaliações reais escritas da Apple App Store para o app configurado
     utilizando a API oficial de RSS da Apple e enriquece com as respostas oficiais do desenvolvedor.
     """
+    a_id = app_id or get_current_app_id()
+    c = country or get_current_country()
+
     # 1. Coleta mapa de respostas oficiais da Apple
-    web_responses = fetch_apple_web_responses()
+    web_responses = fetch_apple_web_responses(app_id=a_id, country=c)
 
     reviews_list = []
     seen_ids = set()
@@ -104,7 +118,7 @@ def fetch_apple_store_reviews(max_pages: int = 10) -> List[Dict[str, Any]]:
     from analytics.device_detector import detect_device_and_os
 
     for page in range(1, max_pages + 1):
-        url = f"https://itunes.apple.com/{COUNTRY}/rss/customerreviews/page={page}/id={APP_ID}/sortBy=mostRecent/json"
+        url = f"https://itunes.apple.com/{c}/rss/customerreviews/page={page}/id={a_id}/sortBy=mostRecent/json"
         try:
             resp = requests.get(url, headers=headers, timeout=15)
             if resp.status_code != 200:

@@ -1,0 +1,29 @@
+{
+  "app_name": "MG App Cidadão",
+  "app_short_name": "mgapp",
+  "organization_name": "Governo de Minas Gerais / Prodemge",
+  "developer_name": "Prodemge - Tecnologia da Informação do Estado de MG",
+  "app_tagline": "Central de Inteligência e Avaliações de Serviços Públicos",
+  "app_description": "Sistema de inteligência artificial para monitoramento de avaliações, diagnóstico técnico e geração de respostas automáticas.",
+  "support_url": "https://www.mg.gov.br/atendimento",
+  "support_email": "atendimento@prodemge.gov.br",
+  "google_play": {
+    "package_name": "br.gov.prodemge.cidadao",
+    "country": "br",
+    "language": "pt"
+  },
+  "apple_store": {
+    "app_id": "1158925514",
+    "country": "br"
+  },
+  "branding": {
+    "primary_color": "#047857",
+    "header_subtext": "Governo de Minas Gerais",
+    "badge_text": "OFICIAL"
+  },
+  "features": {
+    "enable_fale_conosco": false,
+    "enable_hardware_matrix": true,
+    "enable_ai_suggestions": true
+  }
+}

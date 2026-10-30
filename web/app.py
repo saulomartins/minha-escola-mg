@@ -47,6 +47,7 @@ from publisher.store_publisher import (
 from analytics.complexity import get_detailed_problem_analytics, classify_text_issue
 from analytics.temporal import get_temporal_diagnostics
 from ai.auto_reply_templates import PROBLEM_TEMPLATES_CONFIG, generate_auto_reply_for_review
+from config import get_app_config, save_app_config, get_app_name, get_organization_name, get_support_url, PRESETS_DIR
 
 logger = logging.getLogger("app_reviews")
 
@@ -104,6 +105,11 @@ class ReplyRequest(BaseModel):
     send_to_store: bool = False
 
 class SettingsRequest(BaseModel):
+    app_name: Optional[str] = None
+    organization_name: Optional[str] = None
+    google_play_package: Optional[str] = None
+    apple_store_id: Optional[str] = None
+    support_contact_url: Optional[str] = None
     gemini_api_key: Optional[str] = None
     google_play_service_account: Optional[str] = None
     apple_key_id: Optional[str] = None
@@ -321,7 +327,7 @@ async def login_page(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="login.html",
-        context={"google_client_id": client_id}
+        context={"google_client_id": client_id, "app_config": get_app_config()}
     )
 
 @app.post("/api/auth/google")
@@ -624,7 +630,7 @@ async def index(request: Request):
     response = templates.TemplateResponse(
         request=request,
         name="index.html",
-        context={"current_user": user}
+        context={"current_user": user, "app_config": get_app_config()}
     )
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
     response.headers["Pragma"] = "no-cache"
@@ -1701,14 +1707,30 @@ def api_get_settings():
     p8 = settings.get("apple_private_key_p8", "")
     masked["apple_connected"] = bool(k_id and iss and p8)
     
-    support_val = settings.get("support_contact_url") or settings.get("support_email") or "https://forms.cloud.microsoft/r/JmZhSzXtwG"
+    cfg = get_app_config()
+    support_val = settings.get("support_contact_url") or settings.get("support_email") or cfg.get("support_url")
     masked["support_email"] = support_val
     masked["support_contact_url"] = support_val
+    masked["app_name"] = cfg.get("app_name", "Minha Escola MG")
+    masked["organization_name"] = cfg.get("organization_name", "Prodemge")
+    masked["google_play_package"] = cfg.get("google_play", {}).get("package_name", "com.prodemge.minhaescolamg")
+    masked["apple_store_id"] = cfg.get("apple_store", {}).get("app_id", "6749247611")
 
     return masked
 
 @app.post("/api/settings")
 def api_update_settings(req: SettingsRequest):
+    if req.app_name is not None:
+        set_setting("app_name", req.app_name.strip())
+    if req.organization_name is not None:
+        set_setting("organization_name", req.organization_name.strip())
+    if req.google_play_package is not None:
+        set_setting("google_play_package", req.google_play_package.strip())
+    if req.apple_store_id is not None:
+        set_setting("apple_store_id", req.apple_store_id.strip())
+    if req.support_contact_url is not None:
+        set_setting("support_contact_url", req.support_contact_url.strip())
+        set_setting("support_email", req.support_contact_url.strip())
     if req.gemini_api_key is not None:
         set_setting("gemini_api_key", req.gemini_api_key)
     if req.google_play_service_account is not None:
@@ -1765,3 +1787,54 @@ def api_test_apple(req: TestAppleRequest):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("web.app:app", host="127.0.0.1", port=8000, reload=True)
+
+
+# ==============================================================================
+# ENDPOINTS DE CONFIGURAÇÃO MULTI-APP E PRESETS
+# ==============================================================================
+
+@app.get("/api/app-config")
+def api_get_app_config():
+    """Retorna os metadados do aplicativo mobile atualmente monitorado."""
+    return get_app_config()
+
+@app.get("/api/presets")
+def api_list_presets():
+    """Retorna a lista de perfis pré-configurados de aplicativos mobile."""
+    presets = []
+    if os.path.exists(PRESETS_DIR):
+        for f in os.listdir(PRESETS_DIR):
+            if f.endswith(".json"):
+                p_path = os.path.join(PRESETS_DIR, f)
+                try:
+                    with open(p_path, "r", encoding="utf-8") as pf:
+                        data = json.load(pf)
+                        presets.append({
+                            "id": f,
+                            "name": data.get("app_name", f),
+                            "org": data.get("organization_name", ""),
+                            "google_play": data.get("google_play", {}).get("package_name", ""),
+                            "apple_store": data.get("apple_store", {}).get("app_id", ""),
+                            "tagline": data.get("app_tagline", "")
+                        })
+                except Exception:
+                    pass
+    return {"presets": presets}
+
+class ApplyPresetRequest(BaseModel):
+    preset_id: str
+
+@app.post("/api/presets/apply")
+def api_apply_preset(req: ApplyPresetRequest):
+    """Aplica um perfil de aplicativo mobile configurado na pasta presets."""
+    p_path = os.path.join(PRESETS_DIR, req.preset_id)
+    if not os.path.exists(p_path):
+        raise HTTPException(status_code=404, detail="Perfil não encontrado.")
+    with open(p_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    save_app_config(data)
+    return {
+        "success": True,
+        "message": f"Aplicativo monitorado alterado para '{data.get('app_name')}' com sucesso!",
+        "config": get_app_config()
+    }

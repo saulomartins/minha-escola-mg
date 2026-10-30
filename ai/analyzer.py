@@ -4,43 +4,42 @@ import logging
 import re
 from typing import Dict, Any, Optional
 from database.db import get_setting
+from config import get_app_name, get_organization_name, get_support_url
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_SUPPORT_URL = "https://forms.cloud.microsoft/r/JmZhSzXtwG"
-
 def get_official_support_url() -> str:
     """
-    Retorna dinamicamente a URL do campo de configuração
-    'Canal de Suporte Oficial citado pela IA (Formulário Prodemge)'
-    salvo nas configurações do sistema.
+    Retorna dinamicamente a URL do canal de suporte oficial
+    definido nas configurações do sistema ou no app_config.json.
     """
     try:
-        url = get_setting("support_contact_url") or get_setting("support_email") or DEFAULT_SUPPORT_URL
+        url = get_setting("support_contact_url") or get_setting("support_email") or get_support_url()
         if "@" in url or not url.strip():
-            url = DEFAULT_SUPPORT_URL
+            url = get_support_url()
         return url.strip()
     except Exception:
-        return DEFAULT_SUPPORT_URL
+        return get_support_url()
 
 def build_system_prompt(support_url: str) -> str:
-    return f"""Você é o assistente oficial de suporte e atendimento ao usuário do aplicativo "Minha Escola MG" (aplicativo oficial da Secretaria de Estado de Educação de Minas Gerais - SEE/MG e PRODEMGE).
-Sua missão é analisar avaliações e comentários de usuários (estudantes, pais, professores e responsáveis) nas lojas Google Play Store e Apple App Store, categorizar o problema e redigir uma resposta oficial, cordial, prestativa e empática em Português do Brasil.
+    app_name = get_app_name()
+    org_name = get_organization_name()
+    return f"""Você é o assistente oficial de suporte e atendimento ao usuário do aplicativo "{app_name}" (aplicativo oficial desenvolvido por {org_name}).
+Sua missão é analisar avaliações e comentários de usuários nas lojas Google Play Store e Apple App Store, categorizar o problema e redigir uma resposta oficial, cordial, prestativa e empática em Português do Brasil.
 
 Diretrizes obrigatórias para as respostas:
 1. Seja sempre educado, acolhedor e profissional.
-2. Cumprimente o usuário pelo nome (se disponível) ou cordialmente ("Olá!", "Olá, estudante/responsável!").
+2. Cumprimente o usuário pelo nome (se disponível) ou cordialmente ("Olá!", "Olá, usuário!").
 3. REGRA CRÍTICA DO CANAL DE SUPORTE OFICIAL:
-   - REGRA ABSOLUTA PARA 5 ESTRELAS: Para TODAS as avaliações com nota 5 estrelas, NUNCA inclua link de formulário nem mencione "Canal de Suporte Oficial". Apenas agradeça de forma calorosa, cordial e prestativa pela avaliação e pela nota máxima no Minha Escola MG!
+   - REGRA ABSOLUTA PARA 5 ESTRELAS: Para TODAS as avaliações com nota 5 estrelas, NUNCA inclua link de formulário nem mencione "Canal de Suporte Oficial". Apenas agradeça de forma calorosa, cordial e prestativa pela avaliação e pela nota máxima no {app_name}!
    - Para TODAS as avaliações com nota de 1 a 3 estrelas (1, 2 ou 3 estrelas): a resposta DEVE OBRIGATORIAMENTE indicar e solicitar que o usuário utilize exatamente:
      Canal de Suporte Oficial: 👉 {support_url}
    - Para avaliações de 4 estrelas: se contiver menção ou contexto de problema, falha ou lentidão, solicite o Canal de Suporte Oficial: 👉 {support_url}. Se for apenas elogio, agradeça cordialmente sem incluir o canal de suporte.
-4. REGRA OBRIGATÓRIA DE CONTATO: NUNCA utilize endereços de e-mail (como saulomartins.costa@gmail.com ou qualquer outro) na resposta. O único canal oficial a ser informado quando houver problema/dificuldade é exatamente no formato:
+4. REGRA OBRIGATÓRIA DE CONTATO: NUNCA utilize endereços de e-mail na resposta. O único canal oficial a ser informado quando houver problema/dificuldade é exatamente no formato:
    Canal de Suporte Oficial: 👉 {support_url}
-5. Para PROBLEMAS DE ACESSO/LOGIN/SENHA: Oriente a verificar se o cadastro no sistema escolar/Simave/Gov.br está atualizado na secretaria da escola, ou a utilizar a recuperação de senha, e solicite o preenchimento do Canal de Suporte Oficial: 👉 {support_url}.
+5. Para PROBLEMAS DE ACESSO/LOGIN/SENHA: Oriente a verificar cadastro, recuperação de senha ou conectividade, e solicite o preenchimento do Canal de Suporte Oficial: 👉 {support_url}.
 6. Para BUGS/TRAVAMENTOS/TELA PRETA: Peça desculpas pelo transtorno, sugira atualizar o aplicativo para a versão mais recente, limpar o cache do app, e solicite o registro no Canal de Suporte Oficial: 👉 {support_url}.
-7. Para PROBLEMAS DE NOTAS/FALTAS NÃO ATUALIZADAS: Explique que o lançamento depende do Diário Escolar Digital (DED) pelos professores. Caso persista a divergência, oriente a procurar a coordenação da escola ou registrar no Canal de Suporte Oficial: 👉 {support_url}.
-8. Mantenha a resposta concisa (máximo de 3 a 4 frases), ideal para leitura em lojas de aplicativos.
+7. Mantenha a resposta concisa (máximo de 3 a 4 frases), ideal para leitura em lojas de aplicativos.
 
 Você DEVE responder SEMPRE em formato JSON com o seguinte formato:
 {{
@@ -141,7 +140,8 @@ def strip_support_link(text: str) -> str:
     
     # Se por acaso todas as frases foram removidas, mantém uma saudação cordial positiva
     if not result:
-        result = "Agradecemos pela excelente avaliação no Minha Escola MG! Conte sempre conosco!"
+        app_name = get_app_name()
+        result = f"Agradecemos pela excelente avaliação no {app_name}! Conte sempre conosco!"
         
     return result
 
@@ -197,13 +197,15 @@ def heuristic_fallback_analysis(user_name: str, rating: int, content: str) -> Di
     name_greeting = f"Olá, {user_name}!" if user_name and "usuário" not in user_name.lower() else "Olá!"
     
     # REGRA ABSOLUTA: 5 estrelas é sempre elogio caloroso sem link
+    app_name = get_app_name()
+    org_name = get_organization_name()
     if rating >= 5:
         return {
             "sentiment": "POSITIVO",
             "category": "Elogio",
             "suggested_response": (
-                f"{name_greeting} Ficamos muito felizes com a sua avaliação de 5 estrelas no Minha Escola MG! "
-                f"Nosso compromisso diário é facilitar a rotina de toda a comunidade escolar mineira. "
+                f"{name_greeting} Ficamos muito felizes com a sua avaliação de 5 estrelas no {app_name}! "
+                f"Nosso compromisso diário é entregar a melhor experiência aos nossos usuários. "
                 f"Muito obrigado pelo carinho e conte sempre conosco!"
             )
         }
@@ -281,12 +283,13 @@ def analyze_review(review: Dict[str, Any], api_key: Optional[str] = None) -> Dic
     store = review.get("store", "Loja")
     
     # Se não tiver conteúdo de texto e for só nota
+    app_name = get_app_name()
     if not content.strip():
         if rating >= 4:
             return {
                 "sentiment": "POSITIVO",
                 "category": "Elogio",
-                "suggested_response": f"Olá! Muito obrigado pela sua avaliação de {rating} estrelas no Minha Escola MG! Estamos sempre à disposição."
+                "suggested_response": f"Olá! Muito obrigado pela sua avaliação de {rating} estrelas no {app_name}! Estamos sempre à disposição."
             }
         else:
             return {
@@ -308,7 +311,7 @@ def analyze_review(review: Dict[str, Any], api_key: Optional[str] = None) -> Dic
         from google import genai
         client = genai.Client(api_key=effective_api_key)
         
-        prompt = f"""Analise a seguinte avaliação do app Minha Escola MG recebida na loja {store.upper()}:
+        prompt = f"""Analise a seguinte avaliação do app {app_name} recebida na loja {store.upper()}:
 Nome do usuário: {user_name}
 Nota: {rating} estrelas
 Comentário: "{content}"

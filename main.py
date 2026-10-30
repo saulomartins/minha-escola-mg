@@ -10,9 +10,11 @@ from database.db import init_db, upsert_review, get_stats, get_reviews
 from collector.google_play import fetch_google_play_reviews
 from collector.apple_store import fetch_apple_store_reviews
 from ai.analyzer import analyze_review
+from config import get_app_name
 
 def sync_all():
-    print("Iniciando sincronização das avaliações do Minha Escola MG...")
+    app_name = get_app_name()
+    print(f"Iniciando sincronização das avaliações do {app_name}...")
     init_db()
     
     # Google Play
@@ -46,7 +48,7 @@ def run_server(host="0.0.0.0", port=8055):
     uvicorn.run("web.app:app", host=host, port=port, reload=False)
 
 def main():
-    parser = argparse.ArgumentParser(description="Sistema de Análise e Respostas de Avaliações - Minha Escola MG")
+    parser = argparse.ArgumentParser(description=f"Sistema de Análise e Respostas de Avaliações - {get_app_name()}")
     parser.add_argument("--sync", action="store_true", help="Executa sincronização das lojas e salva no banco")
     parser.add_argument("--web", action="store_true", help="Inicia o painel web (padrão)")
     parser.add_argument("--port", type=int, default=8055, help="Porta para o servidor web (padrão 8055)")

@@ -1,19 +1,24 @@
 import logging
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 from datetime import datetime
 from google_play_scraper import reviews, reviews_all, app as get_app_info, Sort
+from config import get_google_play_package, get_app_name, get_organization_name
 
 logger = logging.getLogger(__name__)
 
-PACKAGE_NAME = "com.prodemge.minhaescolamg"
+def get_current_package_name() -> str:
+    return get_google_play_package()
 
-def get_google_play_metadata() -> Dict[str, Any]:
+PACKAGE_NAME = get_current_package_name()
+
+def get_google_play_metadata(package_name: Optional[str] = None) -> Dict[str, Any]:
     """Obtém metadados oficiais reais do app na Google Play Store"""
+    pkg = package_name or get_current_package_name()
     try:
-        data = get_app_info(PACKAGE_NAME, lang='pt', country='br')
+        data = get_app_info(pkg, lang='pt', country='br')
         return {
-            "title": data.get("title", "Minha Escola MG"),
-            "developer": data.get("developer", "Prodemge"),
+            "title": data.get("title", get_app_name()),
+            "developer": data.get("developer", get_organization_name()),
             "score": round(float(data.get("score", 0)), 1),
             "ratings_count": data.get("ratings", 0),
             "reviews_count": data.get("reviews", 0),
@@ -29,22 +34,23 @@ def get_google_play_metadata() -> Dict[str, Any]:
         logger.error(f"Erro ao obter metadados da Google Play: {e}")
         return {}
 
-def fetch_google_play_reviews(count: int = 150, full: bool = False) -> List[Dict[str, Any]]:
+def fetch_google_play_reviews(count: int = 150, full: bool = False, package_name: Optional[str] = None) -> List[Dict[str, Any]]:
     """
-    Coleta avaliações reais escritas do Google Play Store para o Minha Escola MG.
+    Coleta avaliações reais escritas do Google Play Store para o app configurado.
     Por padrão busca as avaliações mais recentes rapidamente (0.5s).
     """
+    pkg = package_name or get_current_package_name()
     try:
         if full:
             raw_reviews = reviews_all(
-                PACKAGE_NAME,
+                pkg,
                 lang='pt',
                 country='br',
                 sort=Sort.NEWEST
             )
         else:
             raw_reviews, _ = reviews(
-                PACKAGE_NAME,
+                pkg,
                 lang='pt',
                 country='br',
                 sort=Sort.NEWEST,
@@ -144,7 +150,7 @@ def fetch_google_play_api_reviews(service_account_info_or_path: Any, max_results
         creds.refresh(GoogleAuthRequest())
         token = creds.token
 
-        url = f"https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{PACKAGE_NAME}/reviews"
+        url = f"https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{get_current_package_name()}/reviews"
         headers = {
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json"

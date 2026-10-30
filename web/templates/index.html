@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minha Escola MG - Central de Avaliações e Diagnóstico de Problemas</title>
+    <title>{{ app_config.app_name or 'Minha Escola MG' }} - Central de Avaliações e Diagnóstico de Problemas</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -98,7 +98,7 @@
                     <i class="fa-solid fa-graduation-cap"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold tracking-tight">Minha Escola MG - Central de Inteligência</h1>
+                    <h1 class="text-xl font-bold tracking-tight">{{ app_config.app_name or "Minha Escola MG" }} - Central de Inteligência</h1>
                     <p class="text-xs text-indigo-200">Monitoramento, Análise de Complexidade & Resposta (Google Play & App Store)</p>
                 </div>
             </div>
@@ -194,7 +194,7 @@
                         <span class="text-xl font-black text-slate-900 tracking-tight">GOVERNO DO ESTADO DE MINAS GERAIS</span>
                     </div>
                     <p class="text-sm font-bold text-slate-700">PRODEMGE • Companhia de Tecnologia da Informação do Estado de Minas Gerais</p>
-                    <h1 class="text-2xl font-extrabold text-indigo-950 mt-2" id="print-report-title">Relatório Executivo: Diagnóstico Técnico do Aplicativo Minha Escola MG</h1>
+                    <h1 class="text-2xl font-extrabold text-indigo-950 mt-2" id="print-report-title">Relatório Executivo: Diagnóstico Técnico do Aplicativo {{ app_config.app_name or "Minha Escola MG" }}</h1>
                     <p class="text-xs text-slate-500 mt-1" id="print-subtitle">Avaliações das Lojas Google Play Store e Apple App Store • Amostra de 474 avaliações analisadas</p>
                 </div>
                 <div class="text-right text-xs text-slate-600 space-y-1">
@@ -2537,6 +2537,9 @@
                 <button type="button" onclick="switchTab('automation')" id="tab-automation" class="tab-btn pb-2 px-3 text-slate-500 hover:text-slate-800">
                     <i class="fa-solid fa-robot mr-1"></i> 3. Robô Automático
                 </button>
+                <button type="button" onclick="switchTab('app')" id="tab-app" class="tab-btn pb-2 px-3 text-slate-500 hover:text-slate-800">
+                    <i class="fa-solid fa-mobile-screen-button mr-1"></i> 4. 📱 App Monitorado
+                </button>
             </div>
 
             <!-- Conteúdo da Tab 1: Gemini -->
@@ -2629,6 +2632,58 @@
                     <div id="apple-test-result" class="hidden text-xs font-semibold"></div>
                 </div>
 
+                </div>
+            </div>
+
+            <!-- Conteúdo da Tab 4: App Monitorado (Parametrização) -->
+            <div id="tab-content-app" class="hidden space-y-4 text-sm max-h-[60vh] overflow-y-auto pr-1">
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-3.5 text-xs text-blue-900">
+                    <p class="font-bold flex items-center gap-1.5 mb-1">
+                        <i class="fa-solid fa-layer-group"></i> Parametrização Multi-App (White-Label)
+                    </p>
+                    <p>Configure qualquer outro aplicativo mobile para ser monitorado pela plataforma. Ao alterar, os coletores da Google Play e Apple Store, a análise da IA e as respostas automáticas adotam a identidade do novo app.</p>
+                </div>
+
+                <!-- Seletor de Perfil / Presets -->
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                    <label class="block font-bold text-xs text-slate-700">Perfis Pré-Configurados (Presets Rápidos):</label>
+                    <div class="flex gap-2">
+                        <select id="select-app-preset" class="flex-1 px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 bg-white">
+                            <option value="minha_escola_mg.json">Minha Escola MG (SEE/MG & Prodemge)</option>
+                            <option value="mg_app_cidadao.json">MG App Cidadão (Governo de Minas Gerais)</option>
+                            <option value="app_generico.json">Meu Aplicativo Mobile (Genérico)</option>
+                        </select>
+                        <button type="button" onclick="applySelectedPreset()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-xs transition shadow-sm">
+                            Carregar Perfil
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1 text-xs">Nome do Aplicativo</label>
+                        <input type="text" id="input-app-name" placeholder="Ex: Minha Escola MG" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1 text-xs">Empresa / Órgão Desenvolvedor</label>
+                        <input type="text" id="input-org-name" placeholder="Ex: Governo de MG / Prodemge" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1 text-xs">Google Play (Package Name)</label>
+                        <input type="text" id="input-gp-package" placeholder="Ex: com.prodemge.minhaescolamg" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono text-xs">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1 text-xs">Apple App Store (ID Numérico)</label>
+                        <input type="text" id="input-apple-id" placeholder="Ex: 6749247611" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono text-xs">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1 text-xs">Canal de Suporte Oficial (Formulário / Portal Web)</label>
+                    <input type="url" id="input-support-url-app" placeholder="https://forms.cloud.microsoft/r/..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
                 </div>
             </div>
 
@@ -3602,10 +3657,12 @@
             document.getElementById('tab-gemini').classList.toggle('active', tab === 'gemini');
             document.getElementById('tab-stores').classList.toggle('active', tab === 'stores');
             document.getElementById('tab-automation').classList.toggle('active', tab === 'automation');
+            if (document.getElementById('tab-app')) document.getElementById('tab-app').classList.toggle('active', tab === 'app');
 
             document.getElementById('tab-content-gemini').classList.toggle('hidden', tab !== 'gemini');
             document.getElementById('tab-content-stores').classList.toggle('hidden', tab !== 'stores');
             document.getElementById('tab-content-automation').classList.toggle('hidden', tab !== 'automation');
+            if (document.getElementById('tab-content-app')) document.getElementById('tab-content-app').classList.toggle('hidden', tab !== 'app');
         }
 
         function showAlert(msg, type = 'success') {
@@ -4640,6 +4697,12 @@
                     if (data.apple_private_key_p8) document.getElementById('input-apple-p8').value = data.apple_private_key_p8;
                     
 
+                    if (data.app_name && document.getElementById('input-app-name')) document.getElementById('input-app-name').value = data.app_name;
+                    if (data.organization_name && document.getElementById('input-org-name')) document.getElementById('input-org-name').value = data.organization_name;
+                    if (data.google_play_package && document.getElementById('input-gp-package')) document.getElementById('input-gp-package').value = data.google_play_package;
+                    if (data.apple_store_id && document.getElementById('input-apple-id')) document.getElementById('input-apple-id').value = data.apple_store_id;
+                    if (data.support_contact_url && document.getElementById('input-support-url-app')) document.getElementById('input-support-url-app').value = data.support_contact_url;
+
                     document.getElementById('check-auto-publish-direct').checked = data.auto_publish_direct === 'true';
                     document.getElementById('check-auto-5stars').checked = data.auto_reply_5_stars_only === 'true';
                     if (data.auto_sync_interval) document.getElementById('select-auto-sync').value = data.auto_sync_interval;
@@ -4743,6 +4806,12 @@
             const appleP8 = document.getElementById('input-apple-p8').value.trim();
             
 
+            const appName = document.getElementById('input-app-name') ? document.getElementById('input-app-name').value.trim() : null;
+            const orgName = document.getElementById('input-org-name') ? document.getElementById('input-org-name').value.trim() : null;
+            const gpPackage = document.getElementById('input-gp-package') ? document.getElementById('input-gp-package').value.trim() : null;
+            const appleId = document.getElementById('input-apple-id') ? document.getElementById('input-apple-id').value.trim() : null;
+            const supportUrlApp = document.getElementById('input-support-url-app') ? document.getElementById('input-support-url-app').value.trim() : null;
+
             const autoPublish = document.getElementById('check-auto-publish-direct').checked ? 'true' : 'false';
             const auto5stars = document.getElementById('check-auto-5stars').checked ? 'true' : 'false';
             const autoSyncInterval = document.getElementById('select-auto-sync').value;
@@ -4761,7 +4830,12 @@
                         
                         auto_publish_direct: autoPublish,
                         auto_reply_5_stars_only: auto5stars,
-                        auto_sync_interval: autoSyncInterval
+                        auto_sync_interval: autoSyncInterval,
+                        app_name: appName,
+                        organization_name: orgName,
+                        google_play_package: gpPackage,
+                        apple_store_id: appleId,
+                        support_contact_url: supportUrlApp || supportEmail
                     })
                 });
                 closeSettingsModal();
@@ -4769,6 +4843,28 @@
                 await loadStats();
             } catch (err) {
                 showAlert("Erro ao salvar configurações.", "error");
+            }
+        }
+
+        
+        async function applySelectedPreset() {
+            const sel = document.getElementById('select-app-preset').value;
+            if (!sel) return;
+            try {
+                const res = await fetch('/api/presets/apply', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ preset_id: sel })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showAlert(data.message, 'success');
+                    setTimeout(() => window.location.reload(), 1200);
+                } else {
+                    showAlert(data.detail || 'Erro ao aplicar perfil.', 'error');
+                }
+            } catch (e) {
+                showAlert('Erro de conexão ao aplicar perfil.', 'error');
             }
         }
 
