@@ -791,7 +791,7 @@
                         <h4 class="font-extrabold text-white text-sm flex items-center gap-2">
                             <i class="fa-solid fa-table-cells text-indigo-400"></i> Matriz Detalhada: Causa-Raiz, Complexidade e Sistema Operacional Mais Ofendido
                         </h4>
-                        <span class="text-[11px] font-semibold text-slate-300">Base: 410 queixas específicas analisadas</span>
+                        <span id="os-comparison-base-count" class="text-[11px] font-semibold text-slate-300">Base: 410 queixas específicas analisadas</span>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-xs">
@@ -4902,10 +4902,18 @@
                 });
             }
 
+            // Atualiza base de queixas analisadas
+            const elBaseCount = document.getElementById('os-comparison-base-count');
+            if (elBaseCount && (osData.android_complaints !== undefined || osData.ios_complaints !== undefined)) {
+                const totalComp = (osData.android_complaints || 0) + (osData.ios_complaints || 0);
+                elBaseCount.innerText = `Base: ${totalComp} queixas específicas analisadas`;
+            }
+
             // 2. Tabela Detalhada por Causa-Raiz
             const tbody = document.getElementById('os-comparison-tbody');
-            if (tbody && osData.causes_comparison) {
-                tbody.innerHTML = osData.causes_comparison.map(item => {
+            const causesList = osData.causes_comparison || osData.causes_table || [];
+            if (tbody && causesList.length > 0) {
+                tbody.innerHTML = causesList.map(item => {
                     let domBadge = '';
                     if (item.dominant === 'iOS') {
                         domBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-black bg-rose-500/20 text-rose-300 border border-rose-500/40">🍎 iOS Sofre Mais</span>`;
@@ -4938,7 +4946,7 @@
                             </td>
                             <td class="p-3 text-center">${domBadge}</td>
                             <td class="p-3 text-slate-300 text-[11px] leading-relaxed">
-                                ${escapeHtml(item.diagnosis)}
+                                ${escapeHtml(item.diagnosis || item.diagnostic || '')}
                             </td>
                         </tr>
                     `;

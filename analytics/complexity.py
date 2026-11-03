@@ -269,7 +269,8 @@ def get_detailed_problem_analytics(app_id: Optional[str] = None, domain: Optiona
             "dominant_label": dominant_label,
             "dominant_color": dominant_color,
             "recommendation": g["recommendation"],
-            "diagnostic": diag
+            "diagnostic": diag,
+            "diagnosis": diag
         })
 
     pareto_labels = [g["name"] for g in pareto_items]
@@ -311,6 +312,12 @@ def get_detailed_problem_analytics(app_id: Optional[str] = None, domain: Optiona
             "ios_positive": sum(1 for r in ios_rows if r.get("rating", 0) >= 4),
             "top_android_causes": sorted([c for c in os_causes_table if c["android_count"] > 0], key=lambda x: x["android_count"], reverse=True)[:2],
             "top_ios_causes": sorted([c for c in os_causes_table if c["ios_count"] > 0], key=lambda x: x["ios_count"], reverse=True)[:2],
+            "chart_data": {
+                "labels": [c["name"] for c in os_causes_table],
+                "android_pcts": [c["android_pct"] for c in os_causes_table],
+                "ios_pcts": [c["ios_pct"] for c in os_causes_table]
+            },
+            "causes_comparison": os_causes_table,
             "causes_table": os_causes_table
         }
     }
