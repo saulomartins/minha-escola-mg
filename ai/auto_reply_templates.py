@@ -152,6 +152,19 @@ PROBLEM_TEMPLATES_CONFIG = {
             "positive": "Olá, {nome}! Agradecemos pela avaliação de {estrelas} estrelas no {app_name}! Trabalhamos para tornar o dia a dia escolar cada vez mais prático. Conte conosco!"
         }
     },
+    "usabilidade_interface": {
+        "id": "usabilidade_interface",
+        "name": "Dificuldade de Usabilidade e Interface (UX)",
+        "description": "Comentários sobre complexidade de navegação, layout confuso ou sugestões de interface.",
+        "keywords": ["confuso", "horroroso", "estilo", "layout", "interface", "dificil de mexer", "complicado"],
+        "severity": "Média",
+        "complexity": "Baixa",
+        "templates": {
+            "critical": "Olá, {nome}! Agradecemos pelo feedback sobre a experiência de uso do {app_name}. Nossa equipe técnica da {org_name} está continuamente simplificando os fluxos e telas para tornar a navegação o mais clara e intuitiva possível. Se desejar enviar sugestões de melhoria, acesse o Canal de Suporte Oficial: 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! Obrigado por compartilhar sua visão sobre a interface do {app_name}. Avaliações como a sua nos ajudam a evoluir o design e a praticidade da plataforma.",
+            "positive": "Olá, {nome}! Muito obrigado pela avaliação de {estrelas} estrelas no {app_name}! Trabalhamos diariamente para entregar uma interface prática e moderna para a comunidade escolar."
+        }
+    },
     # Domínio Serviços Públicos / MG App Cidadão
     "agendamento_uai_cin": {
         "id": "agendamento_uai_cin",

@@ -48,8 +48,12 @@ UNIVERSAL_CAUSES: List[Dict[str, Any]] = [
         "name": "Crash e Fechamento Inesperado",
         "keywords": [
             "fecha sozinho", "fechando sozinho", "fechando", "fecha", "sai do app", "crash",
-            "trava ao abrir", "nem abre", "parou de funcionar", "app parou", "nao abre",
-            "fica fechando", "fecha do nada", "aplicativo fecha", "falha ao abrir", "parou inesperadamente"
+            "trava ao abrir", "nem abre", "nunca abre", "parou de funcionar", "app parou", "nao abre",
+            "nao abre.", "n abre", "nao apre", "fica fechando", "fecha do nada", "aplicativo fecha",
+            "falha ao abrir", "parou inesperadamente", "o app sai", "aplicativo para", "aplicativo parou",
+            "cair tanto", "cai muito o aplicativo", "cai muito", "so abre quando quer", "nao consigo abrir",
+            "nao consegui abrir", "n consigo abrir", "nao da pra abrir", "fecha na cara", "fecha ao abrir",
+            "dispositivo nao e compativel", "nao e compativel", "parou de ser compativel", "nao estou conseguindo abaixar"
         ],
         "severity": "Crítica",
         "severity_color": "#dc2626",
@@ -63,14 +67,16 @@ UNIVERSAL_CAUSES: List[Dict[str, Any]] = [
         }
     },
     {
-        "id": "lentidao_performance",
-        "name": "Lentidão Extrema e Travamentos",
+        "id": "lentidao_tela_preta",
+        "name": "Lentidão Extrema e Tela Preta",
         "keywords": [
             "tela preta", "tela branca", "lento", "lentidao", "travando", "trava",
             "carregando infinito", "roda roda", "nao passa da tela", "atualizacao piorou",
             "carregamento infinito", "demora demais", "congelando", "congela", "fica carregando",
             "demora para carregar", "demora pra carregar", "nunca carrega", "demora pra atualizar",
-            "fica rodando", "carregar e nunca carrega", "muito lento", "pessimo desempenho"
+            "fica rodando", "carregar e nunca carrega", "muito lento", "pessimo desempenho",
+            "nao carrega", "nao carrega nada", "nem carrega", "custa abrir", "carregam mais",
+            "nao foi possivel carregar", "demora muito para conseguir entrar"
         ],
         "severity": "Alta",
         "severity_color": "#ea580c",
@@ -188,9 +194,13 @@ DOMAIN_PACKS: Dict[str, List[Dict[str, Any]]] = {
             "id": "boletim_notas",
             "name": "Boletim em Branco e Notas Ausentes",
             "keywords": [
-                "nota", "notas", "boletim", "bimestre", "nao carrega nota", "boletim em branco",
+                "nota", "notas", "boletim", "bimestre", "trimestre", "nao carrega nota", "boletim em branco",
                 "nota zerada", "nao aparece nota", "nota sumiu", "lancamento de notas", "ver as notas",
-                "sem nota", "notas nao aparecem", "quadro de notas", "ver notas", "consultar nota"
+                "sem nota", "notas nao aparecem", "quadro de notas", "ver notas", "consultar nota",
+                "historico escolar", "situacao do aluno", "materias", "materia", "nada lancado",
+                "ver meu historico", "funcao de deveres", "atividades", "atividade que o professor",
+                "qual sala", "minha sala", "saber minha sala", "quem caiu na minha sala", "perfil escolar",
+                "dados atualizados", "professores fazem", "professores nao", "calendario"
             ],
             "severity": "Alta",
             "severity_color": "#ea580c",
@@ -209,7 +219,7 @@ DOMAIN_PACKS: Dict[str, List[Dict[str, Any]]] = {
             "keywords": [
                 "falta", "faltas", "frequencia", "presenca", "falta errada", "computou falta",
                 "sem presenca", "marcou falta", "quadro de faltas", "abono de falta",
-                "dias que eu fui", "dias de aula"
+                "dias que eu fui", "dias de aula", "matar aula"
             ],
             "severity": "Média",
             "severity_color": "#eab308",
@@ -226,8 +236,9 @@ DOMAIN_PACKS: Dict[str, List[Dict[str, Any]]] = {
             "id": "acesso_responsaveis",
             "name": "Acesso dos Pais / Múltiplos Alunos",
             "keywords": [
-                "responsavel", "pais", "mae", "pai", "filho", "filhos", "ver meu filho",
-                "dependente", "outro filho", "dois filhos", "duas filhas", "minha filha"
+                "responsavel", "responsaveis", "pais", "mae", "pai", "filho", "filhos", "ver meu filho",
+                "meu filho", "meus filhos", "minha filha", "minhas filhas", "outro filho", "dois filhos",
+                "duas filhas", "dependente", "reunioes escolares", "reuniao escolar"
             ],
             "severity": "Média",
             "severity_color": "#eab308",
@@ -247,7 +258,9 @@ DOMAIN_PACKS: Dict[str, List[Dict[str, Any]]] = {
                 "gov.br", "gov", "conta gov", "login gov", "gov br",
                 "cpf", "vincular cpf", "vinculo de cpf", "nao reconhece cpf",
                 "cpf nao encontrado", "cpf incorreto", "dados divergentes", "dados invalidos",
-                "dataprev", "simade"
+                "dataprev", "simade", "conta em nenhum banco", "criar uma conta", "criar conta",
+                "fazer a conta", "fazer minha conta", "usuario nao encontrado", "nao aceitam meu email",
+                "ficar cadastrando"
             ],
             "severity": "Crítica",
             "severity_color": "#dc2626",

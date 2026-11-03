@@ -47,6 +47,17 @@ def classify_text_issue(content: str, title: str = "", rating: int = 3, domain: 
     if rating >= 4 and not any(w in text for w in negative_signals):
         return elogio_cfg
 
+    # Elogios explícitos de 3★ (ex: 'bom', 'otimo', 'o app e bom') ou com texto puramente positivo
+    if rating >= 3 and text in [
+        "bom", "otimo", "muito bom", "o app e bom e muito util",
+        "apesar dos bugs e falhas, e um app bom.",
+        "por ser um app novo eu entendo q tenha bugs, mais em geral ele e mt bm",
+        "tirando os bugs, ele e otimo"
+    ]:
+        return elogio_cfg
+    if rating >= 1 and any(p in text for p in ["maravilhoso aplicativo", "parabens pelo aplicativo"]):
+        return elogio_cfg
+
     # 1. Primeiro verifica causas específicas do domínio (ex: Agendamento UAI, Veículos/Detran, Farmácia, Boletim, etc.)
     for cfg in causes:
         if cfg["id"] in ("elogios_satisfacao", "outros_problemas", "login_sessao_recorrente"):
@@ -59,19 +70,26 @@ def classify_text_issue(content: str, title: str = "", rating: int = 3, domain: 
     login_cfg = next((c for c in causes if c["id"] in ("login_sessao_recorrente", "login_govbr_biometria")), None)
     if login_cfg:
         login_regexes = [
-            r"\blogin\b", r"\blogar\b", r"tentativ", r"deslog", r"desconect",
+            r"\blogin\b", r"\blogar\b", r"\bloga\b", r"\blogam\b", r"\blogando\b", r"\blogou\b",
+            r"tentativ", r"deslog", r"desconect", r"\btoken\b",
             r"toda\s*(hora|vez).*(sai|pede|tem\s*que)",
             r"(sai|caiu|desfez).*(da\s*conta|o\s*login)",
-            r"(nao|nem|nunca|sem|dificil|impossivel).*(consig|consegu|da\s*pra|passa\s*da).*(acess|entr|log|autentic|conect)",
-            r"(erro|falha|bug|problema).*(ao|de|no|para|pra)?\s*(entr|acess|log|autentic|conect)",
-            r"erro\s*(interno|de\s*sessao|de\s*token)",
-            r"(sessao|token).*(expir|invalid)",
+            r"(nao|n\b|nn\b|nem|nunca|sem|dificil|impossivel|se\s*eu).*(consig|consegu|da\s*pra|passa\s*da|de)?\s*(acess|entr|log|autentic|conect)",
+            r"(erro|falha|bug|problema).*(ao|de|no|para|pra)?\s*(entr|acess|log|autentic|conect|token|sessao)",
+            r"erro\s*(interno|de\s*sessao|de\s*token|no\s*token)",
+            r"(sessao|token).*(expir|invalid|erro)",
             r"(usuario|email).*(e|ou)\s*senha",
             r"senha.*(invalida|incorreta|nao\s*confere)",
-            r"(nao|nunca).*(entra|conecta|autentica)",
-            r"(tentar|tento|tentando|tentei).*(entrar|acessar|logar)",
+            r"(nao|n\b|nn\b|nunca).*(entra|conecta|autentica)",
+            r"(tentar|tento|tentando|tentei|tenta).*(entrar|acessar|logar)",
             r"(bloqueou|bloqueada|bloqueado).*(conta|acesso|login)",
-            r"acessar\s*(minha|a)?\s*conta"
+            r"acessar\s*(minha|a)?\s*conta",
+            r"nao\s*da\s*acesso", r"n\s*da\s*nem\s*pra\s*entrar", r"de\s*entrar\s*nessa",
+            r"so\s*entra\s*quando\s*quer", r"so\s*posso\s*usar\s*uma\s*vez",
+            r"entro\s*uma\s*vez.*pra\s*voltar", r"apagando\s*a\s*conta",
+            r"sistema\s*completamente\s*instavel", r"fora\s*do\s*ar",
+            r"fica\s*muito\s*instavel", r"dificil\s*de\s*entrar",
+            r"n\s*esta\s*entrando", r"nao\s*entra", r"nn\s*entra", r"conseguir\s*entrar"
         ]
         for pat in login_regexes:
             if re.search(pat, text):
