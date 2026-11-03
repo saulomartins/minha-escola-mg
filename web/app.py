@@ -263,6 +263,41 @@ def require_auth(request: Request) -> Dict[str, Any]:
         raise HTTPException(status_code=401, detail="Acesso restrito. Faça login ou informe um token de acesso válido.")
     return user
 
+def can_user_view_all_apps(user: Optional[Dict[str, Any]]) -> bool:
+    """
+    Regra de Negócio:
+    Somente o email 'saulomartins.costa@gmail.com' pode ver ambos os apps ('minha_escola_mg' e 'mg_app_cidadao').
+    Qualquer outro usuário ou convidado visualiza estritamente apenas o 'minha_escola_mg'.
+    """
+    if not user:
+        return False
+    user_email = (user.get("email") or "").lower().strip()
+    return user_email == "saulomartins.costa@gmail.com"
+
+def can_user_publish_to_store(user: Optional[Dict[str, Any]]) -> bool:
+    """
+    Regra de Negócio:
+    - O usuário 'saulomartins.costa@gmail.com' NÃO possui permissão para publicar nas lojas em nenhum app.
+    - Apenas o usuário oficial 'mgminhaescola@gmail.com' possui permissão de publicação direta nas lojas oficiais.
+    """
+    if not user:
+        return False
+    user_email = (user.get("email") or "").lower().strip()
+    if user_email == "saulomartins.costa@gmail.com":
+        return False
+    return user_email == "mgminhaescola@gmail.com"
+
+def resolve_authorized_app_id(request: Request, requested_app_id: Optional[str] = None) -> str:
+    """
+    Garante o isolamento de visualização de aplicativos:
+    - Se for 'saulomartins.costa@gmail.com': respeita o requested_app_id ou o app_id ativo no sistema.
+    - Se for qualquer outro usuário: força SEMPRE 'minha_escola_mg'.
+    """
+    user = get_current_user_from_request(request)
+    if can_user_view_all_apps(user):
+        return (requested_app_id or get_app_id() or "minha_escola_mg").strip()
+    return "minha_escola_mg"
+
 @app.middleware("http")
 async def auth_gate_middleware(request: Request, call_next):
     """Barreira de acesso: protege o dashboard e APIs contra acessos públicos anônimos."""
@@ -638,10 +673,28 @@ async def index(request: Request):
     user = get_current_user_from_request(request)
     if not user:
         return RedirectResponse(url="/login", status_code=302)
+    
+    user_can_view_all = can_user_view_all_apps(user)
+    user_can_publish = can_user_publish_to_store(user)
+    
+    app_cfg = get_app_config()
+    # Se o usuário não tem permissão para ver todos os apps e o app ativo for outro (ex: mg_app_cidadao),
+    # força a visualização do Minha Escola MG
+    if not user_can_view_all and app_cfg.get("app_id") != "minha_escola_mg":
+        p_path = os.path.join(PRESETS_DIR, "minha_escola_mg.json")
+        if os.path.exists(p_path):
+            with open(p_path, "r", encoding="utf-8") as f:
+                app_cfg = json.load(f)
+                
     response = templates.TemplateResponse(
         request=request,
         name="index.html",
-        context={"current_user": user, "app_config": get_app_config()}
+        context={
+            "current_user": user, 
+            "app_config": app_cfg,
+            "can_view_all_apps": user_can_view_all,
+            "can_publish_to_store": user_can_publish
+        }
     )
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
     response.headers["Pragma"] = "no-cache"
@@ -649,12 +702,14 @@ async def index(request: Request):
     return response
 
 @app.get("/api/stats")
-def api_stats(app_id: Optional[str] = None):
-    return get_stats(app_id=app_id)
+def api_stats(request: Request, app_id: Optional[str] = None):
+    effective_app = resolve_authorized_app_id(request, app_id)
+    return get_stats(app_id=effective_app)
 
 @app.get("/api/analytics/problems")
-def api_analytics_problems(app_id: Optional[str] = None):
-    return get_detailed_problem_analytics(app_id=app_id)
+def api_analytics_problems(request: Request, app_id: Optional[str] = None):
+    effective_app = resolve_authorized_app_id(request, app_id)
+    return get_detailed_problem_analytics(app_id=effective_app)
 
 @app.get("/api/analytics/templates")
 def api_analytics_templates():
@@ -662,24 +717,28 @@ def api_analytics_templates():
     return PROBLEM_TEMPLATES_CONFIG
 
 @app.get("/api/analytics/devices")
-def api_analytics_devices(app_id: Optional[str] = None):
+def api_analytics_devices(request: Request, app_id: Optional[str] = None):
     """Retorna diagnóstico completo sobre modelos de celulares, sistemas operacionais e versões"""
-    return get_device_diagnostic(app_id=app_id)
+    effective_app = resolve_authorized_app_id(request, app_id)
+    return get_device_diagnostic(app_id=effective_app)
 
 @app.get("/api/analytics/temporal")
-def api_analytics_temporal(app_id: Optional[str] = None):
+def api_analytics_temporal(request: Request, app_id: Optional[str] = None):
     """Retorna diagnóstico temporal completo: linha do tempo, faixas de envelhecimento, evolução mês a mês e tendências por causa-raiz"""
-    return get_temporal_diagnostics(app_id=app_id)
+    effective_app = resolve_authorized_app_id(request, app_id)
+    return get_temporal_diagnostics(app_id=effective_app)
 
 @app.get("/api/analytics/hardware-root-cause")
 def api_analytics_hardware_root_cause(
+    request: Request,
     brand: Optional[str] = None,
     root_cause_id: Optional[str] = None,
     app_id: Optional[str] = None
 ):
     """Retorna análise cruzada de hardware (fabricantes e modelos) com causas-raiz de problemas."""
     from analytics.hardware_root_cause import get_hardware_root_cause_analytics
-    return get_hardware_root_cause_analytics(filter_brand=brand, filter_root_cause_id=root_cause_id, app_id=app_id)
+    effective_app = resolve_authorized_app_id(request, app_id)
+    return get_hardware_root_cause_analytics(filter_brand=brand, filter_root_cause_id=root_cause_id, app_id=effective_app)
 
 @app.get("/api/analytics/keyword-scan")
 def api_analytics_keyword_scan(q: str = ""):
@@ -732,6 +791,7 @@ def api_update_review_device(review_id: str, payload: UpdateReviewDeviceRequest)
 
 @app.get("/api/reviews")
 def api_reviews(
+    request: Request,
     store: Optional[str] = None,
     rating: Optional[int] = None,
     status: Optional[str] = None,
@@ -745,6 +805,7 @@ def api_reviews(
     offset: int = 0,
     app_id: Optional[str] = None
 ):
+    effective_app = resolve_authorized_app_id(request, app_id)
     reviews = get_reviews(
         store=store,
         rating=rating,
@@ -757,12 +818,13 @@ def api_reviews(
         stuck_android_12=stuck_android_12,
         limit=limit,
         offset=offset,
-        app_id=app_id
+        app_id=effective_app
     )
     return {"reviews": reviews, "count": len(reviews)}
 
 @app.get("/api/reviews/export")
 def api_export_reviews(
+    request: Request,
     format: str = "excel",
     scope: str = "all",
     all: Optional[bool] = False,
@@ -774,8 +836,10 @@ def api_export_reviews(
     os_name: Optional[str] = None,
     device_brand: Optional[str] = None,
     search: Optional[str] = None,
-    stuck_android_12: Optional[bool] = None
+    stuck_android_12: Optional[bool] = None,
+    app_id: Optional[str] = None
 ):
+    effective_app = resolve_authorized_app_id(request, app_id)
     """
     Exporta todas as avaliações com colunas estruturadas: Loja, Data, Usuário, Estrelas,
     Sentimento, Categoria, Causa-Raiz, Celular (Marca e Modelo), Sistema Operacional e Versão,
@@ -786,7 +850,7 @@ def api_export_reviews(
     """
     is_full_base = all or (scope == "all")
     if is_full_base:
-        reviews = get_reviews(limit=10000, offset=0)
+        reviews = get_reviews(limit=10000, offset=0, app_id=effective_app)
     else:
         reviews = get_reviews(
             store=store if store != "todas" else None,
@@ -799,7 +863,8 @@ def api_export_reviews(
             search=search,
             stuck_android_12=stuck_android_12,
             limit=10000,
-            offset=0
+            offset=0,
+            app_id=effective_app
         )
 
     root_cause_names = {
@@ -1620,11 +1685,16 @@ def api_reply(req: ReplyRequest, request: Request):
 
     if should_send_store:
         user = get_current_user_from_request(request)
-        user_email = (user.get("email") if user else "").lower()
-        if user_email != "mgminhaescola@gmail.com" and (not user or user.get("role") != "admin"):
+        if not can_user_publish_to_store(user):
+            user_email = (user.get("email") if user else "anônimo").lower().strip()
+            if user_email == "saulomartins.costa@gmail.com":
+                raise HTTPException(
+                    status_code=403, 
+                    detail="O usuário saulomartins.costa@gmail.com não possui permissão para publicar respostas nas lojas de aplicativos (Google Play / App Store)."
+                )
             raise HTTPException(
                 status_code=403, 
-                detail="Apenas o usuário autorizado mgminhaescola@gmail.com possui permissão para mandar publicar respostas na loja oficial."
+                detail="Apenas o usuário oficial mgminhaescola@gmail.com possui permissão para publicar respostas diretamente nas lojas."
             )
 
         target_app = review.get("app_id") or get_app_id()
@@ -1700,11 +1770,16 @@ def api_publish_batch(request: Request, store: Optional[str] = None):
     Exclusivo para mgminhaescola@gmail.com
     """
     user = get_current_user_from_request(request)
-    user_email = (user.get("email") if user else "").lower()
-    if user_email != "mgminhaescola@gmail.com" and (not user or user.get("role") != "admin"):
+    if not can_user_publish_to_store(user):
+        user_email = (user.get("email") if user else "anônimo").lower().strip()
+        if user_email == "saulomartins.costa@gmail.com":
+            raise HTTPException(
+                status_code=403, 
+                detail="O usuário saulomartins.costa@gmail.com não possui permissão para publicar respostas nas lojas de aplicativos."
+            )
         raise HTTPException(
             status_code=403, 
-            detail="Apenas o usuário autorizado mgminhaescola@gmail.com possui permissão para publicar respostas em lote."
+            detail="Apenas o usuário oficial mgminhaescola@gmail.com possui permissão para publicar respostas em lote."
         )
 
     conn = get_connection()
@@ -1810,18 +1885,22 @@ def api_ignore(review_id: str):
     return {"success": True, "message": "Avaliação marcada como ignorada."}
 
 @app.get("/api/settings")
-def api_get_settings(app_id: Optional[str] = None):
+def api_get_settings(request: Request, app_id: Optional[str] = None):
     settings = get_all_settings()
     masked = dict(settings)
     if masked.get("gemini_api_key"):
         k = masked["gemini_api_key"]
         masked["gemini_api_key_masked"] = k[:6] + "..." + k[-4:] if len(k) > 10 else "***"
         
-    current_app = get_app_id()
-    selected_app = (app_id or current_app).strip()
+    user = get_current_user_from_request(request)
+    user_can_view_all = can_user_view_all_apps(user)
+    
+    effective_app = resolve_authorized_app_id(request, app_id)
+    current_app = effective_app if not user_can_view_all else get_app_id()
+    selected_app = effective_app
 
-    # Dicionário detalhado por app
-    known_apps = ["minha_escola_mg", "mg_app_cidadao"]
+    # Dicionário detalhado por app: Saulo vê ambos, outros veem apenas Minha Escola
+    known_apps = ["minha_escola_mg", "mg_app_cidadao"] if user_can_view_all else ["minha_escola_mg"]
     apps_credentials = {}
 
     for a_id in known_apps:
@@ -1879,8 +1958,22 @@ def api_get_settings(app_id: Optional[str] = None):
     return masked
 
 @app.post("/api/settings")
-def api_update_settings(req: SettingsRequest):
+def api_update_settings(request: Request, req: SettingsRequest):
+    user = get_current_user_from_request(request)
+    user_can_view_all = can_user_view_all_apps(user)
+    user_can_publish = can_user_publish_to_store(user)
+    
+    if req.app_id is not None and req.app_id != "minha_escola_mg" and not user_can_view_all:
+        raise HTTPException(
+            status_code=403,
+            detail="Você não possui permissão para configurar ou alternar para outros aplicativos."
+        )
+    if req.auto_publish_direct == "true" and not user_can_publish:
+        req.auto_publish_direct = "false"
+
     target_app = (req.target_app_id or req.app_id or get_app_id()).strip()
+    if target_app != "minha_escola_mg" and not user_can_view_all:
+        target_app = "minha_escola_mg"
 
     if req.app_id is not None:
         set_setting("app_id", req.app_id.strip())
@@ -2058,8 +2151,14 @@ class ApplyPresetRequest(BaseModel):
     preset_id: str
 
 @app.post("/api/presets/apply")
-def api_apply_preset(req: ApplyPresetRequest):
+def api_apply_preset(req: ApplyPresetRequest, request: Request):
     """Aplica um perfil de aplicativo mobile configurado na pasta presets."""
+    user = get_current_user_from_request(request)
+    if not can_user_view_all_apps(user):
+        raise HTTPException(
+            status_code=403, 
+            detail="Apenas o administrador saulomartins.costa@gmail.com possui permissão para alternar entre aplicativos."
+        )
     p_path = os.path.join(PRESETS_DIR, req.preset_id)
     if not os.path.exists(p_path):
         raise HTTPException(status_code=404, detail="Perfil não encontrado.")

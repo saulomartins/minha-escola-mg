@@ -145,6 +145,7 @@
                             <span>{{ app_config.app_name or "Minha Escola MG" }}</span>
                             <span class="text-xs font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-indigo-500/30 text-indigo-300 border border-indigo-400/30">Central AI</span>
                         </h1>
+                        {% if can_view_all_apps or (current_user and current_user.email.lower() == 'saulomartins.costa@gmail.com') %}
                         <div class="flex items-center gap-2 bg-indigo-950/90 px-3 py-1.5 rounded-xl border border-indigo-700/60 text-xs shadow-inner">
                             <i class="fa-solid fa-repeat text-indigo-300 text-xs"></i>
                             <span class="text-indigo-200 font-semibold">Trocar App:</span>
@@ -153,6 +154,7 @@
                                 <option value="mg_app_cidadao.json" {% if app_config.app_id == 'mg_app_cidadao' %}selected{% endif %}>MG App Cidadão</option>
                             </select>
                         </div>
+                        {% endif %}
                     </div>
                     <div class="flex items-center gap-3 mt-1 text-xs text-indigo-200/90">
                         <span class="flex items-center gap-1.5 text-emerald-400 font-semibold"><i class="fa-solid fa-circle text-[8px] animate-pulse"></i> Telemetria em Tempo Real</span>
@@ -218,6 +220,21 @@
                         </div>
                     </div>
                     <a href="/logout" class="bg-rose-950 hover:bg-rose-900 text-rose-300 hover:text-white px-3 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 border border-rose-800/60" title="Sair">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                    </a>
+                </div>
+                {% elif current_user and current_user.email.lower() == 'saulomartins.costa@gmail.com' %}
+                <div class="flex items-center gap-2 pl-3 border-l border-indigo-800/80 ml-1">
+                    <div class="flex items-center gap-2.5 bg-indigo-950/90 px-3.5 py-2 rounded-xl border border-indigo-500/60 text-xs shadow-sm">
+                        <div class="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-white text-xs shadow-sm">
+                            <i class="fa-solid fa-user-shield text-[11px]"></i>
+                        </div>
+                        <div class="text-left hidden sm:block">
+                            <p class="font-bold leading-tight text-indigo-200">Saulo Martins</p>
+                            <p class="text-[10px] text-slate-400 font-medium">Gestão Multi-App (Sem Publicação)</p>
+                        </div>
+                    </div>
+                    <a href="/logout" class="bg-rose-950 hover:bg-rose-900 text-rose-300 hover:text-white px-3 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 border border-rose-800/60" title="Sair da conta">
                         <i class="fa-solid fa-arrow-right-from-bracket"></i>
                     </a>
                 </div>
@@ -527,7 +544,7 @@
                         <button onclick="applyAllAutoReplies()" id="btn-apply-auto-replies" class="px-4 py-2.5 text-xs font-bold bg-slate-900 hover:bg-black text-white rounded-xl shadow-sm transition flex items-center gap-2" title="Gera respostas automáticas personalizadas para todas as avaliações de 1 a 5 estrelas">
                             <i class="fa-solid fa-bolt text-amber-300"></i> Gerar Respostas (1 a 5 ⭐)
                         </button>
-                        <button onclick="publishBatch()" id="btn-publish-batch" class="{% if current_user and current_user.email.lower() == 'mgminhaescola@gmail.com' %}flex{% else %}hidden{% endif %} px-4 py-2.5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm transition items-center gap-2" title="Mandar publicar todas as respostas salvas diretamente nas lojas oficiais (Google Play e App Store)">
+                        <button onclick="publishBatch()" id="btn-publish-batch" class="{% if can_publish_to_store and current_user and current_user.email.lower() == 'mgminhaescola@gmail.com' %}flex{% else %}hidden{% endif %} px-4 py-2.5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm transition items-center gap-2" title="Mandar publicar todas as respostas salvas diretamente nas lojas oficiais (Google Play e App Store)">
                             <i class="fa-solid fa-paper-plane"></i> Mandar Publicar (<span id="count-pending-publish">0</span>)
                         </button>
                         <button onclick="exportToExcel('excel', 'all')" class="px-4 py-2.5 text-xs font-bold bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl shadow-sm transition flex items-center gap-2" title="Exportar TODOS os 500 comentários da base completa para Excel (.xlsx)">
@@ -2721,12 +2738,19 @@
                     <p>Essas credenciais são necessárias <b>apenas</b> se você for publicar as respostas diretamente nas lojas pela API. Cada aplicativo monitorado pode ter seu próprio arquivo JSON de Service Account da Google Play e chaves da Apple Store.</p>
                 </div>
 
+                {% if can_publish_to_store %}
                 <div class="flex items-center space-x-2 bg-slate-50 p-3 rounded-lg border border-slate-200">
                     <input type="checkbox" id="check-auto-publish-direct" class="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4">
                     <label for="check-auto-publish-direct" class="text-xs font-bold text-slate-800">
                         Ativar Envio Direto nas Lojas ao aprovar respostas
                     </label>
                 </div>
+                {% else %}
+                <div class="bg-slate-100 p-2.5 rounded-lg border border-slate-200 text-xs text-slate-500 flex items-center gap-2">
+                    <i class="fa-solid fa-lock text-slate-400"></i>
+                    <span>Publicação oficial nas lojas restrita à conta <b>mgminhaescola@gmail.com</b>.</span>
+                </div>
+                {% endif %}
 
                 <!-- Seletor do Aplicativo para Configuração de Credenciais -->
                 <div class="bg-indigo-50/70 border border-indigo-200/80 rounded-xl p-3 space-y-2.5">
@@ -2746,6 +2770,7 @@
                             </div>
                             <span id="dot-creds-minha_escola_mg" class="w-2.5 h-2.5 rounded-full bg-slate-300 shrink-0" title="Google Play Conexão"></span>
                         </button>
+                        {% if can_view_all_apps or (current_user and current_user.email.lower() == 'saulomartins.costa@gmail.com') %}
                         <button type="button" onclick="switchStoreAppCreds('mg_app_cidadao')" id="btn-creds-mg_app_cidadao" class="p-2.5 rounded-xl border text-left transition flex items-center justify-between bg-slate-50 border-slate-200 text-slate-600 hover:bg-white">
                             <div>
                                 <div class="font-bold text-xs flex items-center gap-1.5">
@@ -2755,6 +2780,7 @@
                             </div>
                             <span id="dot-creds-mg_app_cidadao" class="w-2.5 h-2.5 rounded-full bg-slate-300 shrink-0" title="Google Play Conexão"></span>
                         </button>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -2845,8 +2871,9 @@
                     <div class="flex gap-2">
                         <select id="select-app-preset" onchange="onPresetSelectedChange(this.value)" class="flex-1 px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 bg-white">
                             <option value="minha_escola_mg.json" {% if app_config.app_id == 'minha_escola_mg' %}selected{% endif %}>Minha Escola MG (SEE/MG & Prodemge)</option>
+                            {% if can_view_all_apps or (current_user and current_user.email.lower() == 'saulomartins.costa@gmail.com') %}
                             <option value="mg_app_cidadao.json" {% if app_config.app_id == 'mg_app_cidadao' %}selected{% endif %}>MG App Cidadão (Governo de Minas Gerais)</option>
-                            
+                            {% endif %}
                         </select>
                         <button type="button" onclick="applySelectedPreset()" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-xs transition shadow-sm flex items-center gap-1.5 shrink-0">
                             <i class="fa-solid fa-cloud-arrow-down"></i> Ativar Perfil
@@ -4378,28 +4405,26 @@
                                                 <button onclick="copyToClipboard('${r.id}')" title="Copiar resposta para colar no Google Play Console" class="px-3.5 py-2 text-xs font-bold bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-xl shadow-sm transition flex items-center gap-1.5">
                                                     <i class="fa-regular fa-copy"></i> Copiar Resposta
                                                 </button>
-                                                ${window.isPublisher ? `
-                                                    <button onclick="analyzeSingleReview('${r.id}')" title="Regenerar sugestão de resposta oficial usando inteligência artificial" class="px-3.5 py-2 text-xs font-bold bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl transition flex items-center gap-1.5">
-                                                        <i class="fa-solid fa-wand-magic-sparkles"></i> Regenerar com IA
-                                                    </button>
-                                                ` : ''}
+                                                <button onclick="analyzeSingleReview('${r.id}')" title="Regenerar sugestão de resposta oficial usando inteligência artificial" class="px-3.5 py-2 text-xs font-bold bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl transition flex items-center gap-1.5">
+                                                    <i class="fa-solid fa-wand-magic-sparkles"></i> Regenerar com IA
+                                                </button>
                                             </div>
 
-                                            ${window.isPublisher ? `
-                                                <div class="flex flex-wrap gap-2">
-                                                    ${r.status !== 'ignorada' ? `
-                                                        <button onclick="ignoreReview('${r.id}')" class="px-3 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 rounded-xl transition">
-                                                            Ignorar
-                                                        </button>
-                                                    ` : ''}
-                                                    <button onclick="submitReply('${r.id}', false)" title="Salvar resposta internamente no sistema como respondida" class="px-3.5 py-2 text-xs font-bold bg-slate-700 hover:bg-slate-800 text-white rounded-xl shadow transition flex items-center gap-1.5">
-                                                        <i class="fa-solid fa-check"></i> Salvar no Sistema
+                                            <div class="flex flex-wrap gap-2">
+                                                ${r.status !== 'ignorada' ? `
+                                                    <button onclick="ignoreReview('${r.id}')" class="px-3 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 rounded-xl transition">
+                                                        Ignorar
                                                     </button>
+                                                ` : ''}
+                                                <button onclick="submitReply('${r.id}', false)" title="Salvar resposta internamente no sistema como respondida" class="px-3.5 py-2 text-xs font-bold bg-slate-700 hover:bg-slate-800 text-white rounded-xl shadow transition flex items-center gap-1.5">
+                                                    <i class="fa-solid fa-check"></i> Salvar no Sistema
+                                                </button>
+                                                ${window.isPublisher ? `
                                                     <button onclick="sendToStorePublish('${r.id}')" title="Mandar publicar diretamente na Google Play Store via API oficial" class="px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow transition flex items-center gap-1.5">
                                                         <i class="fa-solid fa-paper-plane"></i> Mandar Publicar na Loja
                                                     </button>
-                                                </div>
-                                            ` : ''}
+                                                ` : ''}
+                                            </div>
                                         </div>
                                     </div>
                                 `}
