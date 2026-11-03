@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: minha-escola-mg-analytics
+    name: prodemge-acompanha
     env: python
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn web.app:app --host 0.0.0.0 --port $PORT
