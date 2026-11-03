@@ -5437,9 +5437,12 @@
                     if (data.apple_store_id && document.getElementById('input-apple-id')) document.getElementById('input-apple-id').value = data.apple_store_id;
                     if (data.support_contact_url && document.getElementById('input-support-url-app')) document.getElementById('input-support-url-app').value = data.support_contact_url;
 
-                    document.getElementById('check-auto-publish-direct').checked = data.auto_publish_direct === 'true';
-                    document.getElementById('check-auto-5stars').checked = data.auto_reply_5_stars_only === 'true';
-                    if (data.auto_sync_interval) document.getElementById('select-auto-sync').value = data.auto_sync_interval;
+                    const chkPublish = document.getElementById('check-auto-publish-direct');
+                    if (chkPublish) chkPublish.checked = data.auto_publish_direct === 'true';
+                    const chk5 = document.getElementById('check-auto-5stars');
+                    if (chk5) chk5.checked = data.auto_reply_5_stars_only === 'true';
+                    const selSync = document.getElementById('select-auto-sync');
+                    if (selSync && data.auto_sync_interval) selSync.value = data.auto_sync_interval;
 
                     document.getElementById('modal-settings').classList.remove('hidden');
                 });
@@ -5560,9 +5563,12 @@
             const appleId = document.getElementById('input-apple-id') ? document.getElementById('input-apple-id').value.trim() : null;
             const supportUrlApp = document.getElementById('input-support-url-app') ? document.getElementById('input-support-url-app').value.trim() : null;
 
-            const autoPublish = document.getElementById('check-auto-publish-direct').checked ? 'true' : 'false';
-            const auto5stars = document.getElementById('check-auto-5stars').checked ? 'true' : 'false';
-            const autoSyncInterval = document.getElementById('select-auto-sync').value;
+            const chkPublish = document.getElementById('check-auto-publish-direct');
+            const autoPublish = chkPublish ? (chkPublish.checked ? 'true' : 'false') : 'false';
+            const chk5 = document.getElementById('check-auto-5stars');
+            const auto5stars = chk5 ? (chk5.checked ? 'true' : 'false') : 'false';
+            const selSync = document.getElementById('select-auto-sync');
+            const autoSyncInterval = selSync ? selSync.value : 'off';
 
             // Prepara mapa de credenciais isoladas por aplicativo
             const appsPayload = {};
@@ -9581,26 +9587,6 @@ async function uploadPlayConsoleCsv(input) {
                         can_publish: canPublish
                     })
                 });
-
-                if (res.ok) {
-                    const data = await res.json();
-                    showAlert(`Chave de acesso <strong>${data.token}</strong> gerada com sucesso para <strong>${data.label}</strong>!`);
-                    if (labelInput) labelInput.value = '';
-                    if (codeInput) codeInput.value = '';
-                    await loadTokensList();
-                } else {
-                    const err = await res.json();
-                    showAlert(err.detail || 'Erro ao criar token.', 'error');
-                }
-            } catch (err) {
-                showAlert('Erro de conexão: ' + err.message, 'error');
-            } finally {
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Gerar Chave de Acesso';
-                }
-            }
-        }
 
                 if (res.ok) {
                     const data = await res.json();
