@@ -241,17 +241,17 @@ def get_detailed_problem_analytics(app_id: Optional[str] = None, domain: Optiona
 
         if i_pct > a_pct * 1.25:
             dominant = "iOS"
-            dominant_label = "🍎 iOS Sofre Mais"
+            dominant_label = "🍎 iOS"
             dominant_color = "rose"
             diag = f"Incidência proporcionalmente maior no iOS ({i_pct}% vs {a_pct}% no Android). Recomenda-se auditar compatibilidade no WebKit/Safari e ciclo de vida no iOS."
         elif a_pct > i_pct * 1.25:
             dominant = "Android"
-            dominant_label = "🤖 Android Sofre Mais"
+            dominant_label = "🤖 Android"
             dominant_color = "emerald"
             diag = f"Incidência concentrada no Android ({a_pct}% vs {i_pct}% no iOS). Aponta para diversidade de fabricantes, restrições de memória RAM e versões legadas de SO."
         else:
             dominant = "Equilibrado"
-            dominant_label = "⚖️ Equilibrado em Ambos"
+            dominant_label = "⚖️ Equilibrado"
             dominant_color = "amber"
             diag = f"Distribuição equilibrada ({a_pct}% Android vs {i_pct}% iOS), indicando que a causa decorre de serviços de backend ou regras de negócio centrais da aplicação."
 

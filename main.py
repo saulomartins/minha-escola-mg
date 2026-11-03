@@ -45,7 +45,7 @@ def run_server(host="0.0.0.0", port=8055):
     init_db()
     print(f"\n🚀 Servidor do Painel Web iniciado em: http://localhost:{port} (ou http://127.0.0.1:{port})")
     print("Pressione Ctrl+C para encerrar.\n")
-    uvicorn.run("web.app:app", host=host, port=port, reload=False)
+    uvicorn.run("web.app:app", host=host, port=port, reload=True)
 
 def main():
     parser = argparse.ArgumentParser(description=f"Sistema de Análise e Respostas de Avaliações - {get_app_name()}")
