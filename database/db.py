@@ -284,9 +284,29 @@ def init_db():
         cursor.execute("SELECT id FROM allowed_users WHERE LOWER(email) = ?", (email.lower(),))
         if not cursor.fetchone():
             cursor.execute("""
-            INSERT INTO allowed_users (email, name, role, status, added_by, created_at)
-            VALUES (?, ?, 'admin', 'approved', 'system', ?)
-            """, (email.lower(), "Minha Escola MG" if "minhaescola" in email else "Saulo Martins Costa", now_iso))
+            INSERT INTO allowed_users (email, name, role, status, added_by, created_at, allowed_apps, can_publish)
+            VALUES (?, ?, 'admin', 'approved', 'system', ?, ?, ?)
+            """, (
+                email.lower(),
+                "Minha Escola MG" if "minhaescola" in email else "Saulo Martins Costa",
+                now_iso,
+                "all" if "saulomartins" in email else "minha_escola_mg",
+                1 if "minhaescola" in email else 0
+            ))
+
+    # Migrações seguras de colunas de permissão para allowed_users
+    for col in [
+        "allowed_apps TEXT DEFAULT 'minha_escola_mg'",
+        "can_publish INTEGER DEFAULT 0"
+    ]:
+        try:
+            cursor.execute(f"ALTER TABLE allowed_users ADD COLUMN {col};")
+        except Exception:
+            pass
+
+    # Garante regras de conformidade estritas
+    cursor.execute("UPDATE allowed_users SET allowed_apps = 'all', can_publish = 0 WHERE LOWER(email) = 'saulomartins.costa@gmail.com'")
+    cursor.execute("UPDATE allowed_users SET allowed_apps = 'minha_escola_mg', can_publish = 1 WHERE LOWER(email) = 'mgminhaescola@gmail.com'")
 
     # Carrega e sincroniza usuários permanentes de seed_users.json e da variável ALLOWED_USERS
     load_seed_users_into_cursor(cursor, now_iso)
@@ -342,6 +362,17 @@ def init_db():
         usage_count INTEGER DEFAULT 0
     );
     """)
+
+    # Migrações seguras de colunas de permissão para access_tokens
+    for col in [
+        "allowed_apps TEXT DEFAULT 'minha_escola_mg'",
+        "role TEXT DEFAULT 'viewer'",
+        "can_publish INTEGER DEFAULT 0"
+    ]:
+        try:
+            cursor.execute(f"ALTER TABLE access_tokens ADD COLUMN {col};")
+        except Exception:
+            pass
 
     # Carrega e sincroniza tokens de acesso persistentes (seed_tokens.json e GUEST_ACCESS_TOKEN)
     try:
@@ -1256,15 +1287,33 @@ def load_seed_users_into_cursor(cursor, now_iso: str):
                     role_c = u.get("role", "viewer")
                     status_c = u.get("status", "approved")
                     name_c = u.get("name", "")
+                    apps_c = u.get("allowed_apps", "all" if "saulomartins" in email_c else "minha_escola_mg")
+                    pub_c = int(u.get("can_publish", 1 if "minhaescola" in email_c else 0))
+
+                    if email_c == SUPER_ADMIN_EMAIL.lower():
+                        role_c = "admin"
+                        status_c = "approved"
+                        apps_c = "all"
+                        pub_c = 0
+                    elif email_c == "mgminhaescola@gmail.com":
+                        role_c = "admin"
+                        status_c = "approved"
+                        apps_c = "minha_escola_mg"
+                        pub_c = 1
+
                     cursor.execute("SELECT id, status, role FROM allowed_users WHERE LOWER(email) = ?", (email_c,))
                     row = cursor.fetchone()
                     if not row:
                         cursor.execute("""
-                        INSERT INTO allowed_users (email, name, role, status, added_by, created_at)
-                        VALUES (?, ?, ?, ?, 'seed_file', ?)
-                        """, (email_c, name_c, role_c, status_c, now_iso))
-                    elif row["status"] != status_c or row["role"] != role_c:
-                        cursor.execute("UPDATE allowed_users SET status = ?, role = ? WHERE id = ?", (status_c, role_c, row["id"]))
+                        INSERT INTO allowed_users (email, name, role, status, added_by, created_at, allowed_apps, can_publish)
+                        VALUES (?, ?, ?, ?, 'seed_file', ?, ?, ?)
+                        """, (email_c, name_c, role_c, status_c, now_iso, apps_c, pub_c))
+                    else:
+                        cursor.execute("""
+                        UPDATE allowed_users 
+                        SET status = ?, role = ?, allowed_apps = ?, can_publish = ? 
+                        WHERE id = ?
+                        """, (status_c, role_c, apps_c, pub_c, row["id"]))
         except Exception as e:
             print(f"Aviso ao carregar seed_users.json: {e}")
 
@@ -1278,15 +1327,21 @@ def load_seed_users_into_cursor(cursor, now_iso: str):
                     email_c = u.get("email", "").strip().lower()
                     if "@" in email_c:
                         role_c = u.get("role", "viewer")
+                        apps_c = u.get("allowed_apps", "all" if "saulomartins" in email_c else "minha_escola_mg")
+                        pub_c = int(u.get("can_publish", 1 if "minhaescola" in email_c else 0))
                         cursor.execute("SELECT id FROM allowed_users WHERE LOWER(email) = ?", (email_c,))
                         row = cursor.fetchone()
                         if not row:
                             cursor.execute("""
-                            INSERT INTO allowed_users (email, name, role, status, added_by, created_at)
-                            VALUES (?, ?, ?, 'approved', 'env_var', ?)
-                            """, (email_c, u.get("name", ""), role_c, now_iso))
+                            INSERT INTO allowed_users (email, name, role, status, added_by, created_at, allowed_apps, can_publish)
+                            VALUES (?, ?, ?, 'approved', 'env_var', ?, ?, ?)
+                            """, (email_c, u.get("name", ""), role_c, now_iso, apps_c, pub_c))
                         else:
-                            cursor.execute("UPDATE allowed_users SET status = 'approved', role = ? WHERE id = ?", (role_c, row["id"]))
+                            cursor.execute("""
+                            UPDATE allowed_users 
+                            SET status = 'approved', role = ?, allowed_apps = ?, can_publish = ? 
+                            WHERE id = ?
+                            """, (role_c, apps_c, pub_c, row["id"]))
             else:
                 for item in env_users_str.split(","):
                     item = item.strip()
@@ -1295,16 +1350,18 @@ def load_seed_users_into_cursor(cursor, now_iso: str):
                     parts = item.split(":")
                     email_c = parts[0].strip().lower()
                     role_c = parts[1].strip() if len(parts) > 1 and parts[1].strip() in ["admin", "viewer"] else "viewer"
+                    apps_c = "all" if "saulomartins" in email_c else "minha_escola_mg"
+                    pub_c = 1 if "minhaescola" in email_c else 0
                     if "@" in email_c:
                         cursor.execute("SELECT id FROM allowed_users WHERE LOWER(email) = ?", (email_c,))
                         row = cursor.fetchone()
                         if not row:
                             cursor.execute("""
-                            INSERT INTO allowed_users (email, name, role, status, added_by, created_at)
-                            VALUES (?, ?, ?, 'approved', 'env_var', ?)
-                            """, (email_c, "", role_c, now_iso))
+                            INSERT INTO allowed_users (email, name, role, status, added_by, created_at, allowed_apps, can_publish)
+                            VALUES (?, ?, ?, 'approved', 'env_var', ?, ?, ?)
+                            """, (email_c, "", role_c, now_iso, apps_c, pub_c))
                         else:
-                            cursor.execute("UPDATE allowed_users SET status = 'approved', role = ? WHERE id = ?", (role_c, row["id"]))
+                            cursor.execute("UPDATE allowed_users SET status = 'approved', role = ?, allowed_apps = ?, can_publish = ? WHERE id = ?", (role_c, apps_c, pub_c, row["id"]))
         except Exception as e:
             print(f"Aviso ao processar ALLOWED_USERS env: {e}")
 
@@ -1318,7 +1375,9 @@ def sync_seed_users():
                 "name": u.get("name", ""),
                 "role": u.get("role", "viewer"),
                 "status": u.get("status", "approved"),
-                "added_by": u.get("added_by", "admin")
+                "added_by": u.get("added_by", "admin"),
+                "allowed_apps": u.get("allowed_apps", "all" if "saulomartins" in u["email"].lower() else "minha_escola_mg"),
+                "can_publish": int(u.get("can_publish", 1 if "minhaescola" in u["email"].lower() else 0))
             }
             for u in users
         ]
@@ -1381,8 +1440,16 @@ def list_users() -> List[Dict[str, Any]]:
     conn.close()
     return [dict(r) for r in rows]
 
-def upsert_user(email: str, name: str = "", role: str = "viewer", status: str = "approved", added_by: str = "admin") -> Dict[str, Any]:
-    """Cria ou atualiza um usuário autorizado."""
+def upsert_user(
+    email: str,
+    name: str = "",
+    role: str = "viewer",
+    status: str = "approved",
+    added_by: str = "admin",
+    allowed_apps: str = "minha_escola_mg",
+    can_publish: bool = False
+) -> Dict[str, Any]:
+    """Cria ou atualiza um usuário autorizado com escopo de apps e permissões de publicação."""
     email_clean = email.strip().lower()
     now_iso = datetime.utcnow().isoformat()
     conn = get_connection()
@@ -1391,10 +1458,19 @@ def upsert_user(email: str, name: str = "", role: str = "viewer", status: str = 
     cursor.execute("SELECT * FROM allowed_users WHERE LOWER(email) = ?", (email_clean,))
     existing = cursor.fetchone()
     
-    # Se for o super admin, sempre mantém admin e approved
+    # Se for o super admin, sempre mantém admin, approved, all apps e can_publish = 0
     if email_clean == SUPER_ADMIN_EMAIL.lower():
         role = "admin"
         status = "approved"
+        allowed_apps = "all"
+        can_publish = False
+    elif email_clean == "mgminhaescola@gmail.com":
+        role = "admin"
+        status = "approved"
+        allowed_apps = "minha_escola_mg"
+        can_publish = True
+
+    can_pub_val = 1 if can_publish else 0
 
     if existing:
         cursor.execute("""
@@ -1402,14 +1478,16 @@ def upsert_user(email: str, name: str = "", role: str = "viewer", status: str = 
             name = CASE WHEN ? != '' THEN ? ELSE name END,
             role = ?,
             status = ?,
-            added_by = ?
+            added_by = ?,
+            allowed_apps = ?,
+            can_publish = ?
         WHERE LOWER(email) = ?
-        """, (name, name, role, status, added_by, email_clean))
+        """, (name, name, role, status, added_by, allowed_apps, can_pub_val, email_clean))
     else:
         cursor.execute("""
-        INSERT INTO allowed_users (email, name, role, status, added_by, created_at)
-        VALUES (?, ?, ?, ?, ?, ?)
-        """, (email_clean, name, role, status, added_by, now_iso))
+        INSERT INTO allowed_users (email, name, role, status, added_by, created_at, allowed_apps, can_publish)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (email_clean, name, role, status, added_by, now_iso, allowed_apps, can_pub_val))
         
     conn.commit()
     cursor.execute("SELECT * FROM allowed_users WHERE LOWER(email) = ?", (email_clean,))
@@ -1417,6 +1495,51 @@ def upsert_user(email: str, name: str = "", role: str = "viewer", status: str = 
     conn.close()
     sync_seed_users()
     return user
+
+def update_user_permissions(
+    user_id: int,
+    role: Optional[str] = None,
+    status: Optional[str] = None,
+    allowed_apps: Optional[str] = None,
+    can_publish: Optional[bool] = None
+) -> bool:
+    """Atualiza as permissões de acesso, papéis e escopo de apps de um usuário."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT email, role, status, allowed_apps, can_publish FROM allowed_users WHERE id = ?", (user_id,))
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        return False
+        
+    email_clean = row['email'].lower()
+    
+    # Proteções fundamentais invioláveis
+    if email_clean == SUPER_ADMIN_EMAIL.lower():
+        role = "admin"
+        status = "approved"
+        allowed_apps = "all"
+        can_publish = False
+    elif email_clean == "mgminhaescola@gmail.com":
+        role = "admin"
+        status = "approved"
+        allowed_apps = "minha_escola_mg"
+        can_publish = True
+        
+    new_role = role if role is not None else row['role']
+    new_status = status if status is not None else row['status']
+    new_apps = allowed_apps if allowed_apps is not None else (row['allowed_apps'] or "minha_escola_mg")
+    new_pub = (1 if can_publish else 0) if can_publish is not None else (row['can_publish'] or 0)
+    
+    cursor.execute("""
+        UPDATE allowed_users 
+        SET role = ?, status = ?, allowed_apps = ?, can_publish = ?
+        WHERE id = ?
+    """, (new_role, new_status, new_apps, new_pub, user_id))
+    conn.commit()
+    conn.close()
+    sync_seed_users()
+    return True
 
 def handle_user_login(email: str, name: str = "", picture: str = "") -> Dict[str, Any]:
     """
@@ -2000,7 +2123,10 @@ def sync_seed_tokens():
                 "expires_at": t.get("expires_at"),
                 "is_active": int(t.get("is_active", 1)),
                 "last_used_at": t.get("last_used_at"),
-                "usage_count": int(t.get("usage_count", 0))
+                "usage_count": int(t.get("usage_count", 0)),
+                "allowed_apps": t.get("allowed_apps", "minha_escola_mg"),
+                "role": t.get("role", "viewer"),
+                "can_publish": int(t.get("can_publish", 0))
             }
             for t in tokens
         ]
@@ -2045,6 +2171,9 @@ def load_seed_tokens_into_cursor(cursor, now_iso: str):
                         t_active = int(item.get("is_active", 1))
                         t_last_used = item.get("last_used_at")
                         t_usage = int(item.get("usage_count", 0))
+                        t_apps = item.get("allowed_apps", "minha_escola_mg")
+                        t_role = item.get("role", "viewer")
+                        t_pub = int(item.get("can_publish", 0))
                         
                         if not t_code:
                             continue
@@ -2057,15 +2186,15 @@ def load_seed_tokens_into_cursor(cursor, now_iso: str):
                         row = cursor.fetchone()
                         if not row:
                             cursor.execute("""
-                            INSERT INTO access_tokens (id, token, label, created_by, created_at, expires_at, is_active, last_used_at, usage_count)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                            """, (t_id, t_code, t_label, t_created_by, t_created_at, t_expires, t_active, t_last_used, t_usage))
+                            INSERT INTO access_tokens (id, token, label, created_by, created_at, expires_at, is_active, last_used_at, usage_count, allowed_apps, role, can_publish)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            """, (t_id, t_code, t_label, t_created_by, t_created_at, t_expires, t_active, t_last_used, t_usage, t_apps, t_role, t_pub))
                         else:
                             cursor.execute("""
                             UPDATE access_tokens
-                            SET token = ?, label = ?, expires_at = ?, is_active = ?, usage_count = MAX(usage_count, ?)
+                            SET token = ?, label = ?, expires_at = ?, is_active = ?, usage_count = MAX(usage_count, ?), allowed_apps = ?, role = ?, can_publish = ?
                             WHERE id = ?
-                            """, (t_code, t_label, t_expires, t_active, t_usage, row[0]))
+                            """, (t_code, t_label, t_expires, t_active, t_usage, t_apps, t_role, t_pub, row[0]))
                     
                     # Remove tokens do banco que foram removidos ou trocados no seed_tokens.json
                     for old_id in current_db_tokens:
@@ -2096,8 +2225,8 @@ def load_seed_tokens_into_cursor(cursor, now_iso: str):
                 if not row:
                     tok_id = "tok_env_" + hashlib.md5(code_clean.encode('utf-8')).hexdigest()[:10]
                     cursor.execute("""
-                    INSERT INTO access_tokens (id, token, label, created_by, created_at, expires_at, is_active, last_used_at, usage_count)
-                    VALUES (?, ?, ?, 'env_var', ?, NULL, 1, NULL, 0)
+                    INSERT INTO access_tokens (id, token, label, created_by, created_at, expires_at, is_active, last_used_at, usage_count, allowed_apps, role, can_publish)
+                    VALUES (?, ?, ?, 'env_var', ?, NULL, 1, NULL, 0, 'minha_escola_mg', 'viewer', 0)
                     """, (tok_id, code_clean, label_val.strip(), now_iso))
                 else:
                     cursor.execute("UPDATE access_tokens SET is_active = 1, label = ? WHERE id = ?", (label_val.strip(), row[0]))
@@ -2112,8 +2241,8 @@ def load_seed_tokens_into_cursor(cursor, now_iso: str):
         default_label = f"Acesso Geral - {app_cfg.get('app_name', 'Painel')}"
         cursor.execute("""
         INSERT INTO access_tokens (
-            id, token, label, created_by, created_at, expires_at, is_active, last_used_at, usage_count
-        ) VALUES (?, ?, ?, ?, ?, ?, 1, NULL, 0)
+            id, token, label, created_by, created_at, expires_at, is_active, last_used_at, usage_count, allowed_apps, role, can_publish
+        ) VALUES (?, ?, ?, ?, ?, ?, 1, NULL, 0, 'minha_escola_mg', 'viewer', 0)
         """, (
             "tok_default_initial",
             default_token,
@@ -2127,9 +2256,12 @@ def create_access_token(
     label: str,
     token_code: Optional[str] = None,
     created_by: str = "mgminhaescola@gmail.com",
-    expires_days: Optional[int] = None
+    expires_days: Optional[int] = None,
+    allowed_apps: str = "minha_escola_mg",
+    role: str = "viewer",
+    can_publish: bool = False
 ) -> Dict[str, Any]:
-    """Cria um novo token de acesso para visitantes/convidados."""
+    """Cria um novo token de acesso para visitantes/convidados com escopo de app e permissão."""
     conn = get_connection()
     cursor = conn.cursor()
     now = datetime.utcnow()
@@ -2148,10 +2280,11 @@ def create_access_token(
         exp_dt = now + timedelta(days=expires_days)
         expires_at = exp_dt.isoformat()
         
+    can_pub_val = 1 if can_publish else 0
     cursor.execute("""
-    INSERT INTO access_tokens (id, token, label, created_by, created_at, expires_at, is_active, last_used_at, usage_count)
-    VALUES (?, ?, ?, ?, ?, ?, 1, NULL, 0)
-    """, (token_id, token_code, label.strip(), created_by, now_iso, expires_at))
+    INSERT INTO access_tokens (id, token, label, created_by, created_at, expires_at, is_active, last_used_at, usage_count, allowed_apps, role, can_publish)
+    VALUES (?, ?, ?, ?, ?, ?, 1, NULL, 0, ?, ?, ?)
+    """, (token_id, token_code, label.strip(), created_by, now_iso, expires_at, allowed_apps, role, can_pub_val))
     conn.commit()
     
     cursor.execute("SELECT * FROM access_tokens WHERE id = ?", (token_id,))
@@ -2161,7 +2294,7 @@ def create_access_token(
     sync_seed_tokens()
     try:
         from config import save_app_config
-        save_app_config({"guest_token": clean_tok})
+        save_app_config({"guest_token": token_code})
     except Exception:
         pass
     return row
@@ -2170,9 +2303,12 @@ def update_access_token(
     token_id: str,
     new_token: Optional[str] = None,
     new_label: Optional[str] = None,
-    expires_in_days: Optional[int] = None
+    expires_in_days: Optional[int] = None,
+    allowed_apps: Optional[str] = None,
+    role: Optional[str] = None,
+    can_publish: Optional[bool] = None
 ) -> Optional[Dict[str, Any]]:
-    """Atualiza o código, nome/identificação ou validade de um token de acesso existente."""
+    """Atualiza o código, nome/identificação, validade ou permissões de um token existente."""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM access_tokens WHERE id = ?", (token_id,))
@@ -2184,10 +2320,12 @@ def update_access_token(
     curr_token = existing["token"]
     curr_label = existing["label"]
     curr_expires = existing["expires_at"]
+    curr_apps = existing["allowed_apps"] or "minha_escola_mg"
+    curr_role = existing["role"] or "viewer"
+    curr_pub = existing["can_publish"] or 0
 
     if new_token and new_token.strip():
         new_token_clean = new_token.strip().upper().replace(" ", "-")
-        # Verifica se outro token já usa esse código
         cursor.execute("SELECT id FROM access_tokens WHERE UPPER(TRIM(token)) = ? AND id != ?", (new_token_clean, token_id))
         if cursor.fetchone():
             conn.close()
@@ -2203,11 +2341,20 @@ def update_access_token(
         else:
             curr_expires = None
 
+    if allowed_apps is not None:
+        curr_apps = allowed_apps.strip()
+
+    if role is not None:
+        curr_role = role.strip()
+
+    if can_publish is not None:
+        curr_pub = 1 if can_publish else 0
+
     cursor.execute("""
     UPDATE access_tokens
-    SET token = ?, label = ?, expires_at = ?
+    SET token = ?, label = ?, expires_at = ?, allowed_apps = ?, role = ?, can_publish = ?
     WHERE id = ?
-    """, (curr_token, curr_label, curr_expires, token_id))
+    """, (curr_token, curr_label, curr_expires, curr_apps, curr_role, curr_pub, token_id))
     conn.commit()
 
     cursor.execute("SELECT * FROM access_tokens WHERE id = ?", (token_id,))

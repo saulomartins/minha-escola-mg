@@ -61,12 +61,14 @@ def create_guest_session_token(token_obj: Dict[str, Any]) -> str:
         "sub": f"token_{token_obj['id']}",
         "email": f"convidado_{token_obj['id']}@token.local",
         "name": token_obj.get("label") or "Convidado por Token",
-        "role": "viewer",
+        "role": token_obj.get("role") or "viewer",
         "picture": "",
         "status": "approved",
         "is_token_guest": True,
         "token_id": token_obj["id"],
         "token_str": token_obj["token"],
+        "allowed_apps": token_obj.get("allowed_apps") or "minha_escola_mg",
+        "can_publish": bool(token_obj.get("can_publish", False)),
         "exp": int(exp.timestamp()),
         "iat": int(time.time()) - 10
     }

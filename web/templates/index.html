@@ -2656,15 +2656,17 @@
                             <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
                                 <th class="p-3.5">Usuário</th>
                                 <th class="p-3.5">E-mail Google (Gmail)</th>
-                                <th class="p-3.5 text-center">Perfil de Acesso</th>
+                                <th class="p-3.5 text-center">Perfil</th>
+                                <th class="p-3.5 text-center">Apps Autorizados</th>
+                                <th class="p-3.5 text-center">Envio Loja</th>
                                 <th class="p-3.5 text-center">Status</th>
-                                <th class="p-3.5 text-center">Cadastro / Último Acesso</th>
+                                <th class="p-3.5 text-center">Cadastro / Último</th>
                                 <th class="p-3.5 text-center">Ações</th>
                             </tr>
                         </thead>
                         <tbody id="users-table-tbody" class="divide-y divide-slate-100 font-medium text-slate-700">
                             <tr>
-                                <td colspan="6" class="p-8 text-center text-slate-400">Carregando usuários...</td>
+                                <td colspan="8" class="p-8 text-center text-slate-400">Carregando usuários...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -3439,12 +3441,13 @@
             if (!tbody) return;
 
             if (users.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400">Nenhum usuário encontrado.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-slate-400">Nenhum usuário encontrado.</td></tr>`;
                 return;
             }
 
             tbody.innerHTML = users.map(u => {
                 const isSuperAdmin = u.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
+                const isEscola = u.email.toLowerCase() === 'mgminhaescola@gmail.com';
                 const isAdmin = u.role === 'admin';
                 const isApproved = u.status === 'approved';
                 const isPending = u.status === 'pending';
@@ -3463,6 +3466,24 @@
                     statusBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-extrabold bg-rose-100 text-rose-800"><i class="fa-solid fa-ban text-rose-600 text-[10px]"></i> Bloqueado</span>`;
                 }
 
+                let appsBadge = '';
+                const userApps = (u.allowed_apps || (isSuperAdmin ? 'all' : 'minha_escola_mg')).toLowerCase();
+                if (isSuperAdmin || userApps === 'all' || userApps === 'todos' || userApps === 'ambos') {
+                    appsBadge = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-indigo-100 text-indigo-900 border border-indigo-200" title="Acesso liberado para ambos os aplicativos (Minha Escola MG e MG App)"><i class="fa-solid fa-globe text-indigo-600"></i> Ambos os Apps</span>`;
+                } else if (userApps === 'mg_app_cidadao') {
+                    appsBadge = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-teal-100 text-teal-900 border border-teal-200" title="Acesso restrito ao aplicativo MG App Cidadão"><i class="fa-solid fa-landmark text-teal-700"></i> MG App Cidadão</span>`;
+                } else {
+                    appsBadge = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-200" title="Acesso restrito ao aplicativo Minha Escola MG"><i class="fa-solid fa-school text-amber-700"></i> Minha Escola MG</span>`;
+                }
+
+                let publishBadge = '';
+                const canPub = isEscola ? true : (isSuperAdmin ? false : !!u.can_publish);
+                if (canPub) {
+                    publishBadge = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300 shadow-sm" title="Permissão para publicar respostas oficiais diretamente nas lojas Google Play & App Store"><i class="fa-solid fa-paper-plane text-emerald-600"></i> Sim (Lojas)</span>`;
+                } else {
+                    publishBadge = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600" title="Sem permissão de publicação direta nas lojas"><i class="fa-solid fa-ban text-slate-400"></i> Não</span>`;
+                }
+
                 return `
                     <tr class="hover:bg-slate-50 transition ${isPending ? 'bg-amber-50/40' : ''}">
                         <td class="p-3.5">
@@ -3473,6 +3494,7 @@
                                 <div>
                                     <p class="font-bold text-slate-900 text-xs">${escapeHtml(u.name || 'Sem nome informado')}</p>
                                     ${isSuperAdmin ? '<span class="text-[10px] font-extrabold text-amber-600 uppercase tracking-wide">⭐ Super Administrador</span>' : ''}
+                                    ${isEscola ? '<span class="text-[10px] font-extrabold text-emerald-600 uppercase tracking-wide">🏫 Publicador Oficial</span>' : ''}
                                 </div>
                             </div>
                         </td>
@@ -3483,6 +3505,12 @@
                             ${roleBadge}
                         </td>
                         <td class="p-3.5 text-center">
+                            ${appsBadge}
+                        </td>
+                        <td class="p-3.5 text-center">
+                            ${publishBadge}
+                        </td>
+                        <td class="p-3.5 text-center">
                             ${statusBadge}
                         </td>
                         <td class="p-3.5 text-center text-[11px] text-slate-500">
@@ -3491,16 +3519,23 @@
                         </td>
                         <td class="p-3.5 text-center">
                             ${isSuperAdmin ? `
-                                <span class="text-[11px] font-bold text-slate-400 italic">Admin Principal</span>
+                                <span class="text-[11px] font-bold text-slate-400 italic">Super Admin</span>
                             ` : `
                                 <div class="flex items-center justify-center gap-1.5">
-                                    <!-- Alternar Papel -->
-                                    <button onclick="toggleUserRole(${u.id}, '${u.role}')" class="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 transition" title="Alternar entre Admin e Leitor">
-                                        <i class="fa-solid fa-repeat text-xs"></i>
+                                    <!-- Configurar Permissões -->
+                                    <button onclick="openEditUserPermsModal(${u.id}, '${escapeHtml(u.email)}', '${escapeHtml(u.name || '')}', '${u.role}', '${u.status}', '${u.allowed_apps || 'minha_escola_mg'}', ${u.can_publish ? 1 : 0})" class="p-1.5 rounded-lg border border-indigo-200 hover:bg-indigo-50 text-indigo-700 transition" title="Configurar App e Permissão de Publicação">
+                                        <i class="fa-solid fa-sliders text-xs"></i>
                                     </button>
 
+                                    <!-- Alternar Papel -->
+                                    ${!isEscola ? `
+                                        <button onclick="toggleUserRole(${u.id}, '${u.role}')" class="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 transition" title="Alternar entre Admin e Leitor">
+                                            <i class="fa-solid fa-repeat text-xs"></i>
+                                        </button>
+                                    ` : ''}
+
                                     <!-- Alternar Status (Bloquear / Desbloquear) -->
-                                    ${isApproved ? `
+                                    ${!isEscola ? (isApproved ? `
                                         <button onclick="setUserStatus(${u.id}, 'blocked')" class="p-1.5 rounded-lg border border-amber-200 hover:bg-amber-50 text-amber-700 transition" title="Suspender / Bloquear acesso">
                                             <i class="fa-solid fa-lock text-xs"></i>
                                         </button>
@@ -3508,12 +3543,14 @@
                                         <button onclick="setUserStatus(${u.id}, 'approved')" class="p-1.5 rounded-lg border border-emerald-200 hover:bg-emerald-50 text-emerald-700 transition" title="Aprovar e Liberar acesso">
                                             <i class="fa-solid fa-check text-xs"></i>
                                         </button>
-                                    `}
+                                    `) : ''}
 
                                     <!-- Excluir Usuário -->
-                                    <button onclick="deleteUserRow(${u.id}, '${escapeHtml(u.email)}')" class="p-1.5 rounded-lg border border-rose-200 hover:bg-rose-50 text-rose-600 transition" title="Remover usuário">
-                                        <i class="fa-solid fa-trash-can text-xs"></i>
-                                    </button>
+                                    ${!isEscola ? `
+                                        <button onclick="deleteUserRow(${u.id}, '${escapeHtml(u.email)}')" class="p-1.5 rounded-lg border border-rose-200 hover:bg-rose-50 text-rose-600 transition" title="Remover usuário">
+                                            <i class="fa-solid fa-trash-can text-xs"></i>
+                                        </button>
+                                    ` : ''}
                                 </div>
                             `}
                         </td>
@@ -3634,11 +3671,15 @@
             const emailInput = document.getElementById('new-user-email');
             const nameInput = document.getElementById('new-user-name');
             const roleInput = document.getElementById('new-user-role');
+            const appsInput = document.getElementById('new-user-allowed-apps');
+            const publishInput = document.getElementById('new-user-can-publish');
             const submitBtn = document.getElementById('btn-submit-add-user');
 
             const email = emailInput ? emailInput.value.trim().toLowerCase() : '';
             const name = nameInput ? nameInput.value.trim() : '';
             const role = roleInput ? roleInput.value : 'viewer';
+            const allowed_apps = appsInput ? appsInput.value : 'minha_escola_mg';
+            const can_publish = publishInput ? publishInput.checked : false;
 
             if (!email || !email.includes('@')) {
                 alert('Por favor, informe um endereço de e-mail Gmail válido.');
@@ -3654,12 +3695,12 @@
                 const res = await fetch('/api/admin/users', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, name, role })
+                    body: JSON.stringify({ email, name, role, allowed_apps, can_publish })
                 });
 
                 if (res.ok) {
                     closeAddUserModal();
-                    showAlert(`✅ Acesso concedido com sucesso para <b>${escapeHtml(email)}</b> (${role === 'admin' ? 'Administrador' : 'Leitor'})!`, 'success');
+                    showAlert(`✅ Acesso concedido com sucesso para <b>${escapeHtml(email)}</b>!`, 'success');
                     await loadAdminUsers();
                 } else {
                     const err = await res.json().catch(() => ({}));
@@ -3671,6 +3712,86 @@
                 if (submitBtn) {
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = '<i class="fa-solid fa-check"></i> Autorizar Acesso';
+                }
+            }
+        }
+
+        function openEditUserPermsModal(userId, email, name, role, status, allowedApps, canPublish) {
+            document.getElementById('edit-user-perms-id').value = userId;
+            document.getElementById('edit-user-perms-email').innerText = email;
+            document.getElementById('edit-user-perms-name').innerText = name || 'Sem nome informado';
+            document.getElementById('edit-user-perms-role').value = role || 'viewer';
+            document.getElementById('edit-user-perms-status').value = status || 'approved';
+            document.getElementById('edit-user-perms-apps').value = allowedApps || 'minha_escola_mg';
+            document.getElementById('edit-user-perms-publish').checked = !!canPublish;
+
+            const isProtectedSaulo = email.toLowerCase() === 'saulomartins.costa@gmail.com';
+            const isProtectedEscola = email.toLowerCase() === 'mgminhaescola@gmail.com';
+            const noticeEl = document.getElementById('edit-user-perms-notice');
+
+            if (isProtectedSaulo) {
+                noticeEl.classList.remove('hidden');
+                noticeEl.innerHTML = '⭐ <b>Super Administrador:</b> Visualiza ambos os aplicativos com papel de Administrador Geral. Por política de conformidade, não possui publicação direta em lojas.';
+                document.getElementById('edit-user-perms-apps').disabled = true;
+                document.getElementById('edit-user-perms-publish').disabled = true;
+                document.getElementById('edit-user-perms-role').disabled = true;
+            } else if (isProtectedEscola) {
+                noticeEl.classList.remove('hidden');
+                noticeEl.innerHTML = '🏫 <b>Minha Escola MG Oficial:</b> Fixo estritamente no app Minha Escola MG e possui permissão mandatória para publicar respostas oficiais nas lojas.';
+                document.getElementById('edit-user-perms-apps').disabled = true;
+                document.getElementById('edit-user-perms-publish').disabled = true;
+                document.getElementById('edit-user-perms-role').disabled = true;
+            } else {
+                noticeEl.classList.add('hidden');
+                document.getElementById('edit-user-perms-apps').disabled = false;
+                document.getElementById('edit-user-perms-publish').disabled = false;
+                document.getElementById('edit-user-perms-role').disabled = false;
+            }
+
+            document.getElementById('modal-edit-user-perms')?.classList.remove('hidden');
+        }
+
+        function closeEditUserPermsModal() {
+            document.getElementById('modal-edit-user-perms')?.classList.add('hidden');
+        }
+
+        async function submitEditUserPerms() {
+            const userId = document.getElementById('edit-user-perms-id')?.value;
+            const role = document.getElementById('edit-user-perms-role')?.value;
+            const status = document.getElementById('edit-user-perms-status')?.value;
+            const allowed_apps = document.getElementById('edit-user-perms-apps')?.value;
+            const can_publish = document.getElementById('edit-user-perms-publish')?.checked;
+
+            if (!userId) return;
+
+            const btn = document.getElementById('btn-save-user-perms');
+            const origHtml = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Salvando...';
+            }
+
+            try {
+                const res = await fetch(`/api/admin/users/${userId}/permissions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ role, status, allowed_apps, can_publish })
+                });
+
+                if (res.ok) {
+                    closeEditUserPermsModal();
+                    showAlert('✅ Permissões do usuário atualizadas com sucesso!', 'success');
+                    await loadAdminUsers();
+                } else {
+                    const err = await res.json().catch(() => ({}));
+                    alert(`Erro: ${err.detail || err.message || 'Falha ao salvar permissões'}`);
+                }
+            } catch (err) {
+                alert(`Erro de conexão: ${err.message}`);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = origHtml;
                 }
             }
         }
@@ -8716,19 +8837,99 @@ async function uploadPlayConsoleCsv(input) {
                         <option value="admin">👑 Administrador (Acesso total + Gerencia outros usuários)</option>
                     </select>
                 </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Aplicativo Autorizado: *</label>
+                    <select id="new-user-allowed-apps" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        <option value="minha_escola_mg">🏫 Minha Escola MG (Acesso apenas a este app)</option>
+                        <option value="mg_app_cidadao">🏛️ MG App Cidadão (Acesso apenas a este app)</option>
+                        <option value="all">🌐 Ambos os Apps (Pode alternar livremente)</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+                    <input type="checkbox" id="new-user-can-publish" class="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4">
+                    <label for="new-user-can-publish" class="text-xs font-bold text-slate-700 cursor-pointer">
+                        Permitir publicar respostas diretamente nas lojas oficiais (Google Play & App Store)
+                    </label>
+                </div>
             </div>
 
             <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-[11px] text-emerald-900 flex items-start gap-2">
                 <i class="fa-solid fa-shield-halved text-emerald-600 mt-0.5"></i>
                 <div>
-                    <b>Liberação Instantânea:</b> O e-mail será salvo como <b>Aprovado</b>. Quando o usuário clicar em "Entrar com o Google", entrará direto sem barreiras.
+                    <b>Liberação Instantânea:</b> O e-mail será salvo como <b>Aprovado</b>. Quando o usuário clicar em "Entrar com o Google", entrará direto sem barreiras com as permissões atribuídas acima.
                 </div>
             </div>
 
             <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
                 <button onclick="closeAddUserModal()" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition">Cancelar</button>
-                <button onclick="submitAddUser()" class="px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow transition flex items-center gap-1.5">
+                <button onclick="submitAddUser()" id="btn-submit-add-user" class="px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow transition flex items-center gap-1.5">
                     <i class="fa-solid fa-check"></i> Autorizar Acesso
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Configurar Permissões do Usuário -->
+    <div id="modal-edit-user-perms" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-user-gear text-indigo-600"></i> Configurar Permissões do Usuário
+                </h3>
+                <button onclick="closeEditUserPermsModal()" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+            </div>
+
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
+                <div class="font-bold text-slate-800" id="edit-user-perms-name">Nome do Usuário</div>
+                <div class="font-mono text-indigo-700 font-semibold" id="edit-user-perms-email">email@gmail.com</div>
+            </div>
+
+            <div id="edit-user-perms-notice" class="hidden p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900">
+            </div>
+
+            <input type="hidden" id="edit-user-perms-id">
+
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Perfil de Acesso: *</label>
+                    <select id="edit-user-perms-role" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <option value="viewer">👁️ Leitor (Visualiza relatórios e gráficos)</option>
+                        <option value="admin">👑 Administrador (Acesso total)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Status da Conta: *</label>
+                    <select id="edit-user-perms-status" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <option value="approved">✅ Aprovado / Ativo</option>
+                        <option value="pending">⏳ Aguardando Aprovação</option>
+                        <option value="blocked">🚫 Bloqueado / Suspenso</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Aplicativo Autorizado: *</label>
+                    <select id="edit-user-perms-apps" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <option value="minha_escola_mg">🏫 Minha Escola MG (Acesso apenas a este app)</option>
+                        <option value="mg_app_cidadao">🏛️ MG App Cidadão (Acesso apenas a este app)</option>
+                        <option value="all">🌐 Ambos os Apps (Pode alternar livremente)</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+                    <input type="checkbox" id="edit-user-perms-publish" class="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4">
+                    <label for="edit-user-perms-publish" class="text-xs font-bold text-slate-700 cursor-pointer">
+                        Permitir publicar respostas diretamente nas lojas (Google Play & App Store)
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button onclick="closeEditUserPermsModal()" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition">Cancelar</button>
+                <button onclick="submitEditUserPerms()" id="btn-save-user-perms" class="px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-floppy-disk"></i> Salvar Permissões
                 </button>
             </div>
         </div>
@@ -8961,6 +9162,27 @@ async function uploadPlayConsoleCsv(input) {
                             <option value="90">Expira em 90 dias</option>
                         </select>
                     </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Aplicativo Autorizado *</label>
+                        <select id="token-new-allowed-apps" class="w-full text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 font-semibold">
+                            <option value="minha_escola_mg">🏫 Minha Escola MG</option>
+                            <option value="mg_app_cidadao">🏛️ MG App Cidadão</option>
+                            <option value="all">🌐 Ambos os Apps</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Perfil de Acesso *</label>
+                        <select id="token-new-role" class="w-full text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 font-semibold">
+                            <option value="viewer">👁️ Leitor (Visualização)</option>
+                            <option value="admin">👑 Administrador</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center pt-5">
+                        <label class="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+                            <input type="checkbox" id="token-new-can-publish" class="rounded text-amber-600 focus:ring-amber-500 h-4 w-4">
+                            <span>Permitir publicar nas lojas</span>
+                        </label>
+                    </div>
                 </div>
                 <div class="flex justify-end pt-1">
                     <button onclick="submitCreateToken()" id="btn-create-token" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-lg shadow-sm transition flex items-center gap-2">
@@ -8984,7 +9206,8 @@ async function uploadPlayConsoleCsv(input) {
                     <table class="w-full text-left border-collapse text-xs">
                         <thead class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 sticky top-0">
                             <tr>
-                                <th class="p-3">Identificação</th>
+                                <th class="p-3">Identificação & Perfil</th>
+                                <th class="p-3">App Permitido</th>
                                 <th class="p-3">Código & Link Direto</th>
                                 <th class="p-3 text-center">Usos</th>
                                 <th class="p-3">Validade</th>
@@ -8994,7 +9217,7 @@ async function uploadPlayConsoleCsv(input) {
                         </thead>
                         <tbody id="tokens-table-tbody" class="divide-y divide-slate-100 bg-white">
                             <tr>
-                                <td colspan="6" class="p-4 text-center text-slate-400">Carregando tokens...</td>
+                                <td colspan="7" class="p-4 text-center text-slate-400">Carregando tokens...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -9051,6 +9274,29 @@ async function uploadPlayConsoleCsv(input) {
                     <label class="block text-[11px] font-bold text-slate-700 mb-1">Nome / Identificação *</label>
                     <input type="text" id="edit-token-label" class="w-full text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-medium">
                 </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Aplicativo Autorizado</label>
+                        <select id="edit-token-allowed-apps" class="w-full text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-semibold">
+                            <option value="minha_escola_mg">🏫 Minha Escola MG</option>
+                            <option value="mg_app_cidadao">🏛️ MG App Cidadão</option>
+                            <option value="all">🌐 Ambos os Apps</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Perfil</label>
+                        <select id="edit-token-role" class="w-full text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-semibold">
+                            <option value="viewer">👁️ Leitor (Visualização)</option>
+                            <option value="admin">👑 Administrador</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                    <input type="checkbox" id="edit-token-can-publish" class="rounded text-blue-600 focus:ring-blue-500 h-4 w-4">
+                    <label for="edit-token-can-publish" class="text-xs font-bold text-slate-700 cursor-pointer">
+                        Permitir publicar respostas nas lojas de aplicativos (Google Play / App Store)
+                    </label>
+                </div>
                 <div>
                     <label class="block text-[11px] font-bold text-slate-700 mb-1">Alterar Validade</label>
                     <select id="edit-token-expires" class="w-full text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-medium">
@@ -9084,20 +9330,20 @@ async function uploadPlayConsoleCsv(input) {
         async function loadTokensList() {
             const tbody = document.getElementById('tokens-table-tbody');
             if (!tbody) return;
-            tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Carregando tokens...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Carregando tokens...</td></tr>';
 
             try {
                 const res = await fetch('/api/admin/tokens');
                 if (!res.ok) {
                     if (res.status === 403 || res.status === 401) {
-                        tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-rose-500 font-bold">Apenas administradores podem gerenciar tokens.</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-rose-500 font-bold">Apenas administradores podem gerenciar tokens.</td></tr>';
                         return;
                     }
                     throw new Error('Falha ao carregar lista de tokens');
                 }
                 const tokens = await res.json();
                 if (!tokens || tokens.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-500 italic">Nenhum token criado até o momento.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-500 italic">Nenhum token criado até o momento.</td></tr>';
                     return;
                 }
 
@@ -9116,14 +9362,38 @@ async function uploadPlayConsoleCsv(input) {
                         statusBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Ativo</span>';
                     }
 
+                    let appBadge = '';
+                    const allowed = (t.allowed_apps || 'minha_escola_mg').toLowerCase();
+                    if (allowed === 'all' || allowed === 'todos' || allowed === 'ambos') {
+                        appBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-900 border border-indigo-200" title="Acesso a ambos os aplicativos"><i class="fa-solid fa-globe text-indigo-600"></i> Ambos</span>';
+                    } else if (allowed === 'mg_app_cidadao') {
+                        appBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-100 text-teal-900 border border-teal-200" title="Acesso ao MG App Cidadão"><i class="fa-solid fa-landmark text-teal-700"></i> MG App</span>';
+                    } else {
+                        appBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-200" title="Acesso ao Minha Escola MG"><i class="fa-solid fa-school text-amber-700"></i> Minha Escola</span>';
+                    }
+
+                    let roleBadge = t.role === 'admin'
+                        ? '<span class="px-1.5 py-0.5 rounded text-[10px] font-black bg-purple-100 text-purple-800 border border-purple-200">Admin</span>'
+                        : '<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">Leitor</span>';
+
+                    let pubBadge = t.can_publish
+                        ? '<span class="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300" title="Pode publicar respostas oficiais nas lojas"><i class="fa-solid fa-paper-plane text-emerald-600"></i> Lojas</span>'
+                        : '<span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-500" title="Sem envio direto às lojas">Sem envio</span>';
+
                     const expText = t.expires_at ? new Date(t.expires_at).toLocaleDateString('pt-BR') : 'Permanente';
                     const lastUsed = t.last_used_at ? new Date(t.last_used_at).toLocaleDateString('pt-BR') + ' às ' + new Date(t.last_used_at).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}) : 'Nunca usado';
 
                     return `
                         <tr class="hover:bg-slate-50 transition">
                             <td class="p-3 align-middle font-bold text-slate-800">
-                                <div>${escapeHtml(t.label)}</div>
+                                <div class="flex items-center gap-1.5">${escapeHtml(t.label)} ${roleBadge}</div>
                                 <div class="text-[10px] text-slate-400 font-normal">Criado em: ${new Date(t.created_at).toLocaleDateString('pt-BR')}</div>
+                            </td>
+                            <td class="p-3 align-middle">
+                                <div class="space-y-1">
+                                    <div>${appBadge}</div>
+                                    <div>${pubBadge}</div>
+                                </div>
                             </td>
                             <td class="p-3 align-middle">
                                 <div class="flex items-center gap-2 flex-wrap">
@@ -9145,7 +9415,7 @@ async function uploadPlayConsoleCsv(input) {
                             </td>
                             <td class="p-3 align-middle text-center">
                                 <div class="flex items-center justify-center gap-1">
-                                    <button onclick="openEditTokenModal('${t.id}', '${escapeHtml(t.token)}', '${escapeHtml(t.label)}', '${t.expires_at || ''}')" class="p-1.5 rounded hover:bg-slate-100 text-xs text-blue-600 hover:text-blue-800 transition cursor-pointer" title="Editar código da chave ou nome">
+                                    <button onclick="openEditTokenModal('${t.id}', '${escapeHtml(t.token)}', '${escapeHtml(t.label)}', '${t.expires_at || ''}', '${t.allowed_apps || 'minha_escola_mg'}', '${t.role || 'viewer'}', ${t.can_publish ? 1 : 0})" class="p-1.5 rounded hover:bg-slate-100 text-xs text-blue-600 hover:text-blue-800 transition cursor-pointer" title="Editar chave, escopo de aplicativo ou validade">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </button>
                                     <button onclick="toggleTokenActive('${t.id}', ${t.is_active ? 0 : 1})" class="p-1.5 rounded hover:bg-slate-100 text-xs transition cursor-pointer ${t.is_active ? 'text-amber-600 hover:text-amber-800' : 'text-emerald-600 hover:text-emerald-800'}" title="${t.is_active ? 'Desativar / Revogar acesso' : 'Reativar token'}">
@@ -9160,20 +9430,26 @@ async function uploadPlayConsoleCsv(input) {
                     `;
                 }).join('');
             } catch (err) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-rose-500">Erro: ${escapeHtml(err.message)}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-rose-500">Erro: ${escapeHtml(err.message)}</td></tr>`;
             }
         }
 
-        function openEditTokenModal(tokenId, tokenCode, label, expiresAt) {
+        function openEditTokenModal(tokenId, tokenCode, label, expiresAt, allowedApps, role, canPublish) {
             const idInput = document.getElementById('edit-token-id');
             const codeInput = document.getElementById('edit-token-code');
             const labelInput = document.getElementById('edit-token-label');
             const expSelect = document.getElementById('edit-token-expires');
+            const appsSelect = document.getElementById('edit-token-allowed-apps');
+            const roleSelect = document.getElementById('edit-token-role');
+            const publishCheck = document.getElementById('edit-token-can-publish');
 
             if (idInput) idInput.value = tokenId;
             if (codeInput) codeInput.value = tokenCode;
             if (labelInput) labelInput.value = label;
             if (expSelect) expSelect.value = 'keep';
+            if (appsSelect) appsSelect.value = allowedApps || 'minha_escola_mg';
+            if (roleSelect) roleSelect.value = role || 'viewer';
+            if (publishCheck) publishCheck.checked = !!canPublish;
 
             document.getElementById('modal-edit-token')?.classList.remove('hidden');
         }
@@ -9187,6 +9463,9 @@ async function uploadPlayConsoleCsv(input) {
             const tokenCode = (document.getElementById('edit-token-code')?.value || '').trim();
             const label = (document.getElementById('edit-token-label')?.value || '').trim();
             const expVal = document.getElementById('edit-token-expires')?.value;
+            const allowedApps = document.getElementById('edit-token-allowed-apps')?.value;
+            const role = document.getElementById('edit-token-role')?.value;
+            const canPublish = document.getElementById('edit-token-can-publish')?.checked;
 
             if (!tokenId) return;
             if (!tokenCode) {
@@ -9212,7 +9491,10 @@ async function uploadPlayConsoleCsv(input) {
             try {
                 const payload = {
                     token: tokenCode,
-                    label: label
+                    label: label,
+                    allowed_apps: allowedApps || 'minha_escola_mg',
+                    role: role || 'viewer',
+                    can_publish: !!canPublish
                 };
                 if (expiresDays !== null) {
                     payload.expires_in_days = expiresDays;
@@ -9264,6 +9546,9 @@ async function uploadPlayConsoleCsv(input) {
             const labelInput = document.getElementById('token-new-label');
             const codeInput = document.getElementById('token-new-code');
             const expSelect = document.getElementById('token-new-expires');
+            const appsSelect = document.getElementById('token-new-allowed-apps');
+            const roleSelect = document.getElementById('token-new-role');
+            const publishCheck = document.getElementById('token-new-can-publish');
 
             const label = (labelInput?.value || '').trim();
             if (!label) {
@@ -9273,6 +9558,9 @@ async function uploadPlayConsoleCsv(input) {
 
             const tokenCode = (codeInput?.value || '').trim();
             const expDays = parseInt(expSelect?.value || '0', 10);
+            const allowedApps = appsSelect?.value || 'minha_escola_mg';
+            const role = roleSelect?.value || 'viewer';
+            const canPublish = publishCheck?.checked || false;
 
             const btn = document.getElementById('btn-create-token');
             if (btn) {
@@ -9287,9 +9575,32 @@ async function uploadPlayConsoleCsv(input) {
                     body: JSON.stringify({
                         label: label,
                         token: tokenCode || null,
-                        expires_in_days: expDays > 0 ? expDays : null
+                        expires_in_days: expDays > 0 ? expDays : null,
+                        allowed_apps: allowedApps,
+                        role: role,
+                        can_publish: canPublish
                     })
                 });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    showAlert(`Chave de acesso <strong>${data.token}</strong> gerada com sucesso para <strong>${data.label}</strong>!`);
+                    if (labelInput) labelInput.value = '';
+                    if (codeInput) codeInput.value = '';
+                    await loadTokensList();
+                } else {
+                    const err = await res.json();
+                    showAlert(err.detail || 'Erro ao criar token.', 'error');
+                }
+            } catch (err) {
+                showAlert('Erro de conexão: ' + err.message, 'error');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Gerar Chave de Acesso';
+                }
+            }
+        }
 
                 if (res.ok) {
                     const data = await res.json();

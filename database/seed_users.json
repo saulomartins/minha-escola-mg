@@ -1,16 +1,20 @@
 [
   {
+    "email": "mgminhaescola@gmail.com",
+    "name": "Minha Escola MG",
+    "role": "admin",
+    "status": "approved",
+    "added_by": "system",
+    "allowed_apps": "minha_escola_mg",
+    "can_publish": 1
+  },
+  {
     "email": "saulomartins.costa@gmail.com",
     "name": "Saulo Martins Costa",
     "role": "admin",
     "status": "approved",
-    "added_by": "system"
-  },
-  {
-    "email": "mgminhaescola@gmail.com",
-    "name": "Minha Escola MG (Publicador Oficial)",
-    "role": "admin",
-    "status": "approved",
-    "added_by": "system"
+    "added_by": "system",
+    "allowed_apps": "all",
+    "can_publish": 0
   }
 ]

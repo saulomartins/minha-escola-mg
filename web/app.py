@@ -24,7 +24,7 @@ from database.db import (
     update_review_analysis, update_review_status, update_review_device_info,
     get_setting, set_setting, get_all_settings, get_connection,
     list_users, get_user_by_id, get_user_by_email, upsert_user,
-    update_user_status, update_user_role, delete_user, SUPER_ADMIN_EMAIL,
+    update_user_status, update_user_role, update_user_permissions, delete_user, SUPER_ADMIN_EMAIL,
     bulk_import_users, get_users_env_string,
     create_access_token, get_access_token_by_token, get_access_token_by_id,
     record_access_token_usage, list_access_tokens, toggle_access_token_status,
@@ -156,6 +156,14 @@ class AddUserRequest(BaseModel):
     email: str
     name: Optional[str] = ""
     role: str = "viewer"
+    allowed_apps: Optional[str] = "minha_escola_mg"
+    can_publish: Optional[bool] = False
+
+class UpdateUserPermissionsRequest(BaseModel):
+    role: Optional[str] = None
+    status: Optional[str] = None
+    allowed_apps: Optional[str] = None
+    can_publish: Optional[bool] = None
 
 class UserStatusRequest(BaseModel):
     status: str
@@ -171,11 +179,17 @@ class CreateTokenRequest(BaseModel):
     label: str
     token: Optional[str] = None
     expires_in_days: Optional[int] = None
+    allowed_apps: Optional[str] = "minha_escola_mg"
+    role: Optional[str] = "viewer"
+    can_publish: Optional[bool] = False
 
 class UpdateTokenRequest(BaseModel):
     label: Optional[str] = None
     token: Optional[str] = None
     expires_in_days: Optional[int] = None
+    allowed_apps: Optional[str] = None
+    role: Optional[str] = None
+    can_publish: Optional[bool] = None
 
 class ToggleTokenStatusRequest(BaseModel):
     is_active: bool
@@ -217,11 +231,13 @@ def get_current_user_from_request(request: Request) -> Optional[Dict[str, Any]]:
             "id": f"token_{token_db['id']}",
             "email": f"convidado_{token_db['token'].lower()}@token.local",
             "name": token_db.get("label") or "Convidado por Token",
-            "role": "viewer",
+            "role": token_db.get("role") or "viewer",
             "picture": "",
             "is_token_guest": True,
             "token_id": token_db["id"],
             "token_str": token_db["token"],
+            "allowed_apps": token_db.get("allowed_apps") or "minha_escola_mg",
+            "can_publish": bool(token_db.get("can_publish", False)),
             "status": "approved"
         }
 
@@ -237,13 +253,27 @@ def get_current_user_from_request(request: Request) -> Optional[Dict[str, Any]]:
         user_db = get_user_by_email(payload["email"])
 
     user_email = (payload.get("email") or "").lower()
-    # Se for o super admin ou mgminhaescola@gmail.com, sempre garante acesso admin ativo
+    # Se for o super admin ou mgminhaescola@gmail.com, sempre garante acesso admin ativo com suas regras estritas
     if user_email in [SUPER_ADMIN_EMAIL.lower(), "mgminhaescola@gmail.com"]:
         if not user_db:
-            user_db = upsert_user(user_email, name="Administrador", role="admin", status="approved", added_by="system")
+            user_db = upsert_user(
+                user_email,
+                name="Administrador",
+                role="admin",
+                status="approved",
+                added_by="system",
+                allowed_apps="all" if user_email == SUPER_ADMIN_EMAIL.lower() else "minha_escola_mg",
+                can_publish=(user_email == "mgminhaescola@gmail.com")
+            )
         else:
             user_db["role"] = "admin"
             user_db["status"] = "approved"
+            if user_email == SUPER_ADMIN_EMAIL.lower():
+                user_db["allowed_apps"] = "all"
+                user_db["can_publish"] = 0
+            elif user_email == "mgminhaescola@gmail.com":
+                user_db["allowed_apps"] = "minha_escola_mg"
+                user_db["can_publish"] = 1
 
     if not user_db or user_db.get("status") != "approved":
         return None
@@ -265,37 +295,57 @@ def require_auth(request: Request) -> Dict[str, Any]:
 
 def can_user_view_all_apps(user: Optional[Dict[str, Any]]) -> bool:
     """
-    Regra de Negócio:
-    Somente o email 'saulomartins.costa@gmail.com' pode ver ambos os apps ('minha_escola_mg' e 'mg_app_cidadao').
-    Qualquer outro usuário ou convidado visualiza estritamente apenas o 'minha_escola_mg'.
+    Retorna True se o usuário pode alternar e ver ambos os apps ('minha_escola_mg' e 'mg_app_cidadao').
+    Regra de Negócio Estrita:
+    - O e-mail 'saulomartins.costa@gmail.com' SEMPRE pode ver todos os apps.
+    - O e-mail 'mgminhaescola@gmail.com' NUNCA pode ver todos os apps (estritamente 'minha_escola_mg').
+    - Outros usuários ou tokens de acesso: respeitam o valor configurado em allowed_apps ('all').
     """
     if not user:
         return False
     user_email = (user.get("email") or "").lower().strip()
-    return user_email == "saulomartins.costa@gmail.com"
+    if user_email == "saulomartins.costa@gmail.com":
+        return True
+    if user_email == "mgminhaescola@gmail.com":
+        return False
+    allowed = (user.get("allowed_apps") or "minha_escola_mg").lower().strip()
+    return allowed in ["all", "todos", "ambos"]
 
 def can_user_publish_to_store(user: Optional[Dict[str, Any]]) -> bool:
     """
-    Regra de Negócio:
-    - O usuário 'saulomartins.costa@gmail.com' NÃO possui permissão para publicar nas lojas em nenhum app.
-    - Apenas o usuário oficial 'mgminhaescola@gmail.com' possui permissão de publicação direta nas lojas oficiais.
+    Retorna True se o usuário tem permissão para publicar respostas nas lojas de aplicativos (Google Play / App Store).
+    Regra de Negócio Estrita:
+    - O e-mail 'saulomartins.costa@gmail.com' NUNCA pode publicar respostas nas lojas (can_publish = False).
+    - O e-mail 'mgminhaescola@gmail.com' SEMPRE possui permissão oficial de publicação (can_publish = True).
+    - Outros usuários ou tokens de acesso: respeitam a permissão configurada em can_publish.
     """
     if not user:
         return False
     user_email = (user.get("email") or "").lower().strip()
     if user_email == "saulomartins.costa@gmail.com":
         return False
-    return user_email == "mgminhaescola@gmail.com"
+    if user_email == "mgminhaescola@gmail.com":
+        return True
+    return bool(user.get("can_publish"))
 
 def resolve_authorized_app_id(request: Request, requested_app_id: Optional[str] = None) -> str:
     """
     Garante o isolamento de visualização de aplicativos:
-    - Se for 'saulomartins.costa@gmail.com': respeita o requested_app_id ou o app_id ativo no sistema.
-    - Se for qualquer outro usuário: força SEMPRE 'minha_escola_mg'.
+    - Se for 'mgminhaescola@gmail.com': força SEMPRE 'minha_escola_mg'.
+    - Se o usuário tem permissão para ver todos os apps ('all'): respeita o requested_app_id ou o app_id ativo.
+    - Se tem acesso específico a um app (ex: 'mg_app_cidadao' ou 'minha_escola_mg'): força aquele app.
     """
     user = get_current_user_from_request(request)
+    if not user:
+        return "minha_escola_mg"
+    user_email = (user.get("email") or "").lower().strip()
+    if user_email == "mgminhaescola@gmail.com":
+        return "minha_escola_mg"
     if can_user_view_all_apps(user):
         return (requested_app_id or get_app_id() or "minha_escola_mg").strip()
+    user_allowed = (user.get("allowed_apps") or "minha_escola_mg").strip()
+    if user_allowed in ["mg_app_cidadao", "minha_escola_mg"]:
+        return user_allowed
     return "minha_escola_mg"
 
 @app.middleware("http")
@@ -565,9 +615,26 @@ async def api_admin_add_user(req: AddUserRequest, request: Request):
         name=req.name or "",
         role=req.role if req.role in ["admin", "viewer"] else "viewer",
         status="approved",
-        added_by=admin["email"]
+        added_by=admin["email"],
+        allowed_apps=req.allowed_apps or "minha_escola_mg",
+        can_publish=bool(req.can_publish)
     )
     return {"status": "ok", "user": user}
+
+@app.post("/api/admin/users/{user_id}/permissions")
+def api_admin_update_user_permissions(user_id: int, req: UpdateUserPermissionsRequest, request: Request):
+    """Atualiza perfil de acesso, status, app permitido e permissão de publicar respostas."""
+    require_admin(request)
+    updated = update_user_permissions(
+        user_id=user_id,
+        role=req.role,
+        status=req.status,
+        allowed_apps=req.allowed_apps,
+        can_publish=req.can_publish
+    )
+    if not updated:
+        raise HTTPException(status_code=400, detail="Não foi possível atualizar as permissões do usuário.")
+    return {"status": "ok", "user": updated}
 
 @app.post("/api/admin/users/{user_id}/status")
 async def api_admin_set_status(user_id: int, req: UserStatusRequest, request: Request):
@@ -622,7 +689,10 @@ def api_admin_create_token(req: CreateTokenRequest, request: Request):
         label=req.label,
         token_code=req.token,
         created_by=admin.get("email") or "admin",
-        expires_days=req.expires_in_days
+        expires_days=req.expires_in_days,
+        allowed_apps=req.allowed_apps or "minha_escola_mg",
+        role=req.role or "viewer",
+        can_publish=bool(req.can_publish)
     )
     return new_token
 
@@ -643,7 +713,10 @@ def api_admin_update_token(token_id: str, req: UpdateTokenRequest, request: Requ
             token_id=token_id,
             new_token=req.token,
             new_label=req.label,
-            expires_in_days=req.expires_in_days
+            expires_in_days=req.expires_in_days,
+            allowed_apps=req.allowed_apps,
+            role=req.role,
+            can_publish=req.can_publish
         )
         if not updated:
             raise HTTPException(status_code=404, detail="Token não encontrado.")
@@ -676,11 +749,11 @@ async def index(request: Request):
     
     user_can_view_all = can_user_view_all_apps(user)
     user_can_publish = can_user_publish_to_store(user)
+    user_app_id = resolve_authorized_app_id(request)
     
-    # Se o usuário não tem permissão para ver todos os apps (ou seja, qualquer usuário exceto saulomartins.costa@gmail.com),
-    # força estritamente o preset oficial do Minha Escola MG
+    # Se o usuário não tem permissão para ver todos os apps, carrega estritamente o preset autorizado
     if not user_can_view_all:
-        p_path = os.path.join(PRESETS_DIR, "minha_escola_mg.json")
+        p_path = os.path.join(PRESETS_DIR, f"{user_app_id}.json")
         if os.path.exists(p_path):
             with open(p_path, "r", encoding="utf-8") as f:
                 app_cfg = json.load(f)
