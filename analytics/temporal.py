@@ -86,8 +86,8 @@ def format_relative_time(days: int) -> str:
         return f"Há {years} anos"
 
 def get_temporal_diagnostics(app_id: Optional[str] = None, domain: Optional[str] = None) -> Dict[str, Any]:
-    current_app_id = app_id or (lambda: (__import__('config').get_app_id()))()
-    current_domain = domain or (lambda: (__import__('config').get_domain()))()
+    current_app_id = (app_id or (lambda: (__import__('config').get_app_id()))()).strip()
+    current_domain = domain or (lambda: (__import__('config').get_domain(current_app_id)))()
     
     from analytics.taxonomy import get_root_causes_map
     causes_map = get_root_causes_map(domain=current_domain)

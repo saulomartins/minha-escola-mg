@@ -677,14 +677,17 @@ async def index(request: Request):
     user_can_view_all = can_user_view_all_apps(user)
     user_can_publish = can_user_publish_to_store(user)
     
-    app_cfg = get_app_config()
-    # Se o usuário não tem permissão para ver todos os apps e o app ativo for outro (ex: mg_app_cidadao),
-    # força a visualização do Minha Escola MG
-    if not user_can_view_all and app_cfg.get("app_id") != "minha_escola_mg":
+    # Se o usuário não tem permissão para ver todos os apps (ou seja, qualquer usuário exceto saulomartins.costa@gmail.com),
+    # força estritamente o preset oficial do Minha Escola MG
+    if not user_can_view_all:
         p_path = os.path.join(PRESETS_DIR, "minha_escola_mg.json")
         if os.path.exists(p_path):
             with open(p_path, "r", encoding="utf-8") as f:
                 app_cfg = json.load(f)
+        else:
+            app_cfg = dict(DEFAULT_CONFIG)
+    else:
+        app_cfg = get_app_config()
                 
     response = templates.TemplateResponse(
         request=request,
@@ -1097,38 +1100,54 @@ async def api_import_play_console(file: UploadFile = File(...), app_id: Optional
         return JSONResponse(status_code=500, content={"success": False, "message": f"Erro ao processar CSV: {str(e)}"})
 
 @app.post("/api/reviews/apply-all-auto-replies")
-def api_apply_all_auto_replies():
+@app.post("/api/reviews/apply-all-auto-replies")
+def api_apply_all_auto_replies(request: Request, app_id: Optional[str] = None):
     """
     Gera e aplica respostas automáticas padronizadas e personalizadas para todas as avaliações reais
-    do Minha Escola MG (Google Play e Apple Store), cobrindo de 1 a 5 estrelas e respeitando o agrupamento de causa-raiz.
+    do app autorizado (Google Play e Apple Store), cobrindo de 1 a 5 estrelas e respeitando o agrupamento de causa-raiz.
     """
+    effective_app = resolve_authorized_app_id(request, app_id)
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM reviews")
+    cursor.execute("SELECT * FROM reviews WHERE app_id = ?", (effective_app,))
     rows = [dict(r) for r in cursor.fetchall()]
     
     updated_count = 0
+    now = datetime.utcnow().isoformat()
     for r in rows:
         root_cause = r.get("root_cause_id")
         if not root_cause:
-            c = classify_text_issue(r.get("content", ""), r.get("title", ""), r.get("rating", 3))
+            c = classify_text_issue(r.get("content", ""), r.get("title", ""), r.get("rating", 3), domain=get_domain(effective_app))
             root_cause = c["id"]
         
         reply_text = generate_auto_reply_for_review(r, root_cause_id=root_cause)
         
-        cursor.execute("""
-            UPDATE reviews 
-            SET root_cause_id = ?, 
-                ai_suggested_response = ?
-            WHERE id = ?
-        """, (root_cause, reply_text, r["id"]))
+        is_published = (r.get("published_to_store") == 1)
+        if not is_published:
+            cursor.execute("""
+                UPDATE reviews 
+                SET root_cause_id = ?, 
+                    ai_suggested_response = ?,
+                    local_response = COALESCE(local_response, ?),
+                    status = 'respondida',
+                    updated_at = ?
+                WHERE id = ?
+            """, (root_cause, reply_text, reply_text, now, r["id"]))
+        else:
+            cursor.execute("""
+                UPDATE reviews 
+                SET root_cause_id = ?, 
+                    ai_suggested_response = ?,
+                    updated_at = ?
+                WHERE id = ?
+            """, (root_cause, reply_text, now, r["id"]))
         updated_count += 1
         
     conn.commit()
     conn.close()
     return {
         "success": True, 
-        "message": f"Respostas automáticas padronizadas aplicadas com sucesso a todas as {updated_count} avaliações reais (Google Play e Apple Store, 1 a 5 estrelas)!",
+        "message": f"Respostas automáticas padronizadas aplicadas com sucesso a todas as {updated_count} avaliações reais de {get_app_name(effective_app)} (Google Play e Apple Store, 1 a 5 estrelas)!",
         "count": updated_count
     }
 
@@ -1498,11 +1517,10 @@ def resolve_apple_credentials(app_id: Optional[str] = None) -> Tuple[str, str, s
     return k_id, iss, p8
 
 @app.post("/api/sync")
-def api_sync():
-    active_app = get_app_id()
-    cfg = get_app_config()
-    target_pkg = cfg.get("google_play", {}).get("package_name") or get_google_play_package()
-    target_apple_id = cfg.get("apple_store", {}).get("app_id") or get_apple_store_id()
+def api_sync(request: Request, app_id: Optional[str] = None):
+    active_app = resolve_authorized_app_id(request, app_id)
+    target_pkg = get_google_play_package(active_app)
+    target_apple_id = get_apple_store_id(active_app)
 
     google_sa = resolve_google_play_service_account(active_app)
     google_reviews = []
@@ -1542,7 +1560,7 @@ def api_sync():
     # Analisa automaticamente novos itens que chegarem
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM reviews WHERE sentiment IS NULL")
+    cursor.execute("SELECT * FROM reviews WHERE sentiment IS NULL AND app_id = ?", (active_app,))
     unanalyzed = [dict(r) for r in cursor.fetchall()]
     conn.close()
     
@@ -1556,7 +1574,7 @@ def api_sync():
             suggested_response=analysis["suggested_response"]
         )
 
-    stats = get_stats()
+    stats = get_stats(app_id=active_app)
     new_total = new_google + new_apple
     if new_total > 0:
         msg = f"Sincronização concluída com sucesso! {new_total} novas avaliações foram mineradas e processadas ({new_google} Google Play, {new_apple} Apple Store). Total no banco: {stats['total']}."
@@ -1782,6 +1800,7 @@ def api_publish_batch(request: Request, store: Optional[str] = None):
             detail="Apenas o usuário oficial mgminhaescola@gmail.com possui permissão para publicar respostas em lote."
         )
 
+    effective_app = resolve_authorized_app_id(request)
     conn = get_connection()
     cursor = conn.cursor()
     
@@ -1790,8 +1809,9 @@ def api_publish_batch(request: Request, store: Optional[str] = None):
         WHERE status = 'respondida' 
           AND (published_to_store = 0 OR published_to_store IS NULL)
           AND (local_response IS NOT NULL OR ai_suggested_response IS NOT NULL)
+          AND app_id = ?
     """
-    params = []
+    params = [effective_app]
     if store and store != 'todas':
         query += " AND store = ?"
         params.append(store)
@@ -1808,10 +1828,8 @@ def api_publish_batch(request: Request, store: Optional[str] = None):
             "failed_count": 0
         }
         
-    google_sa = resolve_google_play_service_account()
-    apple_k_id = get_setting("apple_key_id", "")
-    apple_iss = get_setting("apple_issuer_id", "")
-    apple_p8 = get_setting("apple_private_key_p8", "")
+    google_sa = resolve_google_play_service_account(effective_app)
+    apple_k_id, apple_iss, apple_p8 = resolve_apple_credentials(effective_app)
     
     has_google = any(r["store"] == "google" for r in rows)
     has_apple = any(r["store"] == "apple" for r in rows)
@@ -1821,7 +1839,7 @@ def api_publish_batch(request: Request, store: Optional[str] = None):
             "success": False,
             "missing_credentials": True,
             "store": "google",
-            "message": f"Para mandar publicar as {len(rows)} respostas na Google Play, configure o arquivo JSON da Service Account da PRODEMGE."
+            "message": f"Para mandar publicar as {len(rows)} respostas na Google Play, configure o arquivo JSON da Service Account da PRODEMGE para {get_app_name(effective_app)}."
         }
         
     if has_apple and not (apple_k_id and apple_iss and apple_p8):
@@ -1829,7 +1847,7 @@ def api_publish_batch(request: Request, store: Optional[str] = None):
             "success": False,
             "missing_credentials": True,
             "store": "apple",
-            "message": f"Para mandar publicar as {len(rows)} respostas na App Store, configure as credenciais do App Store Connect."
+            "message": f"Para mandar publicar as {len(rows)} respostas na App Store, configure as credenciais do App Store Connect para {get_app_name(effective_app)}."
         }
         
     published_count = 0
@@ -1841,8 +1859,8 @@ def api_publish_batch(request: Request, store: Optional[str] = None):
         if not resp_text:
             continue
             
-        target_app = r.get("app_id") or get_app_id()
-        pkg = "com.prodemge.minhaescolamg" if target_app == "minha_escola_mg" else ("br.gov.prodemge.projetosocialminas" if target_app == "mg_app_cidadao" else get_google_play_package())
+        target_app = r.get("app_id") or effective_app
+        pkg = get_google_play_package(target_app)
         
         success = False
         msg = ""
@@ -1946,14 +1964,22 @@ def api_get_settings(request: Request, app_id: Optional[str] = None):
     masked["apple_key_id"] = cur_app_creds.get("apple_key_id", "")
     masked["apple_issuer_id"] = cur_app_creds.get("apple_issuer_id", "")
     
-    cfg = get_app_config()
-    support_val = settings.get("support_contact_url") or settings.get("support_email") or cfg.get("support_url")
-    masked["support_email"] = support_val
-    masked["support_contact_url"] = support_val
-    masked["app_name"] = cfg.get("app_name", "Minha Escola MG")
-    masked["organization_name"] = cfg.get("organization_name", "Prodemge")
-    masked["google_play_package"] = cfg.get("google_play", {}).get("package_name", "com.prodemge.minhaescolamg")
-    masked["apple_store_id"] = cfg.get("apple_store", {}).get("app_id", "6749247611")
+    if not user_can_view_all:
+        masked["app_name"] = get_app_name("minha_escola_mg")
+        masked["organization_name"] = "Governo de Minas Gerais / Prodemge"
+        masked["google_play_package"] = get_google_play_package("minha_escola_mg")
+        masked["apple_store_id"] = get_apple_store_id("minha_escola_mg")
+        masked["support_contact_url"] = get_support_url("minha_escola_mg")
+        masked["support_email"] = get_support_url("minha_escola_mg")
+    else:
+        cfg = get_app_config()
+        support_val = settings.get("support_contact_url") or settings.get("support_email") or cfg.get("support_url")
+        masked["support_email"] = support_val
+        masked["support_contact_url"] = support_val
+        masked["app_name"] = cfg.get("app_name", "Minha Escola MG")
+        masked["organization_name"] = cfg.get("organization_name", "Prodemge")
+        masked["google_play_package"] = cfg.get("google_play", {}).get("package_name", "com.prodemge.minhaescolamg")
+        masked["apple_store_id"] = cfg.get("apple_store", {}).get("app_id", "6749247611")
 
     return masked
 

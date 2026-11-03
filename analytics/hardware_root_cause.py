@@ -52,8 +52,8 @@ def get_hardware_root_cause_analytics(
     Retorna métricas cruzadas entre Fabricantes, Modelos de Celular e Causas-Raiz.
     Suporta filtros opcionais de marca e causa-raiz especificamente para o aplicativo ativo (app_id).
     """
-    target_app_id = app_id or (lambda: (__import__('config').get_app_id()))()
-    target_domain = domain or (lambda: (__import__('config').get_domain()))()
+    target_app_id = (app_id or (lambda: (__import__('config').get_app_id()))()).strip()
+    target_domain = domain or (lambda: (__import__('config').get_domain(target_app_id)))()
 
     from analytics.taxonomy import get_root_causes_config
     dynamic_causes = get_root_causes_config(domain=target_domain)

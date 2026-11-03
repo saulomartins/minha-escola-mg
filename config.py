@@ -299,15 +299,26 @@ def get_support_url(app_id: Optional[str] = None) -> str:
 
     return "https://forms.cloud.microsoft/r/JmZhSzXtwG"
 
-def get_google_play_package() -> str:
+def get_google_play_package(app_id: Optional[str] = None) -> str:
+    target_app = normalize_app_id(app_id or get_app_id())
+    if target_app == "minha_escola_mg":
+        return os.getenv("GOOGLE_PLAY_PACKAGE_MINHA_ESCOLA_MG") or "com.prodemge.minhaescolamg"
+    elif target_app == "mg_app_cidadao":
+        return os.getenv("GOOGLE_PLAY_PACKAGE_MG_APP_CIDADAO") or "br.gov.prodemge.projetosocialminas"
     gp = get_app_config().get("google_play", {})
     return gp.get("package_name", "com.prodemge.minhaescolamg")
 
-def get_apple_store_id() -> str:
+def get_apple_store_id(app_id: Optional[str] = None) -> str:
+    target_app = normalize_app_id(app_id or get_app_id())
+    if target_app == "minha_escola_mg":
+        return os.getenv("APPLE_STORE_ID_MINHA_ESCOLA_MG") or "6749247611"
+    elif target_app == "mg_app_cidadao":
+        return os.getenv("APPLE_STORE_ID_MG_APP_CIDADAO") or "1057649491"
     ap = get_app_config().get("apple_store", {})
     return ap.get("app_id", "6749247611")
 
-def get_apple_store_country() -> str:
+def get_apple_store_country(app_id: Optional[str] = None) -> str:
+    target_app = normalize_app_id(app_id or get_app_id())
     ap = get_app_config().get("apple_store", {})
     return ap.get("country", "br")
 

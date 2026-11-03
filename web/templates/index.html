@@ -544,7 +544,7 @@
                         <button onclick="applyAllAutoReplies()" id="btn-apply-auto-replies" class="px-4 py-2.5 text-xs font-bold bg-slate-900 hover:bg-black text-white rounded-xl shadow-sm transition flex items-center gap-2" title="Gera respostas automáticas personalizadas para todas as avaliações de 1 a 5 estrelas">
                             <i class="fa-solid fa-bolt text-amber-300"></i> Gerar Respostas (1 a 5 ⭐)
                         </button>
-                        <button onclick="publishBatch()" id="btn-publish-batch" class="{% if can_publish_to_store and current_user and current_user.email.lower() == 'mgminhaescola@gmail.com' %}flex{% else %}hidden{% endif %} px-4 py-2.5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm transition items-center gap-2" title="Mandar publicar todas as respostas salvas diretamente nas lojas oficiais (Google Play e App Store)">
+                        <button onclick="publishBatch()" id="btn-publish-batch" class="{% if can_publish_to_store %}flex{% else %}hidden{% endif %} px-4 py-2.5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm transition items-center gap-2" title="Mandar publicar todas as respostas salvas diretamente nas lojas oficiais (Google Play e App Store)">
                             <i class="fa-solid fa-paper-plane"></i> Mandar Publicar (<span id="count-pending-publish">0</span>)
                         </button>
                         <button onclick="exportToExcel('excel', 'all')" class="px-4 py-2.5 text-xs font-bold bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl shadow-sm transition flex items-center gap-2" title="Exportar TODOS os 500 comentários da base completa para Excel (.xlsx)">
@@ -3141,7 +3141,7 @@
     <!-- JavaScript da Aplicação -->
     <script>
         window.currentUserEmail = "{{ (current_user.email if current_user else 'acesso.livre@prodemge.gov.br') | lower }}";
-        window.isPublisher = (window.currentUserEmail === 'mgminhaescola@gmail.com');
+        window.isPublisher = (window.currentUserEmail === 'mgminhaescola@gmail.com' || {{ 'true' if can_publish_to_store else 'false' }});
 
         let debounceTimer;
         let chartParetoInstance = null;
@@ -3899,7 +3899,8 @@
 
         async function loadDeviceAnalytics() {
             try {
-                const res = await fetch('/api/analytics/devices');
+                const activeApp = (document.getElementById('input-app-id') ? document.getElementById('input-app-id').value : '') || 'minha_escola_mg';
+                const res = await fetch('/api/analytics/devices?app_id=' + encodeURIComponent(activeApp));
                 const data = await res.json();
 
                 // 1. KPIs Android vs iOS (Dinâmicos baseados no app ativo)
@@ -4042,7 +4043,8 @@
 
         async function loadStats() {
             try {
-                const res = await fetch('/api/stats');
+                const activeApp = (document.getElementById('input-app-id') ? document.getElementById('input-app-id').value : '') || 'minha_escola_mg';
+                const res = await fetch('/api/stats?app_id=' + encodeURIComponent(activeApp));
                 const data = await res.json();
                 
                 document.getElementById('stat-total').innerText = data.total;
@@ -4134,8 +4136,9 @@
             const device_brand = document.getElementById('filter-device-brand') ? document.getElementById('filter-device-brand').value : 'todas';
             const search = document.getElementById('filter-search') ? document.getElementById('filter-search').value : '';
 
+            const activeApp = (document.getElementById('input-app-id') ? document.getElementById('input-app-id').value : '') || 'minha_escola_mg';
             const params = new URLSearchParams({
-                store, rating, status, root_cause_id, os_name, device_brand, search, limit: 100
+                store, rating, status, root_cause_id, os_name, device_brand, search, limit: 100, app_id: activeApp
             });
             if (filterStuckAndroidOnly) {
                 params.append('stuck_android_12', 'true');
@@ -4457,7 +4460,8 @@
             showAlert("Gerando e aplicando respostas automáticas personalizadas para todas as 471 avaliações (1 a 5 estrelas)...", "info");
 
             try {
-                const res = await fetch('/api/reviews/apply-all-auto-replies', { method: 'POST' });
+                const activeApp = (document.getElementById('input-app-id') ? document.getElementById('input-app-id').value : '') || 'minha_escola_mg';
+                const res = await fetch('/api/reviews/apply-all-auto-replies?app_id=' + encodeURIComponent(activeApp), { method: 'POST' });
                 const data = await res.json();
                 if (data.success) {
                     showAlert(data.message, "success");
@@ -4482,7 +4486,8 @@
             showAlert("Conectando à Google Play Store e Apple App Store para buscar avaliações...", "info");
 
             try {
-                const res = await fetch('/api/sync', { method: 'POST' });
+                const activeApp = (document.getElementById('input-app-id') ? document.getElementById('input-app-id').value : '') || 'minha_escola_mg';
+                const res = await fetch('/api/sync?app_id=' + encodeURIComponent(activeApp), { method: 'POST' });
                 const data = await res.json();
                 
                 showAlert(data.message || "Sincronização com as lojas concluída com sucesso!");
@@ -5806,7 +5811,8 @@
 
         async function loadTemporalAnalytics() {
             try {
-                const res = await fetch('/api/analytics/temporal');
+                const activeApp = (document.getElementById('input-app-id') ? document.getElementById('input-app-id').value : '') || 'minha_escola_mg';
+                const res = await fetch('/api/analytics/temporal?app_id=' + encodeURIComponent(activeApp));
                 const data = await res.json();
                 currentTemporalData = data;
                 
@@ -6521,7 +6527,8 @@ async function uploadPlayConsoleCsv(input) {
             }
 
             try {
-                const res = await fetch('/api/analytics/hardware-root-cause');
+                const activeApp = (document.getElementById('input-app-id') ? document.getElementById('input-app-id').value : '') || 'minha_escola_mg';
+                const res = await fetch('/api/analytics/hardware-root-cause?app_id=' + encodeURIComponent(activeApp));
                 if (!res.ok) throw new Error('Falha ao carregar dados analíticos de hardware.');
                 const data = await res.json();
                 globalHardwareRcData = data;
