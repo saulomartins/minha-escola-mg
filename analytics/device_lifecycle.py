@@ -8,6 +8,7 @@ Mapeia para cada aparelho:
 - Recomendações técnicas para a equipe de desenvolvimento (Prodemge)
 """
 
+import re
 from typing import Dict, Any, Optional
 
 # Base de modelos comuns no mercado brasileiro e no banco de dados
@@ -159,7 +160,294 @@ DEVICE_LIFECYCLE_DB = {
         "dev_recommendation": "Excelente compatibilidade de hardware."
     },
 
-    # Samsung - Modelos Presos no Android <= 12
+"moto g73": {
+        "brand": "Motorola",
+        "model_name": "Moto G73 5G",
+        "launch_os": "Android 13",
+        "max_os": "Android 14 (Atualizado)",
+        "is_stuck_android_12": False,
+        "support_status": "✅ Suporte Ativo (Atualizado para Android 14)",
+        "status_badge": "green",
+        "google_oem_notes": "Lançado originalmente com Android 13 de fábrica e atualizado oficialmente pela Motorola para o Android 14 no Brasil (build U1TN34.82-12-7). Conta com 8GB RAM e conectividade 5G.",
+        "dev_recommendation": "Dispositivo recente e potente. Falhas relatadas não decorrem de hardware ou SO obsoleto, mas de instabilidades de rede, autenticação ou endpoints de backend."
+    },
+    "moto g84": {
+        "brand": "Motorola",
+        "model_name": "Moto G84 5G",
+        "launch_os": "Android 13",
+        "max_os": "Android 14",
+        "is_stuck_android_12": False,
+        "support_status": "✅ Suporte Ativo (Atualizado para Android 14)",
+        "status_badge": "green",
+        "google_oem_notes": "Lançado com Android 13 e atualizado para Android 14 pela Motorola.",
+        "dev_recommendation": "Dispositivo intermediário recente com alta vendagem no Brasil."
+    },
+    "moto g53": {
+        "brand": "Motorola",
+        "model_name": "Moto G53 5G",
+        "launch_os": "Android 13",
+        "max_os": "Android 14",
+        "is_stuck_android_12": False,
+        "support_status": "✅ Suporte Ativo (Atualizado para Android 14)",
+        "status_badge": "green",
+        "google_oem_notes": "Lançado com Android 13 e atualizado para Android 14.",
+        "dev_recommendation": "Dispositivo 5G acessível muito popular entre estudantes."
+    },
+    "moto g23": {
+        "brand": "Motorola",
+        "model_name": "Moto G23",
+        "launch_os": "Android 13",
+        "max_os": "Android 14",
+        "is_stuck_android_12": False,
+        "support_status": "✅ Suporte Ativo (Atualizado para Android 14)",
+        "status_badge": "green",
+        "google_oem_notes": "Lançado com Android 13 e atualizado para Android 14.",
+        "dev_recommendation": "Garantir fluidez em telas com taxa de atualização de 90Hz."
+    },
+    "moto g13": {
+        "brand": "Motorola",
+        "model_name": "Moto G13",
+        "launch_os": "Android 13",
+        "max_os": "Android 14",
+        "is_stuck_android_12": False,
+        "support_status": "✅ Suporte Ativo (Atualizado para Android 14)",
+        "status_badge": "green",
+        "google_oem_notes": "Lançado com Android 13 e atualizado para Android 14.",
+        "dev_recommendation": "Manter código otimizado para 4GB RAM."
+    },
+    "moto g72": {
+        "brand": "Motorola",
+        "model_name": "Moto G72",
+        "launch_os": "Android 12",
+        "max_os": "Android 13",
+        "is_stuck_android_12": False,
+        "support_status": "✅ Atualizado para Android 13",
+        "status_badge": "green",
+        "google_oem_notes": "Lançado com Android 12 e atualizado oficialmente pela Motorola para Android 13.",
+        "dev_recommendation": "Compatível com Android 13."
+    },
+    "moto g82": {
+        "brand": "Motorola",
+        "model_name": "Moto G82 5G",
+        "launch_os": "Android 12",
+        "max_os": "Android 13",
+        "is_stuck_android_12": False,
+        "support_status": "✅ Atualizado para Android 13",
+        "status_badge": "green",
+        "google_oem_notes": "Lançado com Android 12 e atualizado pela Motorola para Android 13.",
+        "dev_recommendation": "Suporte pleno a Android 13."
+    },
+    "moto g52": {
+        "brand": "Motorola",
+        "model_name": "Moto G52",
+        "launch_os": "Android 12",
+        "max_os": "Android 13",
+        "is_stuck_android_12": False,
+        "support_status": "✅ Atualizado para Android 13",
+        "status_badge": "green",
+        "google_oem_notes": "Lançado com Android 12 e atualizado para Android 13.",
+        "dev_recommendation": "Compatível com Android 13."
+    },
+    "moto g42": {
+        "brand": "Motorola",
+        "model_name": "Moto G42",
+        "launch_os": "Android 12",
+        "max_os": "Android 13",
+        "is_stuck_android_12": False,
+        "support_status": "✅ Atualizado para Android 13",
+        "status_badge": "green",
+        "google_oem_notes": "Atualizado para Android 13 pela Motorola.",
+        "dev_recommendation": "Compatível com Android 13."
+    },
+    "moto g71": {
+        "brand": "Motorola",
+        "model_name": "Moto G71 5G",
+        "launch_os": "Android 11",
+        "max_os": "Android 12",
+        "is_stuck_android_12": True,
+        "support_status": "🔴 Preso no Android 12 (Suporte Encerrado)",
+        "status_badge": "red",
+        "google_oem_notes": "Recebeu upgrade para Android 12 e encerrou ciclo de suporte. A Motorola não liberou Android 13.",
+        "dev_recommendation": "Garantir compatibilidade com APIs do Android 12."
+    },
+    "moto g41": {
+        "brand": "Motorola",
+        "model_name": "Moto G41",
+        "launch_os": "Android 11",
+        "max_os": "Android 12",
+        "is_stuck_android_12": True,
+        "support_status": "🔴 Preso no Android 12 (Suporte Encerrado)",
+        "status_badge": "red",
+        "google_oem_notes": "Suporte encerrado no Android 12 pela Motorola.",
+        "dev_recommendation": "Suporte ao Android 12."
+    },
+    "moto g31": {
+        "brand": "Motorola",
+        "model_name": "Moto G31",
+        "launch_os": "Android 11",
+        "max_os": "Android 12",
+        "is_stuck_android_12": True,
+        "support_status": "🔴 Preso no Android 12 (Suporte Encerrado)",
+        "status_badge": "red",
+        "google_oem_notes": "Suporte encerrado no Android 12 pela Motorola.",
+        "dev_recommendation": "Suporte ao Android 12."
+    },
+    "moto g24": {
+        "brand": "Motorola",
+        "model_name": "Moto G24 / G24 Power",
+        "launch_os": "Android 14",
+        "max_os": "Android 15",
+        "is_stuck_android_12": False,
+        "support_status": "✅ Suporte Ativo (Android 14 de fábrica)",
+        "status_badge": "green",
+        "google_oem_notes": "Aparelho lançado em 2024 de fábrica com Android 14.",
+        "dev_recommendation": "Compatibilidade com Android 14."
+    },
+    "moto g34": {
+        "brand": "Motorola",
+        "model_name": "Moto G34 5G",
+        "launch_os": "Android 14",
+        "max_os": "Android 15",
+        "is_stuck_android_12": False,
+        "support_status": "✅ Suporte Ativo (Android 14 de fábrica)",
+        "status_badge": "green",
+        "google_oem_notes": "Aparelho 5G de 2024 lançado de fábrica com Android 14.",
+        "dev_recommendation": "Compatibilidade com Android 14."
+    },
+    "moto g85": {
+        "brand": "Motorola",
+        "model_name": "Moto G85 5G",
+        "launch_os": "Android 14",
+        "max_os": "Android 16",
+        "is_stuck_android_12": False,
+        "support_status": "✅ Suporte Ativo Pleno",
+        "status_badge": "green",
+        "google_oem_notes": "Lançado com Android 14 e suporte a 2 grandes atualizações.",
+        "dev_recommendation": "Hardware moderno."
+    },
+    "galaxy a05": {
+        "brand": "Samsung",
+        "model_name": "Galaxy A05 / A05s",
+        "launch_os": "Android 13 / 14",
+        "max_os": "Android 15 / 16 (Suporte Samsung)",
+        "is_stuck_android_12": False,
+        "support_status": "✅ Suporte Ativo Pleno",
+        "status_badge": "green",
+        "google_oem_notes": "Lançado recentemente com garantia de upgrades pela Samsung.",
+        "dev_recommendation": "Aparelho básico moderno muito popular."
+    },
+    "galaxy a24": {
+        "brand": "Samsung",
+        "model_name": "Galaxy A24",
+        "launch_os": "Android 13",
+        "max_os": "Android 17 (Política 4 anos Samsung)",
+        "is_stuck_android_12": False,
+        "support_status": "✅ Suporte Ativo Pleno",
+        "status_badge": "green",
+        "google_oem_notes": "Recebe 4 grandes atualizações de SO pela Samsung.",
+        "dev_recommendation": "Suporte pleno."
+    },
+    "galaxy a25": {
+        "brand": "Samsung",
+        "model_name": "Galaxy A25 5G",
+        "launch_os": "Android 14",
+        "max_os": "Android 18 (Política 4 anos Samsung)",
+        "is_stuck_android_12": False,
+        "support_status": "✅ Suporte Ativo Pleno",
+        "status_badge": "green",
+        "google_oem_notes": "Garantia de 4 upgrades pela Samsung.",
+        "dev_recommendation": "Suporte pleno."
+    },
+    "galaxy a34": {
+        "brand": "Samsung",
+        "model_name": "Galaxy A34 5G",
+        "launch_os": "Android 13",
+        "max_os": "Android 17 (Política 4 anos Samsung)",
+        "is_stuck_android_12": False,
+        "support_status": "✅ Suporte Ativo Pleno",
+        "status_badge": "green",
+        "google_oem_notes": "Atualizado para Android 14 com garantia até Android 17.",
+        "dev_recommendation": "Excelente performance."
+    },
+    "galaxy a35": {
+        "brand": "Samsung",
+        "model_name": "Galaxy A35 5G",
+        "launch_os": "Android 14",
+        "max_os": "Android 18 (Política 4 anos Samsung)",
+        "is_stuck_android_12": False,
+        "support_status": "✅ Suporte Ativo Pleno",
+        "status_badge": "green",
+        "google_oem_notes": "Lançado em 2024 com 4 upgrades garantidos.",
+        "dev_recommendation": "Hardware moderno."
+    },
+    "galaxy a55": {
+        "brand": "Samsung",
+        "model_name": "Galaxy A55 5G",
+        "launch_os": "Android 14",
+        "max_os": "Android 18 (Política 4 anos Samsung)",
+        "is_stuck_android_12": False,
+        "support_status": "✅ Suporte Ativo Pleno",
+        "status_badge": "green",
+        "google_oem_notes": "Lançado em 2024 com 4 upgrades garantidos.",
+        "dev_recommendation": "Hardware premium intermediário."
+    },
+    "galaxy s21 fe": {
+        "brand": "Samsung",
+        "model_name": "Galaxy S21 FE 5G",
+        "launch_os": "Android 12",
+        "max_os": "Android 16 (Política 4 anos Samsung)",
+        "is_stuck_android_12": False,
+        "support_status": "✅ Suporte Ativo Pleno",
+        "status_badge": "green",
+        "google_oem_notes": "Atualizado para Android 14 e com suporte até Android 16.",
+        "dev_recommendation": "Topo de linha acessível com alta performance."
+    },
+    "redmi note 13": {
+        "brand": "Xiaomi",
+        "model_name": "Redmi Note 13 / 5G / Pro",
+        "launch_os": "Android 13 (MIUI 14)",
+        "max_os": "Android 15 (HyperOS)",
+        "is_stuck_android_12": False,
+        "support_status": "✅ Suporte Ativo Pleno",
+        "status_badge": "green",
+        "google_oem_notes": "Lançado com MIUI 14 e atualizado para HyperOS (Android 14).",
+        "dev_recommendation": "Aparelho de altíssima popularidade."
+    },
+    "redmi 12": {
+        "brand": "Xiaomi",
+        "model_name": "Redmi 12 / 12 5G",
+        "launch_os": "Android 13 (MIUI 14)",
+        "max_os": "Android 15 (HyperOS)",
+        "is_stuck_android_12": False,
+        "support_status": "✅ Suporte Ativo Pleno",
+        "status_badge": "green",
+        "google_oem_notes": "Atualizado para HyperOS (Android 14).",
+        "dev_recommendation": "Dispositivo recente."
+    },
+    "poco x5": {
+        "brand": "POCO / Xiaomi",
+        "model_name": "POCO X5 / X5 Pro 5G",
+        "launch_os": "Android 12 / 13",
+        "max_os": "Android 14 (HyperOS)",
+        "is_stuck_android_12": False,
+        "support_status": "✅ Atualizado para Android 14",
+        "status_badge": "green",
+        "google_oem_notes": "Atualizado para HyperOS.",
+        "dev_recommendation": "Intermediário potente."
+    },
+    "poco x6": {
+        "brand": "POCO / Xiaomi",
+        "model_name": "POCO X6 / X6 Pro 5G",
+        "launch_os": "Android 14 (HyperOS)",
+        "max_os": "Android 17",
+        "is_stuck_android_12": False,
+        "support_status": "✅ Suporte Ativo Pleno",
+        "status_badge": "green",
+        "google_oem_notes": "Lançado em 2024 de fábrica com HyperOS.",
+        "dev_recommendation": "Hardware avançado."
+    },
+
+        # Samsung - Modelos Presos no Android <= 12
     "galaxy a10": {
         "brand": "Samsung",
         "model_name": "Galaxy A10 / A10s",
@@ -711,6 +999,8 @@ OS_LIFECYCLE_DB = {
 def get_device_lifecycle(brand: Optional[str], model: Optional[str]) -> Dict[str, Any]:
     """
     Retorna metadados de ciclo de vida e última versão de SO suportada para um modelo de celular.
+    Utiliza correspondência exata, normalização de termos e limites de palavra (\b)
+    para evitar colisões como 'moto g7' casando indevidamente com 'moto g73'.
     """
     if not model or model in ("Não especificado", "Geral", "Dispositivo Android", "Apple iPhone"):
         b_name = (brand or "").lower()
@@ -734,116 +1024,33 @@ def get_device_lifecycle(brand: Optional[str], model: Optional[str]) -> Dict[str
         
     m_clean = model.lower().strip()
     
-    # 1. Busca exata
+    # 1. Busca exata direta no dicionário
     if m_clean in DEVICE_LIFECYCLE_DB:
         return DEVICE_LIFECYCLE_DB[m_clean]
         
-    # 2. Busca por termos
-    for key, data in DEVICE_LIFECYCLE_DB.items():
-        if key in m_clean or m_clean in key:
-            return data
+    # Remove ruídos de rede/conectividade para normalizar
+    m_no_conn = re.sub(r'\b(5g|4g|lte|dual sim|duos)\b', '', m_clean).strip()
+    m_no_conn = re.sub(r'\s+', ' ', m_no_conn)
+    if m_no_conn in DEVICE_LIFECYCLE_DB:
+        return DEVICE_LIFECYCLE_DB[m_no_conn]
+
+    # 2. Busca por limites de palavra (\b), testando chaves mais longas primeiro
+    # Isso garante que 'moto g73' seja avaliado ANTES de 'moto g7'
+    sorted_keys = sorted(DEVICE_LIFECYCLE_DB.keys(), key=len, reverse=True)
+    for key in sorted_keys:
+        # Padrão com limites de palavra
+        pattern = r'(?:\b|^)' + re.escape(key) + r'(?:\b|$)'
+        if re.search(pattern, m_clean) or re.search(pattern, m_no_conn):
+            return DEVICE_LIFECYCLE_DB[key]
             
-    # 3. Heurísticas baseadas no nome
-    if "g22" in m_clean:
-        return DEVICE_LIFECYCLE_DB["moto g22"]
-    if "e22" in m_clean:
-        return DEVICE_LIFECYCLE_DB["moto e22"]
-    if "e32" in m_clean:
-        return DEVICE_LIFECYCLE_DB["moto e32"]
-    if "g20" in m_clean:
-        return DEVICE_LIFECYCLE_DB["moto g20"]
-    if "g10" in m_clean:
-        return DEVICE_LIFECYCLE_DB["moto g10"]
-    if "g30" in m_clean:
-        return DEVICE_LIFECYCLE_DB["moto g30"]
-    if "g32" in m_clean:
-        return DEVICE_LIFECYCLE_DB["moto g32"]
-    if "g04" in m_clean:
-        return DEVICE_LIFECYCLE_DB["moto g04"]
-    if "g14" in m_clean:
-        return DEVICE_LIFECYCLE_DB["moto g14"]
-    if "g54" in m_clean:
-        return DEVICE_LIFECYCLE_DB["moto g54"]
-    if "g7" in m_clean:
-        return DEVICE_LIFECYCLE_DB["moto g7"]
-    if "g8" in m_clean:
-        return DEVICE_LIFECYCLE_DB["moto g8"]
-    if "g9" in m_clean:
-        return DEVICE_LIFECYCLE_DB["moto g9"]
-    if "a10s" in m_clean:
-        return DEVICE_LIFECYCLE_DB["galaxy a10s"]
-    if "a10" in m_clean:
-        return DEVICE_LIFECYCLE_DB["galaxy a10"]
-    if "a01" in m_clean:
-        return DEVICE_LIFECYCLE_DB["galaxy a01"]
-    if "a02" in m_clean:
-        return DEVICE_LIFECYCLE_DB["galaxy a02"]
-    if "a03" in m_clean:
-        return DEVICE_LIFECYCLE_DB["galaxy a03 core"] if "core" in m_clean else DEVICE_LIFECYCLE_DB["galaxy a03"]
-    if "a11" in m_clean:
-        return DEVICE_LIFECYCLE_DB["galaxy a11"]
-    if "a12" in m_clean:
-        return DEVICE_LIFECYCLE_DB["galaxy a12"]
-    if "a14" in m_clean:
-        return DEVICE_LIFECYCLE_DB["galaxy a14"]
-    if "a15" in m_clean:
-        return DEVICE_LIFECYCLE_DB["galaxy a15"]
-    if "a22" in m_clean:
-        return DEVICE_LIFECYCLE_DB["galaxy a22"]
-    if "a32" in m_clean:
-        return DEVICE_LIFECYCLE_DB["galaxy a32"]
-    if "a54" in m_clean:
-        return DEVICE_LIFECYCLE_DB["galaxy a54"]
-    if "a20" in m_clean:
-        return DEVICE_LIFECYCLE_DB["galaxy a20"]
-    if "a21" in m_clean:
-        return DEVICE_LIFECYCLE_DB["galaxy a21s"]
-    if "k52" in m_clean:
-        return DEVICE_LIFECYCLE_DB["lg k52"]
-    if "k62" in m_clean:
-        return DEVICE_LIFECYCLE_DB["lg k62"]
-    if "k41" in m_clean or "k51" in m_clean:
-        return DEVICE_LIFECYCLE_DB["lg k41s"]
-    if "13c" in m_clean:
-        return DEVICE_LIFECYCLE_DB["redmi 13c"]
-    if "12c" in m_clean:
-        return DEVICE_LIFECYCLE_DB["redmi 12c"]
-    if "note 12" in m_clean:
-        return DEVICE_LIFECYCLE_DB["redmi note 12"]
-    if "note 11" in m_clean:
-        return DEVICE_LIFECYCLE_DB["redmi note 11"]
-    if "note 8" in m_clean:
-        return DEVICE_LIFECYCLE_DB["redmi note 8"]
-    if "note 9" in m_clean:
-        return DEVICE_LIFECYCLE_DB["redmi note 9"]
-    if "10a" in m_clean:
-        return DEVICE_LIFECYCLE_DB["redmi 10a"]
-    if "c40" in m_clean or "poco c40" in m_clean:
-        return DEVICE_LIFECYCLE_DB["poco c40"]
-    if "poco x3 pro" in m_clean or "x3 pro" in m_clean:
-        return DEVICE_LIFECYCLE_DB["poco x3 pro"]
-    if "poco x3" in m_clean or "x3 nfc" in m_clean:
-        return DEVICE_LIFECYCLE_DB["poco x3"]
-    if "redmi 9a" in m_clean or "9a" in m_clean:
-        return DEVICE_LIFECYCLE_DB["redmi 9a"]
-    if "redmi 9c" in m_clean or "9c" in m_clean:
-        return DEVICE_LIFECYCLE_DB["redmi 9c"]
-    if "redmi 9" in m_clean:
-        return DEVICE_LIFECYCLE_DB["redmi 9"]
-    if "iphone 13" in m_clean:
-        return DEVICE_LIFECYCLE_DB["iphone 13"]
-    if "iphone 12" in m_clean:
-        return DEVICE_LIFECYCLE_DB["iphone 12"]
-    if "iphone 11" in m_clean:
-        return DEVICE_LIFECYCLE_DB["iphone 11"]
-    if "iphone xr" in m_clean or "xr" in m_clean:
-        return DEVICE_LIFECYCLE_DB["iphone xr"]
-    if "iphone 8" in m_clean:
-        return DEVICE_LIFECYCLE_DB["iphone 8"]
-    if "iphone 7" in m_clean:
-        return DEVICE_LIFECYCLE_DB["iphone 7"]
-    if "iphone 6" in m_clean:
-        return DEVICE_LIFECYCLE_DB["iphone 6s"]
+    # 3. Busca por identificador do modelo sem prefixo de marca (ex: 'g73', 'g84', 'a14', 'note 12')
+    for key in sorted_keys:
+        # Extrai sub-termo (ex: "moto g73" -> "g73", "galaxy a14" -> "a14", "redmi note 12" -> "note 12")
+        short_key = re.sub(r'^(moto|motorola|galaxy|samsung|redmi|xiaomi|poco|apple|iphone)\s+', '', key).strip()
+        if short_key and len(short_key) >= 2:
+            short_pat = r'(?:\b|^)' + re.escape(short_key) + r'(?:\b|$)'
+            if re.search(short_pat, m_clean) or re.search(short_pat, m_no_conn):
+                return DEVICE_LIFECYCLE_DB[key]
         
     # Padrão para modelos desconhecidos
     return {
@@ -904,6 +1111,11 @@ def evaluate_stuck_android_12(
     """
     Avalia se um dispositivo/avaliação refere-se a um celular que NÃO ATUALIZA para versão maior que Android 12
     (ou seja, parou no Android 12, 11, 10 ou anterior, e não recebe mais atualização para Android 13+).
+    
+    REGRA INVIOLÁVEL DE PREVALÊNCIA DA REALIDADE (Telemetria Real):
+    Se o usuário está comprovadamente executando Android 13 ou superior (ou SDK >= 33),
+    ele JAMAIS pode ser marcado como preso no Android <= 12, e sua versão máxima oficial
+    não pode ser inferior à versão em que o aparelho está comprovadamente operando.
     """
     brand_lower = (brand or "").lower()
     os_name_lower = (os_name or "").lower()
@@ -925,13 +1137,54 @@ def evaluate_stuck_android_12(
             "recommendation": ""
         }
         
+    # Extrai dados numéricos da telemetria da loja
+    current_android_num = None
+    current_sdk = None
+    
+    sdk_m = re.search(r'sdk\s*(\d+)', os_ver_str, re.IGNORECASE)
+    if sdk_m:
+        current_sdk = int(sdk_m.group(1))
+        
+    num_m = re.search(r'android\s*(\d+)', os_ver_str, re.IGNORECASE)
+    if num_m:
+        current_android_num = int(num_m.group(1))
+    elif os_ver_str.isdigit():
+        current_android_num = int(os_ver_str)
+        
+    # Flag: o usuário já está no Android 13 ou superior?
+    is_running_android_13_plus = (
+        (current_sdk is not None and current_sdk >= 33) or
+        (current_android_num is not None and current_android_num >= 13)
+    )
+    
     life = get_device_lifecycle(brand, model)
     max_os = life.get("max_os", "")
+    has_upgrade_to_13_plus = any(k in max_os.lower() for k in ["android 13", "android 14", "android 15", "android 16", "hyperos"])
     
+    # PREVALÊNCIA DA TELEMETRIA REAL:
+    if is_running_android_13_plus:
+        ver_label = f"Android {current_android_num}" if current_android_num else f"Android (SDK {current_sdk})"
+        # Se o catálogo tiver um max_os menor que a versão atual (ou desatualizado), ajusta
+        adjusted_max_os = max_os
+        if not has_upgrade_to_13_plus or max_os in ("Verificar com fabricante", "Não catalogado"):
+            adjusted_max_os = f"{ver_label}+ (Confirmado em Telemetria)"
+            
+        return {
+            "is_stuck": False,
+            "is_stuck_android_12": False,
+            "badge_text": None,
+            "badge_subtext": None,
+            "badge_color": None,
+            "reason": f"Dispositivo operando em {ver_label} (telemetria oficial Google Play).",
+            "max_os": adjusted_max_os,
+            "last_official_os": life.get("last_official_os") or adjusted_max_os,
+            "support_status": life.get("support_status") if has_upgrade_to_13_plus else f"✅ Suporte Ativo (Operando em {ver_label})",
+            "user_action_possible": True,
+            "recommendation": life.get("dev_recommendation") or "Dispositivo com SO moderno."
+        }
+        
     is_stuck = False
     reasons = []
-    
-    has_upgrade_to_13_plus = any(k in max_os.lower() for k in ["android 13", "android 14", "android 15", "android 16"])
     
     # 1. Verificação direta pelo modelo catalogado
     if life.get("is_stuck_android_12") is True:
@@ -1001,4 +1254,3 @@ def evaluate_stuck_android_12(
         "user_action_possible": True,
         "recommendation": life.get("dev_recommendation", "")
     }
-
