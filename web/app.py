@@ -1990,8 +1990,8 @@ def api_get_settings(request: Request, app_id: Optional[str] = None):
     current_app = effective_app if not user_can_view_all else get_app_id()
     selected_app = effective_app
 
-    # Dicionário detalhado por app: Saulo vê ambos, outros veem apenas Minha Escola
-    known_apps = ["minha_escola_mg", "mg_app_cidadao"] if user_can_view_all else ["minha_escola_mg"]
+    # Dicionário detalhado por app: Saulo vê ambos, outros veem seu app autorizado
+    known_apps = ["minha_escola_mg", "mg_app_cidadao"] if user_can_view_all else [effective_app]
     apps_credentials = {}
 
     for a_id in known_apps:
@@ -2038,12 +2038,12 @@ def api_get_settings(request: Request, app_id: Optional[str] = None):
     masked["apple_issuer_id"] = cur_app_creds.get("apple_issuer_id", "")
     
     if not user_can_view_all:
-        masked["app_name"] = get_app_name("minha_escola_mg")
+        masked["app_name"] = get_app_name(effective_app)
         masked["organization_name"] = "Governo de Minas Gerais / Prodemge"
-        masked["google_play_package"] = get_google_play_package("minha_escola_mg")
-        masked["apple_store_id"] = get_apple_store_id("minha_escola_mg")
-        masked["support_contact_url"] = get_support_url("minha_escola_mg")
-        masked["support_email"] = get_support_url("minha_escola_mg")
+        masked["google_play_package"] = get_google_play_package(effective_app)
+        masked["apple_store_id"] = get_apple_store_id(effective_app)
+        masked["support_contact_url"] = get_support_url(effective_app)
+        masked["support_email"] = get_support_url(effective_app)
     else:
         cfg = get_app_config()
         support_val = settings.get("support_contact_url") or settings.get("support_email") or cfg.get("support_url")
@@ -2062,7 +2062,8 @@ def api_update_settings(request: Request, req: SettingsRequest):
     user_can_view_all = can_user_view_all_apps(user)
     user_can_publish = can_user_publish_to_store(user)
     
-    if req.app_id is not None and req.app_id != "minha_escola_mg" and not user_can_view_all:
+    effective_app = resolve_authorized_app_id(request)
+    if req.app_id is not None and req.app_id != effective_app and not user_can_view_all:
         raise HTTPException(
             status_code=403,
             detail="Você não possui permissão para configurar ou alternar para outros aplicativos."
@@ -2070,9 +2071,9 @@ def api_update_settings(request: Request, req: SettingsRequest):
     if req.auto_publish_direct == "true" and not user_can_publish:
         req.auto_publish_direct = "false"
 
-    target_app = (req.target_app_id or req.app_id or get_app_id()).strip()
-    if target_app != "minha_escola_mg" and not user_can_view_all:
-        target_app = "minha_escola_mg"
+    target_app = (req.target_app_id or req.app_id or effective_app).strip()
+    if target_app != effective_app and not user_can_view_all:
+        target_app = effective_app
 
     if req.app_id is not None:
         set_setting("app_id", req.app_id.strip())

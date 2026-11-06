@@ -2136,12 +2136,23 @@ def sync_seed_tokens():
         print(f"Aviso ao sincronizar seed_tokens.json: {e}")
 
 def get_tokens_env_string() -> str:
-    """Gera a string pronta para colar no Render Dashboard (variável GUEST_ACCESS_TOKEN)."""
+    """
+    Gera a string pronta para colar no Render Dashboard (variável GUEST_ACCESS_TOKEN).
+    Formato: TOKEN:LABEL:ALLOWED_APPS:ROLE:CAN_PUBLISH
+    Exemplo: MEMG-2026:Acesso Minha Escola:minha_escola_mg:viewer:0,MGAPP-2026:Acesso MG App:mg_app_cidadao:viewer:0
+    """
     tokens = list_access_tokens()
     active_tokens = [t for t in tokens if t.get("is_active")]
     if not active_tokens:
         return ""
-    items = [f"{t['token']}:{t['label']}" for t in active_tokens]
+    items = []
+    for t in active_tokens:
+        code = t['token']
+        label = t['label'].replace(":", " - ")
+        app = t.get('allowed_apps') or 'minha_escola_mg'
+        role = t.get('role') or 'viewer'
+        pub = 1 if t.get('can_publish') else 0
+        items.append(f"{code}:{label}:{app}:{role}:{pub}")
     return ",".join(items)
 
 def load_seed_tokens_into_cursor(cursor, now_iso: str):
@@ -2211,46 +2222,105 @@ def load_seed_tokens_into_cursor(cursor, now_iso: str):
     )
     if env_token:
         try:
-            items = [x.strip() for x in env_token.split(",") if x.strip()]
-            for item in items:
-                if ":" in item:
-                    code_val, label_val = item.split(":", 1)
-                else:
-                    code_val, label_val = item, "Token Oficial (Configurado via Ambiente Render)"
-                code_clean = code_val.strip().upper().replace(" ", "-")
-                if not code_clean:
-                    continue
-                cursor.execute("SELECT id FROM access_tokens WHERE UPPER(TRIM(token)) = ?", (code_clean,))
-                row = cursor.fetchone()
-                if not row:
-                    tok_id = "tok_env_" + hashlib.md5(code_clean.encode('utf-8')).hexdigest()[:10]
-                    cursor.execute("""
-                    INSERT INTO access_tokens (id, token, label, created_by, created_at, expires_at, is_active, last_used_at, usage_count, allowed_apps, role, can_publish)
-                    VALUES (?, ?, ?, 'env_var', ?, NULL, 1, NULL, 0, 'minha_escola_mg', 'viewer', 0)
-                    """, (tok_id, code_clean, label_val.strip(), now_iso))
-                else:
-                    cursor.execute("UPDATE access_tokens SET is_active = 1, label = ? WHERE id = ?", (label_val.strip(), row[0]))
+            if env_token.startswith("["):
+                # Formato JSON completo
+                items_data = json.loads(env_token)
+                for item in items_data:
+                    code_clean = (item.get("token") or "").strip().upper().replace(" ", "-")
+                    if not code_clean:
+                        continue
+                    label_val = (item.get("label") or "Token de Acesso").strip()
+                    app_val = (item.get("allowed_apps") or "minha_escola_mg").strip().lower()
+                    role_val = (item.get("role") or "viewer").strip().lower()
+                    pub_val = 1 if item.get("can_publish") else 0
+                    
+                    if app_val in ["todos", "ambos"]:
+                        app_val = "all"
+                    elif app_val not in ["minha_escola_mg", "mg_app_cidadao", "all"]:
+                        app_val = "minha_escola_mg"
+
+                    cursor.execute("SELECT id FROM access_tokens WHERE UPPER(TRIM(token)) = ?", (code_clean,))
+                    row = cursor.fetchone()
+                    if not row:
+                        tok_id = "tok_env_" + hashlib.md5(code_clean.encode('utf-8')).hexdigest()[:10]
+                        cursor.execute("""
+                        INSERT INTO access_tokens (id, token, label, created_by, created_at, expires_at, is_active, last_used_at, usage_count, allowed_apps, role, can_publish)
+                        VALUES (?, ?, ?, 'env_var', ?, NULL, 1, NULL, 0, ?, ?, ?)
+                        """, (tok_id, code_clean, label_val, now_iso, app_val, role_val, pub_val))
+                    else:
+                        cursor.execute("""
+                        UPDATE access_tokens 
+                        SET is_active = 1, label = ?, allowed_apps = ?, role = ?, can_publish = ? 
+                        WHERE id = ?
+                        """, (label_val, app_val, role_val, pub_val, row[0]))
+            else:
+                # Formato delimitado por vírgulas e dois-pontos:
+                # TOKEN:LABEL:ALLOWED_APPS:ROLE:CAN_PUBLISH
+                raw_items = [x.strip() for x in env_token.split(",") if x.strip()]
+                for raw_item in raw_items:
+                    parts = [p.strip() for p in raw_item.split(":")]
+                    if not parts or not parts[0]:
+                        continue
+                    code_clean = parts[0].upper().replace(" ", "-")
+                    
+                    # Defaults inteligentes com base no nome do token
+                    label_val = "Token Oficial"
+                    app_val = "mg_app_cidadao" if ("MGAPP" in code_clean or "CIDADAO" in code_clean) else "minha_escola_mg"
+                    role_val = "viewer"
+                    pub_val = 0
+                    
+                    if len(parts) == 1:
+                        label_val = f"Token Oficial ({code_clean})"
+                    elif len(parts) == 2:
+                        label_val = parts[1]
+                        if parts[1].lower() in ["mg_app_cidadao", "minha_escola_mg", "all", "ambos", "todos"]:
+                            app_val = parts[1].lower()
+                            label_val = f"Token Oficial ({code_clean})"
+                    elif len(parts) == 3:
+                        label_val = parts[1]
+                        app_val = parts[2].lower()
+                    elif len(parts) == 4:
+                        label_val = parts[1]
+                        app_val = parts[2].lower()
+                        role_val = parts[3].lower() if parts[3].lower() in ["admin", "viewer"] else "viewer"
+                    elif len(parts) >= 5:
+                        label_val = parts[1]
+                        app_val = parts[2].lower()
+                        role_val = parts[3].lower() if parts[3].lower() in ["admin", "viewer"] else "viewer"
+                        pub_val = 1 if parts[4] in ["1", "true", "True"] else 0
+                        
+                    if app_val in ["todos", "ambos"]:
+                        app_val = "all"
+                    elif app_val not in ["minha_escola_mg", "mg_app_cidadao", "all"]:
+                        app_val = "minha_escola_mg"
+
+                    cursor.execute("SELECT id FROM access_tokens WHERE UPPER(TRIM(token)) = ?", (code_clean,))
+                    row = cursor.fetchone()
+                    if not row:
+                        tok_id = "tok_env_" + hashlib.md5(code_clean.encode('utf-8')).hexdigest()[:10]
+                        cursor.execute("""
+                        INSERT INTO access_tokens (id, token, label, created_by, created_at, expires_at, is_active, last_used_at, usage_count, allowed_apps, role, can_publish)
+                        VALUES (?, ?, ?, 'env_var', ?, NULL, 1, NULL, 0, ?, ?, ?)
+                        """, (tok_id, code_clean, label_val, now_iso, app_val, role_val, pub_val))
+                    else:
+                        cursor.execute("""
+                        UPDATE access_tokens 
+                        SET is_active = 1, label = ?, allowed_apps = ?, role = ?, can_publish = ? 
+                        WHERE id = ?
+                        """, (label_val, app_val, role_val, pub_val, row[0]))
         except Exception as e:
             print(f"Aviso ao processar GUEST_ACCESS_TOKEN env: {e}")
 
     # 3. Fallback dinâmico: apenas se não tem seed_tokens.json, não tem env_token, e a tabela está vazia
     cursor.execute("SELECT COUNT(*) FROM access_tokens")
     if cursor.fetchone()[0] == 0:
-        app_cfg = (lambda: (__import__('config').get_app_config()))()
-        default_token = (app_cfg.get("guest_token") or f"{app_cfg.get('app_short_name', 'APP').upper()}-2026").strip().upper().replace(" ", "-")
-        default_label = f"Acesso Geral - {app_cfg.get('app_name', 'Painel')}"
         cursor.execute("""
         INSERT INTO access_tokens (
             id, token, label, created_by, created_at, expires_at, is_active, last_used_at, usage_count, allowed_apps, role, can_publish
-        ) VALUES (?, ?, ?, ?, ?, ?, 1, NULL, 0, 'minha_escola_mg', 'viewer', 0)
-        """, (
-            "tok_default_initial",
-            default_token,
-            default_label,
-            app_cfg.get("support_email", "admin@app.com"),
-            now_iso,
-            None
-        ))
+        ) VALUES 
+        ('tok_default_memg', 'MEMG-2026', 'Acesso Minha Escola MG', 'sistema', ?, NULL, 1, NULL, 0, 'minha_escola_mg', 'viewer', 0),
+        ('tok_default_mgapp', 'MGAPP-2026', 'Acesso MG App Cidadão', 'sistema', ?, NULL, 1, NULL, 0, 'mg_app_cidadao', 'viewer', 0)
+        """, (now_iso, now_iso))
 
 def create_access_token(
     label: str,
@@ -2381,6 +2451,7 @@ def get_access_token_by_token(token_str: str) -> Optional[Dict[str, Any]]:
     app_cfg = (lambda: (__import__('config').get_app_config()))()
     cfg_token = (app_cfg.get("guest_token") or "").strip().upper().replace(" ", "-")
     if cfg_token and clean_tok == cfg_token:
+        target_app = app_cfg.get("app_id", "minha_escola_mg")
         return {
             "id": "tok_config_master",
             "token": cfg_token,
@@ -2390,10 +2461,13 @@ def get_access_token_by_token(token_str: str) -> Optional[Dict[str, Any]]:
             "expires_at": None,
             "is_active": 1,
             "last_used_at": None,
-            "usage_count": 1
+            "usage_count": 1,
+            "allowed_apps": target_app,
+            "role": "viewer",
+            "can_publish": 0
         }
 
-    # Compatibilidade com chaves legadas do Minha Escola MG
+    # Compatibilidade com chaves mestres oficiais
     if clean_tok in ("MEMG-2026", "MINHAESCOLA-SEE-2026"):
         return {
             "id": "tok_default_initial",
@@ -2404,7 +2478,25 @@ def get_access_token_by_token(token_str: str) -> Optional[Dict[str, Any]]:
             "expires_at": None,
             "is_active": 1,
             "last_used_at": "2026-10-28T10:00:00.000000",
-            "usage_count": 5
+            "usage_count": 5,
+            "allowed_apps": "minha_escola_mg",
+            "role": "viewer",
+            "can_publish": 0
+        }
+    elif clean_tok in ("MGAPP-2026", "PRODEMGE-CIDADAO-2026"):
+        return {
+            "id": "tok_mgapp_master",
+            "token": clean_tok,
+            "label": "Acesso Geral MG App Cidadão",
+            "created_by": "saulomartins.costa@gmail.com",
+            "created_at": "2026-10-07T14:25:23.976240",
+            "expires_at": None,
+            "is_active": 1,
+            "last_used_at": "2026-10-28T10:00:00.000000",
+            "usage_count": 1,
+            "allowed_apps": "mg_app_cidadao",
+            "role": "viewer",
+            "can_publish": 0
         }
 
     return None
