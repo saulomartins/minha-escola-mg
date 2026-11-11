@@ -357,6 +357,7 @@ async def auth_gate_middleware(request: Request, call_next):
     if (
         path in [
             "/login",
+            "/dev-login",
             "/api/auth/google",
             "/api/auth/token-login",
             "/api/auth/dev-login",
