@@ -4204,9 +4204,14 @@
                     `;
                 }
 
-                document.getElementById('stat-sentiment-pos').innerText = data.sentiments['POSITIVO'] || 0;
-                document.getElementById('stat-sentiment-neu').innerText = data.sentiments['NEUTRO'] || 0;
-                document.getElementById('stat-sentiment-neg').innerText = data.sentiments['NEGATIVO'] || 0;
+                if (data.sentiments) {
+                    const elPos = document.getElementById('stat-sentiment-pos');
+                    if (elPos) elPos.innerText = data.sentiments['POSITIVO'] || 0;
+                    const elNeu = document.getElementById('stat-sentiment-neu');
+                    if (elNeu) elNeu.innerText = data.sentiments['NEUTRO'] || 0;
+                    const elNeg = document.getElementById('stat-sentiment-neg');
+                    if (elNeg) elNeg.innerText = data.sentiments['NEGATIVO'] || 0;
+                }
 
                 const pendingCount = data.pending_store_count || 0;
                 const countBadge = document.getElementById('count-pending-publish');
@@ -4267,11 +4272,26 @@
 
             try {
                 const res = await fetch(`/api/reviews?${params.toString()}`);
+                if (!res.ok) {
+                    if (res.status === 401 || res.status === 403) {
+                        container.innerHTML = `
+                            <div class="col-span-full bg-amber-50 p-12 text-center rounded-2xl border border-amber-200 text-amber-900 space-y-3">
+                                <i class="fa-solid fa-lock text-4xl text-amber-600 mb-2"></i>
+                                <h3 class="text-base font-bold">Sessão Expirada ou Acesso Restrito</h3>
+                                <p class="text-xs text-amber-800">Por favor, acesse novamente através da tela de login ou informe uma chave válida.</p>
+                                <a href="/login" class="inline-block mt-2 px-4 py-2 bg-amber-600 text-white font-bold text-xs rounded-xl shadow hover:bg-amber-700 transition">Ir para a Página de Login</a>
+                            </div>
+                        `;
+                        return;
+                    }
+                    throw new Error(`Falha no servidor: HTTP ${res.status}`);
+                }
                 const data = await res.json();
-                const reviews = data.reviews;
+                const reviews = Array.isArray(data.reviews) ? data.reviews : [];
                 window.currentLoadedReviews = reviews;
 
-                document.getElementById('reviews-count-badge').innerText = reviews.length;
+                const badgeEl = document.getElementById('reviews-count-badge');
+                if (badgeEl) badgeEl.innerText = reviews.length;
 
                 // Atualiza visibilidade do botão de exportação filtrada
                 const hasActiveFilter = filterStuckAndroidOnly || 
@@ -4559,7 +4579,16 @@
 
             } catch (err) {
                 console.error('Erro ao listar avaliações:', err);
-                container.innerHTML = `<div class="p-6 bg-rose-50 text-rose-800 text-center rounded-xl">Erro ao carregar avaliações.</div>`;
+                container.innerHTML = `
+                    <div class="col-span-full p-8 bg-rose-50 text-rose-800 text-center rounded-2xl border border-rose-200 space-y-3">
+                        <i class="fa-solid fa-triangle-exclamation text-3xl text-rose-600"></i>
+                        <p class="font-bold text-sm">Não foi possível carregar as avaliações no momento.</p>
+                        <p class="text-xs text-rose-700 font-mono">${escapeHtml(err.message || String(err))}</p>
+                        <button onclick="loadReviews()" class="px-4 py-2 bg-rose-600 text-white font-bold text-xs rounded-xl shadow hover:bg-rose-700 transition cursor-pointer">
+                            <i class="fa-solid fa-rotate-right mr-1"></i> Tentar Novamente
+                        </button>
+                    </div>
+                `;
             }
         }
 
@@ -5940,18 +5969,11 @@
         // Inicialização instantânea e à prova de falhas
         let appInitialized = false;
         async function initApp() {
-            try {
-                await loadStats();
-                if (typeof loadSupportTicketsStats === 'function') {
-                    loadSupportTicketsStats();
-                }
-            } catch (e) {
-                console.error("Erro stats:", e);
-            }
-            try {
-                await loadReviews();
-            } catch (e) {
-                console.error("Erro reviews:", e);
+            // Executa loadReviews imediatamente em paralelo para velocidade máxima
+            loadReviews();
+            loadStats();
+            if (typeof loadSupportTicketsStats === 'function') {
+                loadSupportTicketsStats();
             }
             appInitialized = true;
         }

@@ -1,14 +1,14 @@
 {
-  "app_id": "mg_app_cidadao",
-  "app_name": "MG App Cidadão",
+  "app_id": "minha_escola_mg",
+  "app_name": "Minha Escola MG",
   "app_short_name": "minhaescola",
-  "domain": "public_services",
+  "domain": "education",
   "organization_name": "Governo de Minas Gerais / Prodemge",
   "developer_name": "Prodemge - Secretaria de Estado de Educação de MG",
   "app_tagline": "Central de Inteligência e Diagnóstico de Avaliações",
   "app_description": "Sistema de inteligência artificial para monitoramento de avaliações, diagnóstico técnico e geração de respostas automáticas.",
   "support_url": "https://forms.cloud.microsoft/r/JmZhSzXtwG",
-  "support_email": "https://forms.cloud.microsoft/r/JmZhSzXtwG",
+  "support_email": "suporte@exemplo.mg.gov.br",
   "google_play": {
     "package_name": "com.prodemge.minhaescolamg",
     "country": "br",
@@ -23,10 +23,10 @@
     "header_subtext": "SEE/MG & Prodemge",
     "badge_text": "OFICIAL"
   },
-  "guest_token": "TEST-MG-2026",
   "features": {
     "enable_fale_conosco": true,
     "enable_hardware_matrix": true,
     "enable_ai_suggestions": true
-  }
+  },
+  "guest_token": "MEMG-2026"
 }

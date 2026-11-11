@@ -22,7 +22,7 @@ def get_apple_store_metadata(app_id: Optional[str] = None, country: Optional[str
     c = country or get_current_country()
     try:
         url = f"https://itunes.apple.com/{c}/lookup?id={a_id}"
-        resp = requests.get(url, timeout=10)
+        resp = requests.get(url, timeout=2)
         if resp.status_code == 200:
             data = resp.json()
             results = data.get("results", [])
