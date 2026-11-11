@@ -98,6 +98,18 @@ def get_temporal_diagnostics(app_id: Optional[str] = None, domain: Optional[str]
         local_names[cid] = cdata.get("name", local_names.get(cid, cid))
         if cdata.get("severity_color"):
             local_colors[cid] = cdata["severity_color"]
+        if cid == "agendamento_uai_cin":
+            local_icons[cid] = "fa-calendar-check text-orange-600"
+        elif cid == "veiculos_detran_ipva":
+            local_icons[cid] = "fa-car text-red-600"
+        elif cid == "login_govbr_biometria":
+            local_icons[cid] = "fa-id-badge text-amber-600"
+        elif cid == "farmacia_minas_remedios":
+            local_icons[cid] = "fa-pills text-teal-600"
+        elif cid == "estabilidade_erros_app":
+            local_icons[cid] = "fa-burst text-rose-600"
+        elif cid == "usabilidade_navegacao":
+            local_icons[cid] = "fa-compass text-purple-600"
 
     db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "reviews.db")
     conn = sqlite3.connect(db_path)
@@ -324,7 +336,7 @@ def get_temporal_diagnostics(app_id: Optional[str] = None, domain: Optional[str]
     rising_causes = []
     falling_causes = []
 
-    for rc, name in ROOT_CAUSE_NAMES.items():
+    for rc, name in local_names.items():
         records = cause_dates.get(rc, [])
         if not records:
             continue
@@ -363,19 +375,40 @@ def get_temporal_diagnostics(app_id: Optional[str] = None, domain: Optional[str]
 
         if rc == "login_sessao_recorrente":
             pattern = "Crítico Recorrente: Instabilidade em sessões, expiração de token e múltiplas tentativas de login"
-            recommendation = "Persistir tokens de refresh seguros (AccountManager/Keychain), tolerância a timeout no gateway Prodemge e reconexão silenciosa sem forçar logout."
+            recommendation = "Persistir tokens de refresh seguros (AccountManager/Keychain), tolerância a timeout no gateway e reconexão silenciosa sem forçar logout."
+        elif rc == "agendamento_uai_cin":
+            pattern = "Alta Demanda: Agendamento de Carteira de Identidade (CIN/RG) e Vagas na UAI"
+            recommendation = "Otimizar abertura periódica de vagas, avisar cancelamentos prévios e sincronizar com Polícia Civil/UAI."
+        elif rc == "veiculos_detran_ipva":
+            pattern = "Sazonalidade Veicular: CRLV Digital, IPVA e Taxas de Licenciamento (Detran MG)"
+            recommendation = "Acelerar baixa de guias pagas via PIX e otimizar integração de dados com o Detran MG."
+        elif rc == "login_govbr_biometria":
+            pattern = "Fluxo Crítico: Autenticação Gov.br, Biometria Facial e Sessão"
+            recommendation = "Aprimorar captura de biometria facial na câmera e evitar bloqueios de cookies no Safari/WebKit."
+        elif rc == "farmacia_minas_remedios":
+            pattern = "Consulta de Medicamentos: Disponibilidade de estoque na Farmácia de Minas"
+            recommendation = "Exibir estoque em tempo real das unidades regionais da Farmácia de Minas e notificar liberação de processos."
         elif rc in ("gov_br_cpf", "senha_recuperacao"):
-            pattern = "Pico Sazonal: Início de Ano Letivo & Cadastros (Fevereiro e Agosto)"
-            recommendation = "Revisar fluxo de autenticação e timeout de tokens Gov.br nos períodos de matrícula."
+            if current_domain == "education":
+                pattern = "Pico Sazonal: Início de Ano Letivo & Cadastros (Fevereiro e Agosto)"
+            else:
+                pattern = "Pico de Acesso: Cadastro de Usuário e Autenticação de Contas"
+            recommendation = "Revisar fluxo de autenticação e timeout de tokens nos períodos de maior demanda."
         elif rc in ("boletim_notas", "faltas_frequencia"):
             pattern = "Pico Bimestral: Fechamento de Bimestre e Lançamento de Notas (Maio e Setembro)"
             recommendation = "Garantir sincronização do diário de classe e pré-carregamento em cache para evitar telas em branco."
-        elif rc in ("lentidao_tela_preta", "crash_fechamento"):
-            pattern = "Gargalo de Hardware: Aumentou após Versões Recentes em Aparelhos Econômicos"
-            recommendation = "Otimizar consumo de RAM em WebViews e telas nativas para aparelhos no Android <= 12."
+        elif rc in ("lentidao_tela_preta", "crash_fechamento", "estabilidade_erros_app"):
+            pattern = "Gargalo de Performance: Instabilidade e falhas em versões e aparelhos específicos"
+            recommendation = "Otimizar consumo de RAM, requisições de rede e tratar exceções de Activity/Fragment."
         elif rc == "elogios_satisfacao":
-            pattern = "Avaliações Positivas: Alunos e responsáveis elogiando rapidez nas notas"
-            recommendation = "Manter boa usabilidade de consulta de notas e facilidade de login."
+            if current_domain == "education":
+                pattern = "Avaliações Positivas: Alunos e responsáveis elogiando rapidez nas notas"
+            else:
+                pattern = "Avaliações Positivas: Cidadãos elogiando agilidade e praticidade dos serviços"
+            recommendation = "Manter boa usabilidade de serviços e respostas cordiais de agradecimento."
+        elif rc in causes_map and causes_map[rc].get("recommendation"):
+            pattern = f"Recorrente: {causes_map[rc].get('name', rc)}"
+            recommendation = causes_map[rc]["recommendation"]
         else:
             pattern = "Recorrente: Dúvidas operacionais e suporte contínuo"
             recommendation = "Manter links de ajuda claros e FAQ dentro do aplicativo."
@@ -416,8 +449,8 @@ def get_temporal_diagnostics(app_id: Optional[str] = None, domain: Optional[str]
         trend_entry = {
             "id": rc,
             "name": name,
-            "icon": ROOT_CAUSE_ICONS.get(rc, "fa-circle-exclamation"),
-            "color": ROOT_CAUSE_COLORS.get(rc, "#6366f1"),
+            "icon": local_icons.get(rc, "fa-circle-exclamation"),
+            "color": local_colors.get(rc, "#6366f1"),
             "total": len(records),
             "pct_of_all": round((len(records) / len(reviews)) * 100, 1),
             "first_seen_date": first_seen_str,

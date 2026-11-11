@@ -818,10 +818,11 @@ def api_analytics_hardware_root_cause(
     return get_hardware_root_cause_analytics(filter_brand=brand, filter_root_cause_id=root_cause_id, app_id=effective_app)
 
 @app.get("/api/analytics/keyword-scan")
-def api_analytics_keyword_scan(q: str = ""):
-    """Realiza varredura dinâmica e profunda em tempo real por termos ou palavras-chave em todos os comentários."""
+def api_analytics_keyword_scan(request: Request, q: str = "", app_id: Optional[str] = None):
+    """Realiza varredura dinâmica e profunda em tempo real por termos ou palavras-chave nas avaliações do app ativo."""
     from analytics.keyword_scanner import scan_keywords
-    return scan_keywords(q)
+    effective_app = resolve_authorized_app_id(request, app_id)
+    return scan_keywords(q, app_id=effective_app)
 
 
 @app.post("/api/reviews/backfill-devices")

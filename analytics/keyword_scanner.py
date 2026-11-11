@@ -81,12 +81,35 @@ SUGGESTED_TERMS_CONFIG = [
     {"term": "atualiz", "label": "Atualização", "icon": "fa-arrows-rotate", "color": "#10b981"},
 ]
 
-def scan_keywords(query: str = "") -> Dict[str, Any]:
+SUGGESTED_TERMS_PUBLIC_SERVICES = [
+    {"term": "identidade", "label": "Identidade (CIN/RG)", "icon": "fa-id-card", "color": "#2563eb"},
+    {"term": "agendamento", "label": "Agendamento UAI", "icon": "fa-calendar-check", "color": "#059669"},
+    {"term": "ipva", "label": "IPVA / Licenciamento", "icon": "fa-car", "color": "#dc2626"},
+    {"term": "detran", "label": "Detran / CNH", "icon": "fa-id-badge", "color": "#d97706"},
+    {"term": "gov", "label": "Gov.br / Senha", "icon": "fa-landmark", "color": "#7c3aed"},
+    {"term": "remedio", "label": "Remédio / Farmácia", "icon": "fa-pills", "color": "#0d9488"},
+    {"term": "trava", "label": "Trava / Congela", "icon": "fa-triangle-exclamation", "color": "#f59e0b"},
+    {"term": "atualiz", "label": "Atualização", "icon": "fa-arrows-rotate", "color": "#10b981"},
+]
+
+def scan_keywords(query: str = "", app_id: Optional[str] = None) -> Dict[str, Any]:
     """
-    Executa uma varredura completa e em tempo real em todas as avaliações do banco de dados,
+    Executa uma varredura completa e em tempo real nas avaliações do aplicativo ativo,
     buscando qualquer palavra ou expressão, quantificando ocorrências, impacto nas notas
     e destacando os trechos exatos onde surgiu.
     """
+    target_app_id = (app_id or (lambda: (__import__('config').get_app_id()))()).strip()
+    target_domain = (lambda: (__import__('config').get_domain(target_app_id)))()
+
+    from analytics.taxonomy import get_root_causes_map
+    causes_map = get_root_causes_map(domain=target_domain)
+    dynamic_rc_map = dict(ROOT_CAUSE_MAP)
+    dynamic_rc_colors = dict(ROOT_CAUSE_COLORS)
+    for cid, cdata in causes_map.items():
+        dynamic_rc_map[cid] = cdata.get("name", dynamic_rc_map.get(cid, cid))
+        if cdata.get("severity_color"):
+            dynamic_rc_colors[cid] = cdata["severity_color"]
+
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -94,15 +117,19 @@ def scan_keywords(query: str = "") -> Dict[str, Any]:
                device_brand, device_model, app_version, status, developer_response,
                developer_response_date, root_cause_id
         FROM reviews
+        WHERE app_id = ?
         ORDER BY review_date DESC
-    """)
+    """, (target_app_id,))
     rows = [dict(r) for r in cursor.fetchall()]
     total_db = len(rows)
     now = datetime.now()
 
+    # Seleciona termos sugeridos conforme o domínio do aplicativo
+    active_terms_cfg = SUGGESTED_TERMS_PUBLIC_SERVICES if target_domain == "public_services" else SUGGESTED_TERMS_CONFIG
+
     # Calcula contagens dos termos sugeridos populares
     suggested_terms = []
-    for s in SUGGESTED_TERMS_CONFIG:
+    for s in active_terms_cfg:
         sterm_norm = strip_accents(s["term"])
         sterm_escaped = re.escape(sterm_norm)
         match_reviews_cnt = 0
@@ -182,15 +209,15 @@ def scan_keywords(query: str = "") -> Dict[str, Any]:
         rc_val = r.get("root_cause_id")
         if isinstance(rc_val, str) and rc_val and rc_val != "outros_problemas":
             rc_id = rc_val
-            cause_name = ROOT_CAUSE_MAP.get(rc_id, "Outros Problemas")
+            cause_name = dynamic_rc_map.get(rc_id, "Outros Problemas")
         else:
-            classified = classify_text_issue(content_raw, title_raw, rating)
+            classified = classify_text_issue(content_raw, title_raw, rating, domain=target_domain)
             if isinstance(classified, dict):
                 rc_id = classified.get("id", "outros_problemas")
                 cause_name = classified.get("name", "Outros Problemas")
             else:
                 rc_id = str(classified)
-                cause_name = ROOT_CAUSE_MAP.get(rc_id, "Outros Problemas")
+                cause_name = dynamic_rc_map.get(rc_id, "Outros Problemas")
         cause_counts[cause_name] = cause_counts.get(cause_name, 0) + 1
 
         # Data e dias decorridos

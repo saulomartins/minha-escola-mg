@@ -275,62 +275,151 @@ def get_detailed_problem_analytics(app_id: Optional[str] = None, domain: Optiona
         a_rec_cnt = android_recent_causes[cid]
         i_rec_cnt = ios_recent_causes[cid]
 
-        # Padrão Temporal e Diagnóstico Clínico Cirúrgico por Causa
-        if cid == "login_sessao_recorrente":
-            pattern_ios = "⚡ Incidente em Maio/26 (13 de 15)"
-            pattern_ios_badge = "amber"
-            pattern_android = "🔴 Falha Crônica Recorrente (Ativa)"
-            pattern_android_badge = "rose"
-            diag = (
-                f"No Android, é o ofensor crônico #1 (105 queixas no total, {a_rec_cnt} recentes), decorrente de instabilidade de rede "
-                f"3G/4G e timeouts de gateway em aparelhos modestos. No iOS, 87% das queixas (13 de 15) decorreram de um incidente pontual "
-                f"pós-deploy em 19-22 de Maio/2026 que desfez sessões; desde então o login no iOS foi normalizado (apenas {i_rec_cnt} queixa recente)."
-            )
-        elif cid == "gov_br_cpf":
-            pattern_ios = "🍎 Alta Disparidade WebKit (26%)"
-            pattern_ios_badge = "rose"
-            pattern_android = "⚠️ Recorrência Média (11%)"
-            pattern_android_badge = "slate"
-            diag = (
-                f"Incidência desproporcional no iOS ({i_pct}% vs {a_pct}% no Android; 2,3x maior). O WebKit/Safari no iOS bloqueia cookies "
-                f"e redirecionamentos no fluxo OAuth do Gov.br, levando o aluno a um falso loop de 'crie uma nova conta no Gov'."
-            )
-        elif cid == "boletim_notas":
-            pattern_ios = "📌 Maior Ofensor Recente Ativo (55%)"
-            pattern_ios_badge = "purple"
-            pattern_android = "📌 2º Maior Ofensor Recente (23%)"
-            pattern_android_badge = "purple"
-            diag = (
-                f"Maior ofensor ativo no iOS nos últimos meses ({i_rec_cnt} das queixas recentes pós-junho). Decorre da latência de sincronização "
-                f"das notas do Diário Escolar Digital (DED) no fechamento de bimestres/etapas."
-            )
-        elif cid in ("lentidao_tela_preta", "crash_fechamento"):
-            pattern_ios = "✅ Raro no iOS (Apenas 1 caso)"
-            pattern_ios_badge = "emerald"
-            pattern_android = "🔴 Crítico no Android (RAM modesta)"
-            pattern_android_badge = "rose"
-            diag = (
-                f"Falha quase exclusiva do Android ({a_cnt} no Android vs {i_cnt} no iOS). Concentrado em aparelhos com 2GB/3GB de RAM "
-                f"(Moto G22, Moto E22, Galaxy A10) com alta pressão de memória."
-            )
-        elif cid == "faltas_frequencia":
-            pattern_ios = "⚖️ Ocorrência Regular"
-            pattern_ios_badge = "amber"
-            pattern_android = "⚖️ Ocorrência Regular"
-            pattern_android_badge = "amber"
-            diag = "Inconsistência na exibição do calendário de frequência (aulas cinzas/carregando) após digitação no Diário Escolar Digital."
-        elif cid == "acesso_responsaveis":
-            pattern_ios = "✅ Residual no iOS"
-            pattern_ios_badge = "emerald"
-            pattern_android = "⚠️ Celular Compartilhado"
-            pattern_android_badge = "slate"
-            diag = f"Dificuldade de alternância entre irmãos/dependentes no mesmo aparelho. Mais comum no Android ({a_cnt} vs {i_cnt}) devido ao perfil de uso familiar compartilhado."
+        # Padrão Temporal e Diagnóstico Clínico Cirúrgico por Causa e por Aplicativo
+        if target_app_id == "minha_escola_mg":
+            if cid == "login_sessao_recorrente":
+                pattern_ios = "⚡ Incidente em Maio/26 (13 de 15)"
+                pattern_ios_badge = "amber"
+                pattern_android = "🔴 Falha Crônica Recorrente (Ativa)"
+                pattern_android_badge = "rose"
+                diag = (
+                    f"No Android, é o ofensor crônico #1 ({a_cnt} queixas no total, {a_rec_cnt} recentes), decorrente de instabilidade de rede "
+                    f"3G/4G e timeouts de gateway em aparelhos modestos. No iOS, 87% das queixas (13 de 15) decorreram de um incidente pontual "
+                    f"pós-deploy em 19-22 de Maio/2026 que desfez sessões; desde então o login no iOS foi normalizado (apenas {i_rec_cnt} queixa recente)."
+                )
+            elif cid == "gov_br_cpf":
+                pattern_ios = f"🍎 Alta Disparidade WebKit ({i_pct}%)"
+                pattern_ios_badge = "rose"
+                pattern_android = f"⚠️ Recorrência Média ({a_pct}%)"
+                pattern_android_badge = "slate"
+                diag = (
+                    f"Incidência desproporcional no iOS ({i_pct}% vs {a_pct}% no Android; 2,3x maior). O WebKit/Safari no iOS bloqueia cookies "
+                    f"e redirecionamentos no fluxo OAuth do Gov.br, levando o usuário a um falso loop de 'crie uma nova conta no Gov'."
+                )
+            elif cid == "boletim_notas":
+                pattern_ios = f"📌 Maior Ofensor Recente Ativo ({i_pct}%)"
+                pattern_ios_badge = "purple"
+                pattern_android = f"📌 2º Maior Ofensor Recente ({a_pct}%)"
+                pattern_android_badge = "purple"
+                diag = (
+                    f"Maior ofensor ativo no iOS nos últimos meses ({i_rec_cnt} das queixas recentes pós-junho). Decorre da latência de sincronização "
+                    f"das notas do Diário Escolar Digital (DED) no fechamento de bimestres/etapas."
+                )
+            elif cid in ("lentidao_tela_preta", "crash_fechamento"):
+                pattern_ios = f"✅ Residual no iOS ({i_cnt} caso)" if i_cnt <= 1 else f"⚠️ Ocorrência no iOS ({i_cnt} casos)"
+                pattern_ios_badge = "emerald" if i_cnt <= 1 else "amber"
+                pattern_android = "🔴 Crítico no Android (RAM modesta)"
+                pattern_android_badge = "rose"
+                diag = (
+                    f"Falha quase exclusiva do Android ({a_cnt} no Android vs {i_cnt} no iOS). Concentrado em aparelhos com 2GB/3GB de RAM "
+                    f"(Moto G22, Moto E22, Galaxy A10) com alta pressão de memória."
+                )
+            elif cid == "faltas_frequencia":
+                pattern_ios = "⚖️ Ocorrência Regular"
+                pattern_ios_badge = "amber"
+                pattern_android = "⚖️ Ocorrência Regular"
+                pattern_android_badge = "amber"
+                diag = "Inconsistência na exibição do calendário de frequência (aulas cinzas/carregando) após digitação no Diário Escolar Digital."
+            elif cid == "acesso_responsaveis":
+                pattern_ios = "✅ Residual no iOS"
+                pattern_ios_badge = "emerald"
+                pattern_android = "⚠️ Celular Compartilhado"
+                pattern_android_badge = "slate"
+                diag = f"Dificuldade de alternância entre irmãos/dependentes no mesmo aparelho. Mais comum no Android ({a_cnt} vs {i_cnt}) devido ao perfil de uso familiar compartilhado."
+            else:
+                pattern_ios = f"Ocorrência Regular ({i_cnt})" if i_cnt > 0 else "✅ Sem queixas"
+                pattern_ios_badge = "slate" if i_cnt > 0 else "emerald"
+                pattern_android = f"Ocorrência Regular ({a_cnt})" if a_cnt > 0 else "✅ Sem queixas"
+                pattern_android_badge = "slate" if a_cnt > 0 else "emerald"
+                diag = f"Distribuição de queixas: {a_cnt} no Android ({a_pct}%) vs {i_cnt} no iOS ({i_pct}%)."
+        elif target_app_id == "mg_app_cidadao":
+            if cid == "agendamento_uai_cin":
+                pattern_ios = f"📌 Maior Ofensor de Atendimento ({i_cnt} queixas)"
+                pattern_ios_badge = "purple"
+                pattern_android = f"📅 Agendamentos ({a_cnt} queixas)"
+                pattern_android_badge = "amber"
+                diag = (
+                    f"Principal ofensor de atendimento ({i_cnt} queixas no iOS, {a_cnt} no Android). Usuários relatam escassez de vagas "
+                    f"para agendamento da Carteira de Identidade Nacional (CIN/RG) nas unidades UAI e cancelamento inesperado de horários marcados."
+                )
+            elif cid == "veiculos_detran_ipva":
+                pattern_ios = f"🚗 Detran & CRLV ({i_cnt} queixas)"
+                pattern_ios_badge = "rose"
+                pattern_android = f"🚗 Serviços Detran ({a_cnt} queixas)"
+                pattern_android_badge = "slate"
+                diag = (
+                    f"Alta concentração de queixas no iOS ({i_cnt} queixas, {i_pct}% vs {a_cnt} no Android). Relacionado à sincronização do CRLV digital, "
+                    f"emissão de guias e parcelamento do IPVA e baixa de taxas de transferência veicular."
+                )
+            elif cid == "login_govbr_biometria":
+                pattern_ios = f"🍎 Bloqueio WebKit/Biometria ({i_cnt} queixas)"
+                pattern_ios_badge = "rose"
+                pattern_android = f"🔐 Login Gov.br ({a_cnt} queixas)"
+                pattern_android_badge = "slate"
+                diag = (
+                    f"Desproporcionalmente maior no iOS ({i_pct}% vs {a_pct}% no Android). Ocorre por restrições do WebKit no fluxo de redirecionamento "
+                    f"OAuth do Gov.br e falhas na validação de biometria facial pela câmera do iPhone."
+                )
+            elif cid == "estabilidade_erros_app":
+                pattern_ios = f"⚡ Incidente Passado ({i_cnt} queixas)"
+                pattern_ios_badge = "amber"
+                pattern_android = "✅ Residual no Android"
+                pattern_android_badge = "emerald"
+                diag = (
+                    f"Registrado sobretudo em versões anteriores ({i_cnt} queixas no iOS, apenas {i_rec_cnt} recente). Falhas de timeout "
+                    f"de requisição já mitigadas pelas últimas releases."
+                )
+            elif cid == "farmacia_minas_remedios":
+                pattern_ios = f"💊 Medicamentos ({i_cnt} queixas)"
+                pattern_ios_badge = "teal"
+                pattern_android = "✅ Sem queixas"
+                pattern_android_badge = "emerald"
+                diag = "Dificuldade na consulta de disponibilidade e estoque de medicamentos da Farmácia de Minas e acompanhamento de processos de retirada."
+            elif cid == "usabilidade_navegacao":
+                pattern_ios = f"🧭 Usabilidade ({i_cnt} queixas)"
+                pattern_ios_badge = "slate"
+                pattern_android = f"🧭 Usabilidade ({a_cnt} queixa)"
+                pattern_android_badge = "slate"
+                diag = "Feedback sobre localização de serviços públicos e sugestões de melhoria nos menus e navegação da nova versão."
+            else:
+                pattern_ios = f"Ocorrência no iOS ({i_cnt})" if i_cnt > 0 else "✅ Sem queixas"
+                pattern_ios_badge = "slate" if i_cnt > 0 else "emerald"
+                pattern_android = f"Ocorrência no Android ({a_cnt})" if a_cnt > 0 else "✅ Sem queixas"
+                pattern_android_badge = "slate" if a_cnt > 0 else "emerald"
+                diag = f"Distribuição de queixas: {a_cnt} no Android ({a_pct}%) vs {i_cnt} no iOS ({i_pct}%)."
         else:
-            pattern_ios = "Ocorrência Regular"
-            pattern_ios_badge = "slate"
-            pattern_android = "Ocorrência Regular"
-            pattern_android_badge = "slate"
-            diag = f"Distribuição de queixas: {a_cnt} no Android ({a_pct}%) vs {i_cnt} no iOS ({i_pct}%)."
+            # Qualquer outro aplicativo futuro
+            if i_cnt > 0 and i_rec_cnt >= 5:
+                pattern_ios = f"📌 Ofensor Recente Ativo ({i_rec_cnt} recentes)"
+                pattern_ios_badge = "purple"
+            elif i_cnt > 0 and i_rec_cnt == 0:
+                pattern_ios = f"⚡ Ocorrência Passada ({i_cnt} queixas)"
+                pattern_ios_badge = "amber"
+            elif i_cnt > 0:
+                pattern_ios = f"⚠️ Ocorrência Regular ({i_cnt} queixas)"
+                pattern_ios_badge = "slate"
+            else:
+                pattern_ios = "✅ Sem queixas no iOS"
+                pattern_ios_badge = "emerald"
+
+            if a_cnt > 0 and a_rec_cnt >= 5:
+                pattern_android = f"🔴 Ofensor Crítico Ativo ({a_rec_cnt} recentes)"
+                pattern_android_badge = "rose"
+            elif a_cnt > 0:
+                pattern_android = f"⚠️ Recorrente ({a_cnt} queixas)"
+                pattern_android_badge = "amber"
+            else:
+                pattern_android = "✅ Sem queixas no Android"
+                pattern_android_badge = "emerald"
+
+            if i_pct > a_pct * 1.3:
+                ratio = round(i_pct / max(a_pct, 0.1), 1)
+                diag = f"Maior prevalência no iOS ({i_cnt} queixas, {i_pct}% vs {a_pct}% no Android; {ratio}x maior). Recomenda-se verificação de compatibilidade com ecossistema iOS e WebKit."
+            elif a_pct > i_pct * 1.3:
+                ratio = round(a_pct / max(i_pct, 0.1), 1)
+                diag = f"Maior prevalência no Android ({a_cnt} queixas, {a_pct}% vs {i_pct}% no iOS; {ratio}x maior). Associado à diversidade de modelos de hardware, memória RAM e conexões móveis."
+            else:
+                diag = f"Distribuição equilibrada entre Android ({a_cnt} queixas, {a_pct}%) e iOS ({i_cnt} queixas, {i_pct}%), indicando comportamento geral de serviço/backend."
 
         if i_pct > a_pct * 1.25 and cid != "login_sessao_recorrente":
             dominant = "iOS"
@@ -370,6 +459,72 @@ def get_detailed_problem_analytics(app_id: Optional[str] = None, domain: Optiona
             "android_reviews": android_reviews_by_cause[cid][:30],
             "ios_reviews": ios_reviews_by_cause[cid]
         })
+
+    # Ofensores dinâmicos de destaque para o iOS
+    ios_active_top = None
+    ios_historical_peak = None
+    ios_discrepancy = None
+
+    if target_app_id == "minha_escola_mg":
+        ios_active_top = {
+            "name": "Boletim de Notas & Frequência",
+            "badge": "📌 Ofensor Ativo Recente",
+            "details": f"{ios_recent_causes.get('boletim_notas', 0)} queixas recentes pós-junho (latência DED)"
+        }
+        ios_historical_peak = {
+            "name": "Instabilidade de Login & Sessão",
+            "badge": "⚡ Incidente Pontual em Maio/26 (Superado)",
+            "details": "13 das 15 queixas ocorreram em 3 dias (19 a 22/mai/26); apenas 1 queixa nos últimos 5 meses"
+        }
+        ios_discrepancy = {
+            "name": "Falha no Gov.br e Vínculo de CPF",
+            "badge": "🍎 Alta Disparidade WebKit (31.0%)",
+            "details": "2,3x mais incidente no iOS devido a restrições de terceiros no Safari/WebKit"
+        }
+    elif target_app_id == "mg_app_cidadao":
+        ios_active_top = {
+            "name": "Agendamento UAI & Carteira de Identidade (CIN/RG)",
+            "badge": f"📌 Maior Ofensor Recente ({ios_recent_causes.get('agendamento_uai_cin', 11)} recentes)",
+            "details": "26 queixas no iOS (40.0% das queixas) • Escassez de vagas e cancelamentos de atendimento"
+        }
+        ios_historical_peak = {
+            "name": "Veículos, CNH, IPVA & Licenciamento (Detran MG)",
+            "badge": "🚗 Serviços Detran (21.5% no iOS)",
+            "details": "14 queixas no iOS vs 1 no Android • Sincronização do CRLV digital e guias de IPVA"
+        }
+        ios_discrepancy = {
+            "name": "Login Gov.br, Biometria Facial & Sessão",
+            "badge": "🍎 Disparidade WebKit/FaceID (16.9%)",
+            "details": "11 queixas no iOS vs 1 no Android • Bloqueio de redirecionamento no Safari e leitura facial"
+        }
+    else:
+        ios_candidates = [c for c in os_causes_table if c["ios_count"] > 0]
+        if ios_candidates:
+            c1 = max(ios_candidates, key=lambda x: (x["ios_recent_count"], x["ios_count"]))
+            ios_active_top = {
+                "name": c1["name"],
+                "badge": f"📌 Ofensor Ativo Recente ({c1['ios_recent_count']} recentes)",
+                "details": f"{c1['ios_count']} queixas totais ({c1['ios_pct']}% das queixas do iOS)"
+            }
+            c2_pool = [c for c in ios_candidates if c["id"] != c1["id"]]
+            c2_id = ""
+            if c2_pool:
+                c2 = max(c2_pool, key=lambda x: x["ios_count"])
+                c2_id = c2["id"]
+                ios_historical_peak = {
+                    "name": c2["name"],
+                    "badge": f"⚠️ Ofensor Relevante ({c2['ios_pct']}%)",
+                    "details": f"{c2['ios_count']} queixas totais • {c2['ios_recent_count']} recentes"
+                }
+            c3_pool = [c for c in ios_candidates if c["id"] not in (c1["id"], c2_id)]
+            if c3_pool:
+                c3 = max(c3_pool, key=lambda x: (x["ios_pct"] - x["android_pct"]))
+                ratio = round(c3["ios_pct"] / max(c3["android_pct"], 0.1), 1)
+                ios_discrepancy = {
+                    "name": c3["name"],
+                    "badge": f"🍎 Alta Disparidade iOS ({c3['ios_pct']}%)",
+                    "details": f"{ratio}x maior proporção relativa no iOS vs Android"
+                }
 
     pareto_labels = [g["name"] for g in pareto_items]
     pareto_counts = [g["count"] for g in pareto_items]
@@ -412,21 +567,9 @@ def get_detailed_problem_analytics(app_id: Optional[str] = None, domain: Optiona
             "ios_positive": sum(1 for r in ios_rows if r.get("rating", 0) >= 4),
             "top_android_causes": sorted([c for c in os_causes_table if c["android_count"] > 0], key=lambda x: x["android_count"], reverse=True)[:2],
             "top_ios_causes": sorted([c for c in os_causes_table if c["ios_count"] > 0], key=lambda x: x["ios_count"], reverse=True)[:2],
-            "ios_active_top_cause": {
-                "name": "Boletim de Notas & Frequência",
-                "badge": "📌 Ofensor Ativo Recente (55%)",
-                "details": f"{ios_recent_causes.get('boletim_notas', 0)} queixas recentes pós-junho"
-            },
-            "ios_historical_peak_cause": {
-                "name": "Instabilidade de Login & Sessão",
-                "badge": "⚡ Incidente Pontual em Maio/26 (Superado)",
-                "details": "13 das 15 queixas ocorreram em 3 dias (19 a 22/mai/26); apenas 1 queixa nos últimos 5 meses"
-            },
-            "ios_discrepancy_cause": {
-                "name": "Gov.br & Autenticação CPF",
-                "badge": "🍎 Alta Disparidade WebKit (26%)",
-                "details": "2,3x mais incidente no iOS devido a restrições de terceiros no Safari/WebKit"
-            },
+            "ios_active_top_cause": ios_active_top,
+            "ios_historical_peak_cause": ios_historical_peak,
+            "ios_discrepancy_cause": ios_discrepancy,
             "chart_data": {
                 "labels": [c["name"] for c in os_causes_table],
                 "android_pcts": [c["android_pct"] for c in os_causes_table],
