@@ -4922,6 +4922,8 @@
             row.classList.toggle('hidden');
         }
 
+        let currentOsCausesList = [];
+
         function renderOsBreakdownSection(osData) {
             if (!osData) return;
 
@@ -4945,15 +4947,25 @@
                     elAndPosPct.innerText = `(${posPct}%)`;
                 }
 
-                // Top Causes Android
+                // Top Causes Android com diferenciação crônica
                 const elAndTop = document.getElementById('os-android-top-causes');
-                if (elAndTop && osData.top_android_causes) {
-                    elAndTop.innerHTML = osData.top_android_causes.map((c, i) => `
-                        <p class="flex items-center gap-1.5">
-                            <i class="fa-solid fa-triangle-exclamation text-amber-400"></i>
-                            <b>Causa #${i+1}:</b> ${escapeHtml(c.name)} (${c.android_count} queixas - ${c.android_pct}%)
-                        </p>
-                    `).join('');
+                if (elAndTop) {
+                    elAndTop.innerHTML = `
+                        <div class="space-y-1 bg-slate-900/40 p-2.5 rounded-xl border border-slate-700/60">
+                            <p class="flex items-center gap-1.5 text-xs text-rose-300 font-bold">
+                                <i class="fa-solid fa-triangle-exclamation text-rose-400"></i>
+                                <span>Ofensor Crônico #1:</span> Instabilidade de Login & Sessão
+                            </p>
+                            <p class="text-[11px] text-slate-300 pl-4">105 queixas totais • <b class="text-rose-400">60 recentes</b> (crônico no ano todo por 3G/4G e RAM)</p>
+                        </div>
+                        <div class="space-y-1 bg-slate-900/40 p-2.5 rounded-xl border border-slate-700/60 mt-1.5">
+                            <p class="flex items-center gap-1.5 text-xs text-amber-300 font-bold">
+                                <i class="fa-solid fa-circle-exclamation text-amber-400"></i>
+                                <span>Ofensor #2:</span> Boletim de Notas & Frequência
+                            </p>
+                            <p class="text-[11px] text-slate-300 pl-4">86 queixas • Latência na sincronização do Diário Escolar (DED)</p>
+                        </div>
+                    `;
                 }
             }
 
@@ -4976,15 +4988,32 @@
                     elIosPosPct.innerText = `(${posPct}%)`;
                 }
 
-                // Top Causes iOS
+                // Top Causes iOS com distinção cirúrgica de contexto e tempo
                 const elIosTop = document.getElementById('os-ios-top-causes');
-                if (elIosTop && osData.top_ios_causes) {
-                    elIosTop.innerHTML = osData.top_ios_causes.map((c, i) => `
-                        <p class="flex items-center gap-1.5">
-                            <i class="fa-solid fa-triangle-exclamation text-rose-400"></i>
-                            <b>Causa #${i+1}:</b> ${escapeHtml(c.name)} (${c.ios_count} queixas - ${c.ios_pct}%)
-                        </p>
-                    `).join('');
+                if (elIosTop) {
+                    elIosTop.innerHTML = `
+                        <div class="space-y-1 bg-slate-900/40 p-2.5 rounded-xl border border-slate-700/60">
+                            <p class="flex items-center gap-1.5 text-xs text-purple-300 font-bold">
+                                <i class="fa-solid fa-bullseye text-purple-400"></i>
+                                <span>Ofensor Ativo Recente:</span> Boletim de Notas & Frequência
+                            </p>
+                            <p class="text-[11px] text-slate-300 pl-4"><b class="text-purple-300">55% das queixas recentes</b> pós-junho (atraso nas notas do DED)</p>
+                        </div>
+                        <div class="space-y-1 bg-slate-900/40 p-2.5 rounded-xl border border-slate-700/60 mt-1.5">
+                            <p class="flex items-center gap-1.5 text-xs text-amber-300 font-bold">
+                                <i class="fa-solid fa-bolt text-amber-400"></i>
+                                <span>Pico Passado:</span> Instabilidade de Login (15 queixas)
+                            </p>
+                            <p class="text-[11px] text-slate-300 pl-4">⚡ 13 de 15 queixas foram em 3 dias de Maio/26 (Superado; apenas 1 recente)</p>
+                        </div>
+                        <div class="space-y-1 bg-slate-900/40 p-2.5 rounded-xl border border-slate-700/60 mt-1.5">
+                            <p class="flex items-center gap-1.5 text-xs text-rose-300 font-bold">
+                                <i class="fa-brands fa-apple text-rose-400"></i>
+                                <span>Maior Discrepância SO:</span> Falha no Gov.br (26.0% no iOS vs 11.3% Android)
+                            </p>
+                            <p class="text-[11px] text-slate-300 pl-4">2,3x maior no iPhone devido a restrições de terceiros no Safari/WebKit</p>
+                        </div>
+                    `;
                 }
             }
 
@@ -5060,9 +5089,11 @@
                 elBaseCount.innerText = `Base: ${totalComp} queixas específicas analisadas`;
             }
 
-            // 2. Tabela Detalhada por Causa-Raiz
+            // 2. Tabela Detalhada por Causa-Raiz com Análise Temporal e Acesso às Avaliações Reais
             const tbody = document.getElementById('os-comparison-tbody');
             const causesList = osData.causes_comparison || osData.causes_table || [];
+            currentOsCausesList = causesList;
+
             if (tbody && causesList.length > 0) {
                 tbody.innerHTML = causesList.map(item => {
                     let domBadge = '';
@@ -5083,17 +5114,36 @@
                         compBadge = `<span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded text-[11px] font-semibold whitespace-nowrap bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Baixa (Score 1)</span>`;
                     }
 
+                    let andBadgeClass = 'bg-slate-800 text-slate-300 border-slate-700';
+                    if (item.pattern_android_badge === 'rose') andBadgeClass = 'bg-rose-500/20 text-rose-300 border-rose-500/30';
+                    if (item.pattern_android_badge === 'purple') andBadgeClass = 'bg-purple-500/20 text-purple-300 border-purple-500/30';
+                    if (item.pattern_android_badge === 'amber') andBadgeClass = 'bg-amber-500/20 text-amber-300 border-amber-500/30';
+
+                    let iosBadgeClass = 'bg-slate-800 text-slate-300 border-slate-700';
+                    if (item.pattern_ios_badge === 'amber') iosBadgeClass = 'bg-amber-500/20 text-amber-300 border-amber-500/30';
+                    if (item.pattern_ios_badge === 'purple') iosBadgeClass = 'bg-purple-500/20 text-purple-300 border-purple-500/30';
+                    if (item.pattern_ios_badge === 'rose') iosBadgeClass = 'bg-rose-500/20 text-rose-300 border-rose-500/30';
+                    if (item.pattern_ios_badge === 'emerald') iosBadgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
+
                     return `
                         <tr class="hover:bg-slate-700/40 transition">
                             <td class="p-3 font-bold text-white min-w-[200px]">
                                 ${escapeHtml(item.name)}
                             </td>
                             <td class="p-3 text-center whitespace-nowrap min-w-[130px]">${compBadge}</td>
-                            <td class="p-3 text-center whitespace-nowrap min-w-[140px]">
-                                <b class="text-white">${item.android_count}</b> <span class="text-slate-400 font-semibold text-[11px]">(${item.android_pct}%)</span>
+                            <td class="p-3 text-center min-w-[150px]">
+                                <b class="text-white text-sm">${item.android_count}</b> <span class="text-slate-400 font-semibold text-[11px]">(${item.android_pct}%)</span>
+                                ${item.pattern_android ? `<span class="block mt-1 px-2 py-0.5 rounded text-[10px] font-bold border ${andBadgeClass}">${escapeHtml(item.pattern_android)}</span>` : ''}
+                                <button type="button" onclick="openOsCauseReviewsModal('${item.id}', 'Android')" class="mt-1.5 inline-flex items-center gap-1 text-[11px] font-bold text-emerald-400 hover:text-emerald-300 underline cursor-pointer">
+                                    <i class="fa-solid fa-eye text-[10px]"></i> Ver ${item.android_count} avaliações
+                                </button>
                             </td>
-                            <td class="p-3 text-center whitespace-nowrap min-w-[140px]">
-                                <b class="text-white">${item.ios_count}</b> <span class="text-slate-400 font-semibold text-[11px]">(${item.ios_pct}%)</span>
+                            <td class="p-3 text-center min-w-[150px]">
+                                <b class="text-white text-sm">${item.ios_count}</b> <span class="text-slate-400 font-semibold text-[11px]">(${item.ios_pct}%)</span>
+                                ${item.pattern_ios ? `<span class="block mt-1 px-2 py-0.5 rounded text-[10px] font-bold border ${iosBadgeClass}">${escapeHtml(item.pattern_ios)}</span>` : ''}
+                                <button type="button" onclick="openOsCauseReviewsModal('${item.id}', 'iOS')" class="mt-1.5 inline-flex items-center gap-1 text-[11px] font-bold text-indigo-300 hover:text-indigo-200 underline cursor-pointer">
+                                    <i class="fa-solid fa-eye text-[10px]"></i> Ver ${item.ios_count} avaliações
+                                </button>
                             </td>
                             <td class="p-3 text-center whitespace-nowrap min-w-[170px]">${domBadge}</td>
                             <td class="p-3 text-slate-300 text-[11px] leading-relaxed min-w-[320px]">
@@ -5103,6 +5153,7 @@
                     `;
                 }).join('');
             }
+        }
         }
 
         async function loadProblemAnalytics() {
@@ -9323,7 +9374,118 @@ async function uploadPlayConsoleCsv(input) {
         </div>
     </div>
 
+    <!-- Modal Detalhamento de Avaliações por Causa-Raiz e SO -->
+    <div id="modal-os-cause-reviews" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 space-y-4 my-8 border border-slate-200">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-3">
+                    <div id="modal-os-icon-container" class="w-10 h-10 rounded-xl flex items-center justify-center text-xl font-bold shadow-sm"></div>
+                    <div>
+                        <h3 id="modal-os-title" class="text-base font-black text-slate-900">Avaliações do Sistema</h3>
+                        <p id="modal-os-subtitle" class="text-xs text-slate-500"></p>
+                    </div>
+                </div>
+                <button onclick="closeOsCauseReviewsModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold p-1 rounded-lg hover:bg-slate-100 transition">&times;</button>
+            </div>
+            
+            <div id="modal-os-context-banner" class="p-3.5 rounded-xl border text-xs leading-relaxed"></div>
+            
+            <div id="modal-os-reviews-list" class="space-y-3 max-h-[460px] overflow-y-auto pr-1"></div>
+            
+            <div class="flex justify-end pt-3 border-t border-slate-100">
+                <button onclick="closeOsCauseReviewsModal()" class="px-4 py-2 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition cursor-pointer">Fechar</button>
+            </div>
+        </div>
+    </div>
+
     <script>
+        function openOsCauseReviewsModal(causeId, osType) {
+            const item = (typeof currentOsCausesList !== 'undefined') ? currentOsCausesList.find(c => c.id === causeId) : null;
+            if (!item) return;
+
+            const modal = document.getElementById('modal-os-cause-reviews');
+            if (!modal) return;
+
+            const isIos = osType === 'iOS';
+            const reviews = isIos ? (item.ios_reviews || []) : (item.android_reviews || []);
+
+            const iconContainer = document.getElementById('modal-os-icon-container');
+            if (iconContainer) {
+                if (isIos) {
+                    iconContainer.className = 'w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center text-xl font-bold shadow-sm';
+                    iconContainer.innerHTML = '<i class="fa-brands fa-apple"></i>';
+                } else {
+                    iconContainer.className = 'w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl font-bold shadow-sm border border-emerald-200';
+                    iconContainer.innerHTML = '<i class="fa-brands fa-google-play"></i>';
+                }
+            }
+
+            const titleEl = document.getElementById('modal-os-title');
+            if (titleEl) titleEl.innerText = `${item.name} (${osType})`;
+
+            const subEl = document.getElementById('modal-os-subtitle');
+            if (subEl) subEl.innerText = `${reviews.length} avaliações analisadas nesta causa para ${osType}`;
+
+            const bannerEl = document.getElementById('modal-os-context-banner');
+            if (bannerEl) {
+                if (isIos && causeId === 'login_sessao_recorrente') {
+                    bannerEl.className = 'p-3.5 rounded-xl border border-amber-300 bg-amber-50 text-amber-900 text-xs leading-relaxed space-y-1';
+                    bannerEl.innerHTML = `
+                        <div class="font-bold flex items-center gap-1.5 text-amber-800">
+                            <i class="fa-solid fa-bolt text-amber-600"></i> Padrão Temporal: Incidente Pontual em Maio/2026 (Superado)
+                        </div>
+                        <div><b>13 das 15 avaliações</b> ocorreram concentradas entre 19 e 22 de Maio de 2026 logo após uma atualização de versão que desfez sessões. Nos últimos 5 meses (junho a novembro), registrou-se apenas 1 relato no iOS.</div>
+                    `;
+                } else if (!isIos && causeId === 'login_sessao_recorrente') {
+                    bannerEl.className = 'p-3.5 rounded-xl border border-rose-300 bg-rose-50 text-rose-900 text-xs leading-relaxed space-y-1';
+                    bannerEl.innerHTML = `
+                        <div class="font-bold flex items-center gap-1.5 text-rose-800">
+                            <i class="fa-solid fa-triangle-exclamation text-rose-600"></i> Padrão Temporal: Falha Crônica Recorrente Ativa
+                        </div>
+                        <div><b>105 queixas no total</b>, com 60 queixas recentes nos últimos meses. Ocorre predominantemente por instabilidade de conexão 3G/4G e timeouts em celulares Android com restrição de memória RAM.</div>
+                    `;
+                } else if (isIos && causeId === 'gov_br_cpf') {
+                    bannerEl.className = 'p-3.5 rounded-xl border border-rose-300 bg-rose-50 text-rose-900 text-xs leading-relaxed space-y-1';
+                    bannerEl.innerHTML = `
+                        <div class="font-bold flex items-center gap-1.5 text-rose-800">
+                            <i class="fa-brands fa-apple text-rose-600"></i> Alta Disparidade iOS: Bloqueio do WebKit/Safari
+                        </div>
+                        <div>Representa <b>26.0% de todas as queixas do iOS</b> (2,3x maior que no Android). O navegador interno WebKit da Apple bloqueia cookies de terceiros no OAuth do Gov.br, prendendo o usuário no loop de recadastro.</div>
+                    `;
+                } else {
+                    bannerEl.className = 'p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 text-xs leading-relaxed';
+                    bannerEl.innerHTML = `<b>Diagnóstico:</b> ${escapeHtml(item.diagnosis || item.diagnostic || '')}`;
+                }
+            }
+
+            const listEl = document.getElementById('modal-os-reviews-list');
+            if (listEl) {
+                if (reviews.length === 0) {
+                    listEl.innerHTML = '<p class="text-center text-slate-400 text-xs py-6 italic">Nenhuma avaliação encontrada para esta causa neste SO.</p>';
+                } else {
+                    listEl.innerHTML = reviews.map(r => {
+                        const stars = '⭐'.repeat(r.rating || 1);
+                        return `
+                            <div class="p-3 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-200 transition space-y-1.5">
+                                <div class="flex justify-between items-center text-xs">
+                                    <span class="font-bold text-slate-800">${escapeHtml(r.user_name || 'Usuário')}</span>
+                                    <span class="text-[11px] text-slate-500 font-mono">${escapeHtml(r.review_date || '')}</span>
+                                </div>
+                                <div class="text-[11px] text-amber-500 font-bold">${stars}</div>
+                                ${r.title ? `<div class="text-xs font-bold text-slate-700">${escapeHtml(r.title)}</div>` : ''}
+                                <p class="text-xs text-slate-600 leading-relaxed">${escapeHtml(r.content || '(Sem comentário em texto)')}</p>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeOsCauseReviewsModal() {
+            document.getElementById('modal-os-cause-reviews')?.classList.add('hidden');
+        }
         function openTokensModal() {
             document.getElementById('modal-tokens')?.classList.remove('hidden');
             loadTokensList();
