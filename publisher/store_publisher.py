@@ -1,3 +1,4 @@
+import re
 import os
 import json
 import time
@@ -12,10 +13,28 @@ logger = logging.getLogger(__name__)
 
 PACKAGE_NAME = "com.prodemge.minhaescolamg"
 
+def is_synthetic_review_id(review_id: str) -> bool:
+    """
+    Identifica se o ID da avaliação é um caso sintético/simulado de benchmark local
+    (ex: stuck_motog22_01, mock_123, etc.) que não existe na Google Play Store.
+    """
+    if not review_id or not isinstance(review_id, str):
+        return True
+    rid = review_id.strip()
+    if rid.startswith(("stuck_", "mock_", "test_", "sim_", "demo_")):
+        return True
+    # IDs reais da Google Play são UUIDs ou tokens nativos gp:
+    is_uuid = bool(re.match(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', rid, re.IGNORECASE))
+    is_gp = bool(rid.startswith("gp:"))
+    return not (is_uuid or is_gp)
+
 def reply_to_google_play(review_id: str, reply_text: str, service_account_info_or_path: Any, package_name: Optional[str] = None) -> Tuple[bool, str]:
     """
     Publica a resposta na Google Play Store usando a API Google Play Developer (v3).
     """
+    if is_synthetic_review_id(review_id):
+        return False, f"A avaliação possui ID de teste/benchmark local ('{review_id}') e não existe nos servidores da Google Play Store."
+
     if not service_account_info_or_path:
         return False, "Credenciais do Google Play Console (Service Account) não configuradas."
 

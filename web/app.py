@@ -1794,6 +1794,21 @@ def api_reply(req: ReplyRequest, request: Request):
         pkg = "com.prodemge.minhaescolamg" if target_app == "minha_escola_mg" else ("br.gov.prodemge.projetosocialminas" if target_app == "mg_app_cidadao" else get_google_play_package())
 
         if review["store"] == "google":
+            from publisher.store_publisher import is_synthetic_review_id
+            if is_synthetic_review_id(review["review_id"]):
+                update_review_status(
+                    review_id=req.review_id,
+                    status="respondida",
+                    response_text=final_response_text,
+                    published_to_store=False
+                )
+                return {
+                    "success": True,
+                    "published_to_store": False,
+                    "is_synthetic": True,
+                    "message": f"Esta é uma avaliação de teste/benchmark local ({review.get('device_model', 'Moto G22')}) e não existe nos servidores da Google Play Store. A resposta oficial foi aprovada e salva no sistema local com sucesso!"
+                }
+
             sa_creds = resolve_google_play_service_account(target_app)
             if sa_creds and sa_creds.strip():
                 success, msg = reply_to_google_play(review["review_id"], final_response_text, sa_creds, package_name=pkg)
@@ -1940,6 +1955,17 @@ def api_publish_batch(request: Request, store: Optional[str] = None):
         success = False
         msg = ""
         if r["store"] == "google":
+            from publisher.store_publisher import is_synthetic_review_id
+            if is_synthetic_review_id(r["review_id"]):
+                update_review_status(
+                    review_id=r["id"],
+                    status="respondida",
+                    response_text=resp_text,
+                    published_to_store=False
+                )
+                published_count += 1
+                continue
+
             app_sa = resolve_google_play_service_account(target_app)
             if app_sa:
                 success, msg = reply_to_google_play(r["review_id"], resp_text, app_sa, package_name=pkg)

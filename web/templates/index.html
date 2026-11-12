@@ -4490,6 +4490,11 @@
                                     ${sentimentBadge}
                                     ${rootCauseBadge}
                                     ${categoryBadge}
+                                    ${(r.review_id && r.review_id.startsWith('stuck_')) ? `
+                                        <span class="px-2.5 py-1 text-[11px] font-bold bg-amber-100 text-amber-800 rounded-lg border border-amber-300 inline-flex items-center gap-1.5" title="Caso de teste/benchmark local para análise de compatibilidade de hardware">
+                                            <i class="fa-solid fa-flask text-amber-600"></i> Benchmark / Simulação Local
+                                        </span>
+                                    ` : ''}
                                 </div>
 
                                 <!-- Indicador de Hardware e Sistema Operacional -->
@@ -4570,9 +4575,15 @@
                                                     <i class="fa-solid fa-check"></i> Salvar no Sistema
                                                 </button>
                                                 ${window.isPublisher ? `
-                                                    <button onclick="sendToStorePublish('${r.id}')" title="Mandar publicar diretamente na Google Play Store via API oficial" class="px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow transition flex items-center gap-1.5">
-                                                        <i class="fa-solid fa-paper-plane"></i> Mandar Publicar na Loja
-                                                    </button>
+                                                    ${(r.review_id && r.review_id.startsWith('stuck_')) ? `
+                                                        <button onclick="sendToStorePublish('${r.id}')" title="Avaliação de benchmark local. Ao aprovar, a resposta é salva no sistema local sem enviar à loja." class="px-4 py-2 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-xl shadow transition flex items-center gap-1.5">
+                                                            <i class="fa-solid fa-flask"></i> Salvar (Caso de Teste)
+                                                        </button>
+                                                    ` : `
+                                                        <button onclick="sendToStorePublish('${r.id}')" title="Mandar publicar diretamente na Google Play Store via API oficial" class="px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow transition flex items-center gap-1.5">
+                                                            <i class="fa-solid fa-paper-plane"></i> Mandar Publicar na Loja
+                                                        </button>
+                                                    `}
                                                 ` : ''}
                                             </div>
                                         </div>
