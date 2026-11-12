@@ -322,6 +322,16 @@ def generate_auto_reply_for_review(review: Dict[str, Any], root_cause_id: Option
         org_name=org_name
     )
 
+    # REGRA OBRIGATÓRIA: Para todas as avaliações abaixo de 3 estrelas (1 e 2 estrelas),
+    # incluir o texto orientando a verificar na loja se existem atualizações para serem feitas
+    if rating < 3:
+        update_notice = f"Recomendamos também verificar na {store_name} se existem atualizações para serem feitas no {app_name}."
+        if not re.search(r'verifique.*atualiza|atualizar.*app|atualizaç.*loja|atualizaç.*feitas', formatted, re.IGNORECASE):
+            if "Canal de Suporte Oficial:" in formatted:
+                formatted = formatted.replace("Canal de Suporte Oficial:", f"{update_notice} Canal de Suporte Oficial:")
+            else:
+                formatted = f"{formatted} {update_notice}"
+
     # Verificação estrita de segurança:
     if rating >= 5:
         # REGRA ABSOLUTA: 5 estrelas NUNCA exibe canal de suporte nem link

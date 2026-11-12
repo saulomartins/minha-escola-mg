@@ -314,17 +314,18 @@ def can_user_view_all_apps(user: Optional[Dict[str, Any]]) -> bool:
 def can_user_publish_to_store(user: Optional[Dict[str, Any]]) -> bool:
     """
     Retorna True se o usuário tem permissão para publicar respostas nas lojas de aplicativos (Google Play / App Store).
-    Regra de Negócio Estrita:
-    - O e-mail 'saulomartins.costa@gmail.com' NUNCA pode publicar respostas nas lojas (can_publish = False).
-    - O e-mail 'mgminhaescola@gmail.com' SEMPRE possui permissão oficial de publicação (can_publish = True).
-    - Outros usuários ou tokens de acesso: respeitam a permissão configurada em can_publish.
+    Contas autorizadas:
+    - O e-mail oficial 'mgminhaescola@gmail.com' (sempre True).
+    - O e-mail de administrador 'saulomartins.costa@gmail.com' (sempre True).
+    - Administradores (role == 'admin').
+    - Tokens de acesso ou usuários com a flag can_publish ativada (can_publish == 1).
     """
     if not user:
         return False
     user_email = (user.get("email") or "").lower().strip()
-    if user_email == "saulomartins.costa@gmail.com":
-        return False
-    if user_email == "mgminhaescola@gmail.com":
+    if user_email in ("mgminhaescola@gmail.com", "saulomartins.costa@gmail.com"):
+        return True
+    if user.get("role") == "admin":
         return True
     return bool(user.get("can_publish"))
 
@@ -1779,15 +1780,9 @@ def api_reply(req: ReplyRequest, request: Request):
     if should_send_store:
         user = get_current_user_from_request(request)
         if not can_user_publish_to_store(user):
-            user_email = (user.get("email") if user else "anônimo").lower().strip()
-            if user_email == "saulomartins.costa@gmail.com":
-                raise HTTPException(
-                    status_code=403, 
-                    detail="O usuário saulomartins.costa@gmail.com não possui permissão para publicar respostas nas lojas de aplicativos (Google Play / App Store)."
-                )
             raise HTTPException(
                 status_code=403, 
-                detail="Apenas o usuário oficial mgminhaescola@gmail.com possui permissão para publicar respostas diretamente nas lojas."
+                detail="Você não possui permissão para publicar respostas diretamente nas lojas de aplicativos. Solicite permissão ao administrador."
             )
 
         target_app = review.get("app_id") or get_app_id()
@@ -1833,7 +1828,7 @@ def api_reply(req: ReplyRequest, request: Request):
                     "missing_credentials": True,
                     "store": "apple",
                     "review_id": req.review_id,
-                    "message": f"Credenciais da Apple App Store (App Store Connect para {target_app}) não configuradas! Conecte sua conta para mandar publicar diretamente na loja."
+                    "message": f"Credenciais da Apple App Store (App Store Connect para {target_app}) não configuradas no servidor! Para responder avaliações do iOS, use o botão 'Copiar Resposta' e cole no console do App Store Connect."
                 }
 
     update_review_status(

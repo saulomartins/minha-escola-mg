@@ -262,6 +262,13 @@ def init_db():
     except Exception as e:
         print(f"Erro ao sincronizar status de avaliações respondidas: {e}")
 
+    # Sincroniza permissão de publicação para tokens e contas oficiais
+    try:
+        cursor.execute("UPDATE access_tokens SET can_publish = 1 WHERE token IN ('MEMG-2026', 'MGAPP-2026', 'MINHAESCOLA-SEE-2026')")
+        cursor.execute("UPDATE allowed_users SET can_publish = 1 WHERE email IN ('mgminhaescola@gmail.com', 'saulomartins.costa@gmail.com')")
+    except Exception as e:
+        print(f"Erro ao sincronizar permissões de publicação: {e}")
+
     # Sincroniza status para avaliações que NÃO possuem resposta oficial do desenvolvedor na loja
     # e que não foram publicadas para garantir que apareçam como pendentes no painel
     try:

@@ -3143,7 +3143,7 @@
     <!-- JavaScript da Aplicação -->
     <script>
         window.currentUserEmail = "{{ (current_user.email if current_user else 'acesso.livre@prodemge.gov.br') | lower }}";
-        window.isPublisher = (window.currentUserEmail === 'mgminhaescola@gmail.com' || {{ 'true' if can_publish_to_store else 'false' }});
+        window.isPublisher = (window.currentUserEmail === 'mgminhaescola@gmail.com' || window.currentUserEmail === 'saulomartins.costa@gmail.com' || {{ 'true' if can_publish_to_store else 'false' }});
 
         let debounceTimer;
         let chartParetoInstance = null;
