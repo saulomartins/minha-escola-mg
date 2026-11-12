@@ -38,7 +38,7 @@ Diretrizes obrigatórias para as respostas:
    Canal de Suporte Oficial: 👉 {support_url}
 5. Para PROBLEMAS DE ACESSO/LOGIN/SENHA: Oriente a verificar cadastro, recuperação de senha ou conectividade, e solicite o preenchimento do Canal de Suporte Oficial: 👉 {support_url}.
 6. Para BUGS/TRAVAMENTOS/TELA PRETA: Peça desculpas pelo transtorno, sugira atualizar o aplicativo para a versão mais recente, limpar o cache do app, e solicite o registro no Canal de Suporte Oficial: 👉 {support_url}.
-7. Mantenha a resposta concisa (máximo de 3 a 4 frases), ideal para leitura em lojas de aplicativos.
+7. REGRA CRÍTICA DE TAMANHO: O texto da resposta (suggested_response) DEVE OBRIGATORIAMENTE conter no máximo 350 caracteres no total (incluindo espaços e links), pois este é o limite rígido da Google Play Store.
 8. REGRA OBRIGATÓRIA PARA AVALIAÇÕES ABAIXO DE 3 ESTRELAS (1 e 2 estrelas):
    A resposta DEVE SEMPRE orientar o usuário a verificar na loja de aplicativos (Google Play Store ou Apple App Store) se existem atualizações para serem feitas no aplicativo, garantindo que ele esteja na versão mais recente.
 

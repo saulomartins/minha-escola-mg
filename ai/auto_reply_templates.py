@@ -2,11 +2,49 @@ import re
 from typing import Dict, Any, List, Optional
 from database.db import get_connection, get_setting
 from ai.analyzer import has_problem_context, strip_support_link
-
-# Configuração e descrição detalhada de cada causa-raiz com templates para todas as estrelas
 from config import get_app_name, get_organization_name, get_support_url, get_domain
 
 OFFICIAL_SUPPORT_FORM = get_support_url()
+
+def enforce_char_limit(text: str, max_chars: int = 350) -> str:
+    """
+    Garante que a resposta nunca exceda o limite rígido da loja (350 caracteres, contando espaços),
+    preservando sempre o link do canal de suporte e a coerência das frases.
+    """
+    if not text:
+        return ""
+    text = re.sub(r'\s+', ' ', text).strip()
+    if len(text) <= max_chars:
+        return text
+
+    # Localiza o link oficial no final (se houver)
+    support_match = re.search(r'(Canal de (?:Suporte|Atendimento) Oficial:\s*(?:👉\s*)?https?://\S+)', text)
+    if support_match:
+        support_part = support_match.group(1).strip()
+        body_part = text[:support_match.start()].strip()
+    else:
+        support_part = ""
+        body_part = text
+
+    available_for_body = max_chars - (len(support_part) + 1 if support_part else 0)
+
+    if len(body_part) > available_for_body:
+        cut = body_part[:available_for_body]
+        last_punct = max(cut.rfind('.'), cut.rfind('!'), cut.rfind('?'))
+        if last_punct > 50:
+            body_part = cut[:last_punct + 1].strip()
+        else:
+            last_space = cut.rfind(' ')
+            if last_space > 50:
+                body_part = cut[:last_space].strip() + '.'
+            else:
+                body_part = cut.strip()
+
+    final_text = f"{body_part} {support_part}".strip() if support_part else body_part
+    if len(final_text) > max_chars:
+        final_text = final_text[:max_chars].strip()
+
+    return final_text
 
 PROBLEM_TEMPLATES_CONFIG = {
     "login_sessao_recorrente": {
@@ -17,9 +55,9 @@ PROBLEM_TEMPLATES_CONFIG = {
         "severity": "Crítica",
         "complexity": "Média",
         "templates": {
-            "critical": "Olá, {nome}! Lamentamos muito pelo transtorno com a instabilidade de login no {app_name}. Nossa equipe técnica da {org_name} está atuando na infraestrutura para estabilizar as sessões e evitar desconexões. Como procedimento imediato, por favor limpe o cache do aplicativo em Configurações > Aplicativos > {app_name} > Armazenamento > Limpar Cache e tente novamente. Caso a dificuldade persista, acione o Canal de Suporte Oficial: 👉 {canal_contato}",
-            "moderate": "Olá, {nome}! Agradecemos pelo seu relato. Já estamos cientes da instabilidade no acesso e atuando para otimizar o processo de login do {app_name}. Recomendamos manter o app sempre atualizado na versão mais recente da {loja}. Se precisar de auxílio adicional, conte conosco no Canal de Suporte Oficial: 👉 {canal_contato}",
-            "positive": "Olá, {nome}! Muito obrigado pela avaliação de {estrelas} estrelas no {app_name}! Continuamos trabalhando para garantir um acesso rápido e seguro a todos os usuários."
+            "critical": "Olá, {nome}! Sentimos pela instabilidade de login no {app_name}. Por favor, limpe o cache do app em Configurações > Aplicativos. Verifique na loja se há atualizações para o app. Se persistir, acione o Canal de Suporte Oficial: 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! Agradecemos pelo relato. Estamos trabalhando para otimizar o login do {app_name}. Mantenha o app atualizado na {loja}. Se precisar de auxílio, conte conosco no Canal de Suporte Oficial: 👉 {canal_contato}",
+            "positive": "Olá, {nome}! Muito obrigado pela avaliação de {estrelas} estrelas no {app_name}! Continuamos trabalhando para garantir um acesso rápido e seguro a todos."
         }
     },
     "gov_br_cpf": {
@@ -30,9 +68,9 @@ PROBLEM_TEMPLATES_CONFIG = {
         "severity": "Crítica",
         "complexity": "Alta",
         "templates": {
-            "critical": "Olá, {nome}! Sentimos muito pelo transtorno no acesso Gov.br. Esse erro geralmente ocorre por divergência cadastral entre a base federal e a secretaria da escola. Recomendamos confirmar se o seu CPF e data de nascimento estão atualizados junto à coordenação da sua escola. Se o problema persistir, pedimos que acesse o Canal de Suporte Oficial: 👉 {canal_contato}",
-            "moderate": "Olá, {nome}! Agradecemos pelo seu retorno. O login com Gov.br exige que os dados cadastrais estejam 100% alinhados com o cadastro escolar. Caso o acesso continue instável, orientamos relatar pelo Canal de Suporte Oficial: 👉 {canal_contato}",
-            "positive": "Olá, {nome}! Muito obrigado pela avaliação de {estrelas} estrelas no {app_name}! Trabalhamos constantemente na integração com o Gov.br para manter seu acesso seguro e prático. Conte conosco!"
+            "critical": "Olá, {nome}! Sentimos pela dificuldade com Gov.br. Confirme se seu CPF e data de nascimento estão atualizados na escola. Verifique na loja se há atualizações para o app. Se persistir, acesse o Canal de Suporte Oficial: 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! O login Gov.br exige dados alinhados com o cadastro escolar. Caso continue com instabilidade, orientamos relatar pelo Canal de Suporte Oficial: 👉 {canal_contato}",
+            "positive": "Olá, {nome}! Muito obrigado pela avaliação de {estrelas} estrelas no {app_name}! Trabalhamos constantemente na integração segura com o Gov.br. Conte conosco!"
         }
     },
     "senha_recuperacao": {
@@ -43,9 +81,9 @@ PROBLEM_TEMPLATES_CONFIG = {
         "severity": "Alta",
         "complexity": "Média",
         "templates": {
-            "critical": "Olá, {nome}! Sentimos muito pela dificuldade na recuperação da senha. Verifique se a mensagem não foi para a caixa de Spam/Lixo Eletrônico. Caso o e-mail cadastrado na escola seja antigo ou inacessível, solicite a atualização junto à secretaria da sua escola ou registre no Canal de Suporte Oficial: 👉 {canal_contato}",
-            "moderate": "Olá, {nome}! Agradecemos pelo seu contato. Para recuperar sua senha com segurança, certifique-se de que o e-mail cadastrado na escola é o seu e-mail atual. Havendo qualquer divergência ou persistindo o erro, consulte a secretaria da escola ou registre no Canal de Suporte Oficial: 👉 {canal_contato}",
-            "positive": "Olá, {nome}! Agradecemos pela avaliação positiva de {estrelas} estrelas! Nosso objetivo é garantir que seu acesso ao {app_name} seja sempre ágil e descomplicado. Um abraço da equipe!"
+            "critical": "Olá, {nome}! Sentimos pela dificuldade na senha. Verifique a caixa de Spam. Se o e-mail cadastrado estiver desatualizado, procure a escola. Verifique atualizações na loja ou acione o Canal de Suporte Oficial: 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! Para redefinir sua senha com segurança, certifique-se de que o e-mail cadastrado na escola é o atual. Persistindo o erro, registre no Canal de Suporte Oficial: 👉 {canal_contato}",
+            "positive": "Olá, {nome}! Agradecemos pela avaliação positiva de {estrelas} estrelas! Nosso objetivo é garantir acesso ágil e descomplicado ao {app_name}."
         }
     },
     "lentidao_tela_preta": {
@@ -56,9 +94,9 @@ PROBLEM_TEMPLATES_CONFIG = {
         "severity": "Alta",
         "complexity": "Média",
         "templates": {
-            "critical": "Olá, {nome}! Lamentamos muito pela lentidão ou travamento no {app_name}. Nossa equipe técnica da {org_name} lançou atualizações para otimização de performance. Recomendamos atualizar o app para a versão mais recente na {loja} e limpar o cache nas configurações do aparelho. Se persistir, informe os detalhes no Canal de Suporte Oficial: 👉 {canal_contato}",
-            "moderate": "Olá, {nome}! Obrigado por nos avisar sobre a lentidão. Estamos trabalhando continuamente na estabilidade do aplicativo. Certifique-se de manter o app atualizado e, caso precise de auxílio, relate no Canal de Suporte Oficial: 👉 {canal_contato}",
-            "positive": "Olá, {nome}! Muito obrigado pela avaliação de {estrelas} estrelas! Estamos sempre otimizando a velocidade do {app_name} para oferecer a melhor experiência a você. Conte com a gente!"
+            "critical": "Olá, {nome}! Lamentamos a lentidão no {app_name}. Limpe o cache do app nas configurações do aparelho. Verifique na loja se há atualizações pendentes para o app. Se persistir, relate no Canal de Suporte Oficial: 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! Obrigado pelo aviso. Otimizações de velocidade são lançadas com frequência. Mantenha o app atualizado e, se precisar de auxílio, acione o Canal de Suporte Oficial: 👉 {canal_contato}",
+            "positive": "Olá, {nome}! Muito obrigado pela avaliação de {estrelas} estrelas! Estamos sempre otimizando a velocidade do {app_name} para oferecer a melhor experiência."
         }
     },
     "boletim_notas": {
@@ -69,9 +107,9 @@ PROBLEM_TEMPLATES_CONFIG = {
         "severity": "Alta",
         "complexity": "Alta",
         "templates": {
-            "critical": "Olá, {nome}! Entendemos a importância de acompanhar o boletim. As notas exibidas no {app_name} dependem da sincronização e homologação feitas pelos professores no Diário Escolar Digital (DED). Caso o bimestre já tenha encerrado e as notas não apareçam, consulte a coordenação da sua escola ou relate no Canal de Suporte Oficial: 👉 {canal_contato}",
-            "moderate": "Olá, {nome}! Agradecemos pelo seu relato. A atualização das notas no aplicativo ocorre conforme os professores realizam o lançamento oficial no sistema escolar. Havendo dúvidas ou divergências não solucionadas pela escola, relate pelo Canal de Suporte Oficial: 👉 {canal_contato}",
-            "positive": "Olá, {nome}! Ficamos muito felizes com a sua avaliação positiva! O acompanhamento das notas é fundamental e estamos empenhados em manter tudo sempre sincronizado para você. Bons estudos!"
+            "critical": "Olá, {nome}! Entendemos a importância do boletim. As notas dependem do lançamento no Diário Escolar Digital. Verifique na loja se há atualizações do app ou consulte sua escola. Canal de Suporte Oficial: 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! A atualização das notas no app ocorre conforme o lançamento oficial pelos professores. Havendo dúvidas ou divergências, relate pelo Canal de Suporte Oficial: 👉 {canal_contato}",
+            "positive": "Olá, {nome}! Ficamos muito felizes com a sua avaliação positiva! O acompanhamento das notas é fundamental e estamos empenhados em manter tudo sincronizado. Bons estudos!"
         }
     },
     "faltas_frequencia": {
@@ -82,152 +120,151 @@ PROBLEM_TEMPLATES_CONFIG = {
         "severity": "Média",
         "complexity": "Média",
         "templates": {
-            "critical": "Olá, {nome}! Agradecemos pelo alerta sobre a frequência. O registro de faltas e presenças no app é alimentado pelos professores no Diário Escolar Digital. Se houver divergências não solucionadas pela secretaria da escola, relate os detalhes no Canal de Suporte Oficial: 👉 {canal_contato}",
-            "moderate": "Olá, {nome}! O controle de faltas reflete o Diário Escolar Digital. Caso note divergências na frequência, a coordenação da sua escola poderá verificar e retificar os registros, ou você pode registrar no Canal de Suporte Oficial: 👉 {canal_contato}",
+            "critical": "Olá, {nome}! O extrato de frequência reflete os registros do Diário Escolar Digital. Verifique na loja se há atualizações do app. Se houver divergências não resolvidas pela escola, acione o Canal de Suporte Oficial: 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! O controle de faltas reflete o Diário Escolar Digital. Caso note divergências na frequência, a escola poderá verificar, ou você pode relatar no Canal de Suporte Oficial: 👉 {canal_contato}",
             "positive": "Olá, {nome}! Muito obrigado pela avaliação de {estrelas} estrelas! O controle de frequência é essencial para o acompanhamento escolar. Conte conosco!"
         }
     },
     "crash_fechamento": {
         "id": "crash_fechamento",
-        "name": "Crash e Fechamento Inesperado",
-        "keywords": ["fecha sozinho", "fechando sozinho", "sai do app", "crash", "trava ao abrir", "nem abre", "parou de funcionar", "app parou"],
-        "description": "O aplicativo fecha abruptamente, encerra o processo ou não conclui a inicialização.",
+        "name": "Fechamento Inesperado e Travamento",
+        "description": "Aplicativo fecha sozinho logo após abrir ou durante o uso (Crash).",
+        "keywords": ["fecha sozinho", "fechando", "fechou", "crash", "parou de funcionar", "fechando sozinho", "app fecha"],
         "severity": "Crítica",
         "complexity": "Alta",
         "templates": {
-            "critical": "Olá, {nome}! Pedimos sinceras desculpas pelo fechamento inesperado do aplicativo. Nossa equipe de desenvolvimento está corrigindo as causas de instabilidade. Por gentileza, certifique-se de atualizar o app para a versão mais recente na {loja} e reiniciar o aparelho. Caso persista, pedimos que acesse o Canal de Suporte Oficial: 👉 {canal_contato}",
-            "moderate": "Olá, {nome}! Agradecemos pelo relato. Estamos trabalhando para eliminar falhas de fechamento. Recomendamos reinstalar o aplicativo ou registrar o modelo do celular no Canal de Suporte Oficial: 👉 {canal_contato}",
-            "positive": "Olá, {nome}! Agradecemos pela confiança e avaliação de {estrelas} estrelas! Nossa equipe continuará monitorando a estabilidade para garantir o melhor funcionamento."
+            "critical": "Olá, {nome}! Pedimos desculpas pelo fechamento do app. Nossa equipe está atuando nas correções. Limpe o cache e verifique na loja se há atualizações para o app. Se persistir, relate no Canal de Suporte Oficial: 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! Lamentamos o fechamento inesperado. Mantenha seu app atualizado na {loja}. Se o erro continuar, informe os detalhes do seu aparelho no Canal de Suporte Oficial: 👉 {canal_contato}",
+            "positive": "Olá, {nome}! Agradecemos pela avaliação de {estrelas} estrelas! Trabalhamos para que o {app_name} seja sempre estável e rápido."
         }
     },
     "acesso_responsaveis": {
         "id": "acesso_responsaveis",
-        "name": "Acesso dos Pais / Múltiplos Alunos",
-        "keywords": ["responsável", "responsavel", "pais", "mãe", "mae", "pai", "filho", "filhos", "ver meu filho", "dependente"],
-        "description": "Dificuldade de pais ou responsáveis legais em visualizar múltiplos dependentes matriculados na rede estadual.",
-        "severity": "Média",
+        "name": "Acesso de Pais e Responsáveis",
+        "description": "Mães, pais ou responsáveis que não conseguem vincular os filhos, visualizar múltiplos estudantes ou alternar entre dependentes.",
+        "keywords": ["filho", "filha", "responsável", "mãe", "pai", "dependentes", "vincular filho", "dois filhos", "não vejo meu filho", "outro filho"],
+        "severity": "Alta",
         "complexity": "Média",
         "templates": {
-            "critical": "Olá, {nome}! Compreendemos sua necessidade de acompanhar seus filhos. Para que os dependentes apareçam no seu perfil, o CPF do responsável legal deve estar cadastrado de forma idêntica na matrícula de cada estudante. Orientamos procurar a secretaria escolar ou relatar pelo Canal de Suporte Oficial: 👉 {canal_contato}",
-            "moderate": "Olá, {nome}! O vínculo de múltiplos estudantes ao mesmo responsável depende da conferência cadastral nas secretarias das respectivas escolas. Ficamos à disposição pelo Canal de Suporte Oficial: 👉 {canal_contato} caso precise de orientação adicional.",
-            "positive": "Olá, {nome}! Que alegria receber sua avaliação positiva! É um prazer apoiar as famílias no acompanhamento da vida escolar dos estudantes mineiros. Obrigado!"
+            "critical": "Olá, {nome}! Para acesso de responsáveis, o vínculo deve estar regularizado na secretaria escolar. Verifique na loja se há atualizações para o app ou registre no Canal de Suporte Oficial: 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! Para vincular mais de um filho, o CPF do responsável deve constar no cadastro de cada estudante na escola. Havendo dúvidas, acione o Canal de Suporte Oficial: 👉 {canal_contato}",
+            "positive": "Olá, {nome}! Ficamos muito felizes em apoiar o acompanhamento escolar dos seus filhos pelo {app_name}! Conte sempre com a nossa equipe."
         }
     },
     "outros_problemas": {
         "id": "outros_problemas",
-        "name": "Problemas Gerais e Dúvidas",
-        "keywords": ["outros", "dúvida", "ajuda", "problema"],
-        "description": "Comentários com notas baixas (1 ou 2 estrelas) que não mencionam uma palavra-chave específica, ou dúvidas diversas de utilização.",
+        "name": "Problemas Gerais e Dificuldades Técnicas",
+        "description": "Queixas genéricas sem menção a causa-raiz específica.",
+        "keywords": ["ruim", "péssimo", "horrível", "não funciona", "lixo", "arrumem", "bosta", "desinstalando", "odio", "raiva", "vergonha"],
         "severity": "Média",
         "complexity": "Baixa",
         "templates": {
-            "critical": "Olá, {nome}! Para nos ajudar a identificar e solucionar problemas no aplicativo {app_name}, pedimos que acesse o Canal de Suporte Oficial: 👉 {canal_contato}",
-            "moderate": "Olá, {nome}! Agradecemos por compartilhar sua opinião. Se estiver enfrentando qualquer dificuldade ou dúvida técnica, pedimos que acesse o Canal de Suporte Oficial: 👉 {canal_contato}",
-            "positive": "Olá, {nome}! Agradecemos pelo retorno e pelas observações. Estamos à disposição para apoiar sua jornada escolar!"
+            "critical": "Olá, {nome}! Agradecemos pelo relato no {app_name}. Verifique na loja se há atualizações para o app. Para que nossa equipe analise e solucione seu caso, registre no Canal de Suporte Oficial: 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! Obrigado pelo feedback sobre o {app_name}. Mantenha o app sempre atualizado. Caso precise de suporte, acione o Canal de Suporte Oficial: 👉 {canal_contato}",
+            "positive": "Olá, {nome}! Muito obrigado pela avaliação de {estrelas} estrelas no {app_name}! Estamos à disposição."
         }
     },
     "elogios_satisfacao": {
         "id": "elogios_satisfacao",
-        "name": "Elogios e Avaliações Positivas",
-        "keywords": ["ótimo", "muito bom", "excelente", "parabéns", "ajuda muito", "fácil", "gostei", "adorei", "perfeito", "bom"],
-        "description": "Avaliações de 4 e 5 estrelas contendo elogios, agradecimentos e reconhecimento da utilidade do aplicativo.",
+        "name": "Elogios, Gratidão e Avaliações Positivas",
+        "description": "Avaliações elogiando a praticidade, notas altas e satisfação.",
+        "keywords": ["ótimo", "otimo", "muito bom", "excelente", "maravilhoso", "parabéns", "parabens", "adorei", "gostei", "top", "perfeito", "ajuda muito", "prático", "facil", "fácil"],
         "severity": "Baixa",
         "complexity": "Baixa",
         "templates": {
-            "critical": "Olá, {nome}! Agradecemos pelo seu contato. Caso esteja enfrentando qualquer instabilidade ou dificuldade no {app_name}, pedimos que relate no Canal de Suporte Oficial: 👉 {canal_contato}",
-            "moderate": "Olá, {nome}! Muito obrigado pelo retorno positivo. Se houver alguma dificuldade técnica que possamos ajudar a resolver, utilize o Canal de Suporte Oficial: 👉 {canal_contato}",
-            "positive": "Olá, {nome}! Ficamos imensamente felizes com a sua avaliação de {estrelas} estrelas no {app_name}! Nosso compromisso diário é facilitar a rotina de toda a nossos usuários. Muito obrigado pelo carinho e conte sempre conosco!"
+            "critical": "Olá, {nome}! Obrigado pelo retorno sobre o {app_name}. Verifique na loja se há atualizações para o app. Se precisar de apoio, conte com o Canal de Suporte Oficial: 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! Agradecemos pela avaliação! Continuamos trabalhando para melhorar sua experiência no {app_name}.",
+            "positive": "Olá, {nome}! Ficamos muito felizes com suas {estrelas} estrelas no {app_name}! Nosso compromisso é facilitar sua rotina diária. Muito obrigado!"
         }
     },
     "geral_outros": {
         "id": "geral_outros",
-        "name": "Geral / Sugestões Diversas",
-        "keywords": ["sugestão", "melhorar", "poderia", "recurso", "atualização", "ajuda"],
-        "description": "Comentários com notas moderadas ou sugestões de funcionalidades pedagógicas sem reporte de falhas impeditivas.",
+        "name": "Atendimento Geral e Outros Serviços",
+        "description": "Dúvidas gerais, elogios ou solicitações sobre os serviços do Governo.",
+        "keywords": ["governo", "serviço", "dúvida", "informação", "mg app", "cidadão"],
         "severity": "Baixa",
         "complexity": "Baixa",
         "templates": {
-            "critical": "Olá, {nome}! Sentimos muito por qualquer inconveniente no {app_name}. Para nos ajudar a identificar e solucionar ocorrências, pedimos que acesse o Canal de Suporte Oficial: 👉 {canal_contato}",
-            "moderate": "Olá, {nome}! Muito obrigado por compartilhar sua visão e sugestões de aprimoramento. Se notar qualquer instabilidade ou precisar de auxílio técnico, registre no Canal de Suporte Oficial: 👉 {canal_contato}",
-            "positive": "Olá, {nome}! Agradecemos pela avaliação de {estrelas} estrelas no {app_name}! Trabalhamos para tornar o dia a dia escolar cada vez mais prático. Conte conosco!"
+            "critical": "Olá, {nome}! Agradecemos pelo contato. Verifique na loja se há atualizações pendentes para o app. Se tiver dúvidas ou dificuldades, acesse o Canal de Atendimento Oficial: 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! Obrigado pela avaliação. Mantenha o {app_name} atualizado. Para dúvidas ou solicitações, acesse o Canal de Atendimento Oficial: 👉 {canal_contato}",
+            "positive": "Olá, {nome}! Muito obrigado pela avaliação de {estrelas} estrelas no {app_name}! Estamos sempre à disposição."
         }
     },
     "usabilidade_interface": {
         "id": "usabilidade_interface",
-        "name": "Dificuldade de Usabilidade e Interface (UX)",
-        "description": "Comentários sobre complexidade de navegação, layout confuso ou sugestões de interface.",
-        "keywords": ["confuso", "horroroso", "estilo", "layout", "interface", "dificil de mexer", "complicado"],
-        "severity": "Média",
+        "name": "Usabilidade e Nova Interface",
+        "description": "Comentários sobre a facilidade ou dificuldade de usar o app.",
+        "keywords": ["layout", "visual", "interface", "design", "botão", "tela", "cores"],
+        "severity": "Baixa",
         "complexity": "Baixa",
         "templates": {
-            "critical": "Olá, {nome}! Agradecemos pelo feedback sobre a experiência de uso do {app_name}. Nossa equipe técnica da {org_name} está continuamente simplificando os fluxos e telas para tornar a navegação o mais clara e intuitiva possível. Se desejar enviar sugestões de melhoria, acesse o Canal de Suporte Oficial: 👉 {canal_contato}",
-            "moderate": "Olá, {nome}! Obrigado por compartilhar sua visão sobre a interface do {app_name}. Avaliações como a sua nos ajudam a evoluir o design e a praticidade da plataforma.",
-            "positive": "Olá, {nome}! Muito obrigado pela avaliação de {estrelas} estrelas no {app_name}! Trabalhamos diariamente para entregar uma interface prática e moderna para a comunidade escolar."
+            "critical": "Olá, {nome}! Agradecemos pelas sugestões no {app_name}. Verifique na loja se há atualizações para o app. Envie sua sugestão no Canal de Atendimento Oficial: 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! Obrigado pelo retorno sobre a navegação do {app_name}. Suas sugestões nos ajudam a evoluir continuamente.",
+            "positive": "Olá, {nome}! Que ótimo saber que gostou da interface do {app_name}! Muito obrigado pelo feedback positivo!"
         }
     },
-    # Domínio Serviços Públicos / MG App Cidadão
     "agendamento_uai_cin": {
         "id": "agendamento_uai_cin",
-        "name": "Agendamento UAI & Carteira de Identidade (CIN/RG)",
-        "description": "Dificuldades de agendamento de emissão da nova Carteira de Identidade Nacional (CIN) ou serviços nas UAIs.",
-        "keywords": ["agendamento", "agendar", "identidade", "cin", "rg", "uai", "vagas", "cancelado"],
+        "name": "Agendamento de Serviços (UAI, Carteira de Identidade / CIN)",
+        "description": "Usuários tentando agendar emissão de CIN, RG ou serviços nas unidades UAI.",
+        "keywords": ["uai", "agendar", "agendamento", "carteira de identidade", "cin", "rg", "vagas", "não tem vaga"],
         "severity": "Alta",
-        "complexity": "Média",
+        "complexity": "Alta",
         "templates": {
-            "critical": "Olá, {nome}! Entendemos sua necessidade com o agendamento de identificação (CIN/RG) na UAI. As vagas nas unidades são abertas periodicamente pelos órgãos competentes. Caso necessite de apoio prioritário ou tenha enfrentado cancelamento/divergência de comparecimento, consulte o Canal de Atendimento Oficial: 👉 {canal_contato}",
-            "moderate": "Olá, {nome}! Agradecemos pelo retorno. Recomendamos verificar os horários de abertura de novas vagas nas unidades UAI de atendimento pelo Canal de Atendimento Oficial: 👉 {canal_contato}",
-            "positive": "Olá, {nome}! Ficamos muito felizes que conseguiu agendar seus serviços com praticidade no {app_name}! Estamos à disposição."
+            "critical": "Olá, {nome}! Sentimos pela dificuldade no agendamento. Novas vagas são abertas diariamente pelo sistema. Verifique atualizações na loja ou acesse o Canal de Atendimento Oficial: 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! Agradecemos o relato sobre o agendamento. Se persistir a dificuldade, registre no Canal de Atendimento Oficial: 👉 {canal_contato}",
+            "positive": "Olá, {nome}! Ficamos muito felizes em ajudar no seu agendamento pelo {app_name}! Conte sempre conosco."
         }
     },
     "veiculos_detran_ipva": {
         "id": "veiculos_detran_ipva",
-        "name": "Veículos, CNH, IPVA & Licenciamento (Detran MG)",
-        "description": "Dúvidas e falhas de sincronização de CNH, CRLV, transferência de veículos, ATPV-e ou guias de IPVA.",
-        "keywords": ["veiculo", "veículo", "carro", "moto", "cnh", "crlv", "detran", "transferencia", "ipva", "licenciamento", "atpv"],
-        "severity": "Crítica",
-        "complexity": "Alta",
+        "name": "Consulta de Veículos, CRLV e IPVA",
+        "description": "Dificuldades em emitir CRLV, consultar IPVA ou taxas de veículos.",
+        "keywords": ["crlv", "veículo", "veiculo", "ipva", "multa", "detran", "documento do carro", "licenciamento"],
+        "severity": "Alta",
+        "complexity": "Média",
         "templates": {
-            "critical": "Olá, {nome}! Lamentamos muito pela dificuldade nos serviços de trânsito e veículos do Detran MG. Para que nossa equipe técnica possa verificar a sincronização do seu veículo, CNH ou emissão de guias, acione o Canal de Atendimento Oficial: 👉 {canal_contato}",
-            "moderate": "Olá, {nome}! Agradecemos pelo contato. As informações de veículos e CNH dependem da integração em tempo real com o Detran MG. Havendo divergência de pagamento ou baixa de documentos, registre pelo Canal de Atendimento Oficial: 👉 {canal_contato}",
-            "positive": "Olá, {nome}! Muito obrigado pela avaliação positiva de {estrelas} estrelas! Acompanhar serviços de veículos e CNH de forma digital é prioridade no {app_name}."
+            "critical": "Olá, {nome}! Para consultas de veículos e IPVA, verifique se os dados estão corretos. Verifique atualizações na loja ou relate no Canal de Atendimento Oficial: 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! As informações de veículos são sincronizadas com a base estadual. Se houver divergências, acione o Canal de Atendimento Oficial: 👉 {canal_contato}",
+            "positive": "Olá, {nome}! Muito obrigado pela avaliação de {estrelas} estrelas! A emissão de documentos pelo {app_name} veio para facilitar a sua vida."
         }
     },
     "login_govbr_biometria": {
         "id": "login_govbr_biometria",
-        "name": "Login Gov.br, Biometria Facial & Sessão",
-        "description": "Dificuldades com reconhecimento facial, validação biométrica, loop de login ou autenticação Gov.br.",
-        "keywords": ["gov.br", "gov", "biometria facial", "reconhecimento facial", "selfie", "loop de login", "desloga"],
-        "severity": "Alta",
+        "name": "Autenticação Gov.br e Biometria Facial",
+        "description": "Dificuldade no login do Gov.br ou reconhecimento facial no MG App.",
+        "keywords": ["biometria", "reconhecimento facial", "gov.br", "gov", "foto", "selfie", "não reconhece", "cpf"],
+        "severity": "Crítica",
         "complexity": "Alta",
         "templates": {
-            "critical": "Olá, {nome}! Sentimos muito pela dificuldade na autenticação Gov.br ou reconhecimento facial no {app_name}. Recomendamos verificar se a iluminação está adequada para a biometria facial e se as permissões de câmera do app estão concedidas. Se a falha persistir, acione o Canal de Atendimento Oficial: 👉 {canal_contato}",
-            "moderate": "Olá, {nome}! Agradecemos pelo contato. A autenticação pelo Gov.br é essencial para a segurança dos seus dados estaduais. Havendo instabilidades, consulte as orientações no Canal de Atendimento Oficial: 👉 {canal_contato}",
-            "positive": "Olá, {nome}! Muito obrigado pela nota máxima no {app_name}! Trabalhamos para tornar o acesso aos serviços públicos cada vez mais ágil e seguro."
+            "critical": "Olá, {nome}! A autenticação Gov.br com biometria depende da base federal. Limpe o cache e verifique atualizações na loja. Havendo erro, acesse o Canal de Atendimento Oficial: 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! Para biometria Gov.br, mantenha o app atualizado na {loja}. Persistindo o erro, acione o Canal de Atendimento Oficial: 👉 {canal_contato}",
+            "positive": "Olá, {nome}! Muito obrigado pela avaliação de {estrelas} estrelas! A segurança do seu acesso pelo Gov.br é prioridade."
         }
     },
     "farmacia_minas_remedios": {
         "id": "farmacia_minas_remedios",
-        "name": "Farmácia de Minas & Medicamentos",
-        "description": "Consultas sobre disponibilidade de medicamentos de alto custo e retirada na Farmácia de Minas.",
-        "keywords": ["farmacia", "farmácia", "medicamento", "medicamentos", "remedio", "remédio", "farmacia de minas"],
+        "name": "Farmácia de Minas e Medicamentos",
+        "description": "Consultas sobre medicamentos do SUS, Farmácia de Minas e disponibilidade.",
+        "keywords": ["remédio", "remedio", "medicamento", "farmácia de minas", "farmacia", "insulina", "receita"],
         "severity": "Média",
-        "complexity": "Média",
+        "complexity": "Baixa",
         "templates": {
-            "critical": "Olá, {nome}! Compreendemos a extrema importância do acesso a medicamentos pelo Farmácia de Minas. A disponibilidade e reposição dos estoques são geridas diretamente pela Secretaria de Estado de Saúde (SES-MG). Para verificar a previsão de chegada ou agendar a retirada, consulte o Canal de Atendimento Oficial: 👉 {canal_contato}",
-            "moderate": "Olá, {nome}! Agradecemos pelo seu relato. O {app_name} reflete a disponibilidade das unidades da Farmácia de Minas. Caso precise de apoio com sua solicitação de medicamentos, acesse o Canal de Atendimento Oficial: 👉 {canal_contato}",
-            "positive": "Olá, {nome}! Ficamos muito felizes em apoiar o acompanhamento e a retirada dos seus medicamentos na Farmácia de Minas pelo {app_name}!"
+            "critical": "Olá, {nome}! A disponibilidade de medicamentos reflete o estoque das farmácias regionais. Verifique atualizações na loja ou consulte o Canal de Atendimento Oficial: 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! Para informações sobre medicamentos, acompanhe no {app_name} ou registre dúvidas no Canal de Atendimento Oficial: 👉 {canal_contato}",
+            "positive": "Olá, {nome}! Que ótimo saber que o {app_name} auxiliou na sua consulta à Farmácia de Minas! Obrigado pela avaliação!"
         }
     },
     "estabilidade_erros_app": {
         "id": "estabilidade_erros_app",
-        "name": "Instabilidade, Erros e Travamentos",
-        "description": "Erros inesperados, aplicativo fechando ou páginas fora do ar.",
-        "keywords": ["fora do ar", "trava", "travando", "fecha sozinho", "lento", "bug", "crash"],
-        "severity": "Crítica",
-        "complexity": "Alta",
+        "name": "Instabilidade, Erro Inesperado e Travamentos",
+        "description": "Relatos de tela branca, travamentos ou mensagens de 'tente novamente mais tarde'.",
+        "keywords": ["erro inesperado", "tente novamente", "fora do ar", "não abre", "tela branca", "travando", "lento"],
+        "severity": "Alta",
+        "complexity": "Média",
         "templates": {
-            "critical": "Olá, {nome}! Pedimos sinceras desculpas pela instabilidade técnica ou lentidão no {app_name}. Nossa equipe técnica da {org_name} está atuando na manutenção preventiva da infraestrutura. Como ação rápida, sugerimos limpar o cache do aplicativo nas configurações do aparelho. Persistindo o erro, acione o Canal de Atendimento Oficial: 👉 {canal_contato}",
-            "moderate": "Olá, {nome}! Agradecemos pelo reporte técnico. Estamos trabalhando na estabilidade contínua dos servidores do {app_name}. Se o erro continuar, relate pelo Canal de Atendimento Oficial: 👉 {canal_contato}",
+            "critical": "Olá, {nome}! Lamentamos a instabilidade. Nossa equipe está atuando nas correções. Limpe o cache e verifique atualizações na loja. Se persistir, acesse o Canal de Atendimento Oficial: 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! Agradecemos pelo reporte técnico. Trabalhamos na estabilidade dos servidores. Se o erro continuar, relate pelo Canal de Atendimento Oficial: 👉 {canal_contato}",
             "positive": "Olá, {nome}! Agradecemos pela avaliação de {estrelas} estrelas! Continuamos investindo na estabilidade e velocidade do {app_name}."
         }
     },
@@ -239,9 +276,9 @@ PROBLEM_TEMPLATES_CONFIG = {
         "severity": "Média",
         "complexity": "Baixa",
         "templates": {
-            "critical": "Olá, {nome}! Agradecemos pelo feedback construtivo sobre a navegação e busca no {app_name}. Nossa equipe de design e desenvolvimento está refinando a localização de serviços para torná-la cada vez mais clara e acessível a todos os cidadãos. Sugestões detalhadas podem ser registradas no Canal de Atendimento Oficial: 👉 {canal_contato}",
-            "moderate": "Olá, {nome}! Obrigado por suas sugestões de melhoria de usabilidade. Elas são muito importantes para o aprimoramento contínuo do {app_name}.",
-            "positive": "Olá, {nome}! Muito obrigado pelo retorno positivo sobre a facilidade de uso do {app_name}! Trabalhamos diariamente para facilitar a vida do cidadão mineiro."
+            "critical": "Olá, {nome}! Agradecemos pelo feedback sobre a navegação no {app_name}. Verifique atualizações na loja ou registre sugestões detalhadas no Canal de Atendimento Oficial: 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! Obrigado por suas sugestões de melhoria no {app_name}. Elas são muito importantes para o aprimoramento contínuo.",
+            "positive": "Olá, {nome}! Muito obrigado pelo retorno positivo sobre a facilidade de uso do {app_name}! Trabalhamos diariamente para facilitar a sua vida."
         }
     }
 }
@@ -250,35 +287,33 @@ def generate_auto_reply_for_review(review: Dict[str, Any], root_cause_id: Option
     """
     Gera a resposta automática com base na Causa-Raiz e na Nota (Estrelas).
     REGRAS CRÍTICAS:
-    1. Para TODAS as avaliações de 1 a 3 estrelas: SEMPRE inclui o Canal de Suporte Oficial: 👉 {canal_contato}.
-    2. Para 4 ou 5 estrelas: se contiver QUALQUER contexto de problema no texto do usuário, TAMBÉM inclui o Canal de Suporte Oficial: 👉 {canal_contato}.
-    3. A URL sempre vem do campo de configuração 'Canal de Suporte Oficial citado pela IA (Formulário {org_name})' (support_contact_url / support_email).
-    4. NUNCA inclui e-mails pessoais ou de desenvolvedores (ex: saulomartins.costa@gmail.com).
+    1. O texto final NUNCA pode ultrapassar 350 caracteres (contando espaços), que é o limite da loja!
+    2. Para TODAS as avaliações de 1 a 3 estrelas: SEMPRE inclui o Canal de Suporte Oficial: 👉 {canal_contato}.
+    3. Para notas abaixo de 3 estrelas (1 e 2 estrelas): SEMPRE inclui a orientação de verificar atualizações na loja.
+    4. Para 5 estrelas: NUNCA inclui canal de suporte nem link.
     """
     target_app = (review.get("app_id") or (lambda: (__import__('config').get_app_id()))()).strip()
 
     user_name = review.get("user_name", "").strip()
     if not user_name or user_name.lower() in ("usuário", "usuario", "usuario google play", "usuário apple"):
-        greeting_name = "estudante/responsável" if target_app == "minha_escola_mg" else "cidadão(ã)"
+        greeting_name = "estudante" if target_app == "minha_escola_mg" else "cidadão"
     else:
-        greeting_name = user_name
+        # Se o nome for muito longo, usa apenas o primeiro nome para economizar caracteres
+        parts = user_name.split()
+        greeting_name = parts[0] if parts else user_name
 
     rating = int(review.get("rating", 3))
     content = review.get("content", "")
     store = review.get("store", "google")
     store_name = "Google Play Store" if store == "google" else "Apple App Store"
 
-    # Obtém o canal de contato oficial configurado especificamente para este app
     canal_contato = get_support_url(target_app)
-    # REGRA ABSOLUTA: NUNCA usar endereços de e-mail (como saulomartins.costa@gmail.com)
     if "@" in canal_contato or not canal_contato.strip():
         canal_contato = "https://forms.cloud.microsoft/r/JmZhSzXtwG" if target_app == "minha_escola_mg" else "https://www.mg.gov.br/atendimento"
     canal_contato = canal_contato.strip()
 
-    # Avalia se há contexto de problema
     is_problem = has_problem_context(content, rating)
 
-    # Identifica o grupo se não fornecido
     from analytics.complexity import classify_text_issue
     if not root_cause_id or root_cause_id not in PROBLEM_TEMPLATES_CONFIG:
         app_domain = get_domain(target_app)
@@ -287,8 +322,6 @@ def generate_auto_reply_for_review(review: Dict[str, Any], root_cause_id: Option
 
     cfg = PROBLEM_TEMPLATES_CONFIG.get(root_cause_id, PROBLEM_TEMPLATES_CONFIG["outros_problemas"])
 
-    # Seleciona o template pelo nível de estrelas e pelo contexto de problema
-    # REGRA ABSOLUTA: 5 estrelas SEMPRE recebe resposta positiva de agradecimento sem canal de suporte!
     if rating >= 5:
         is_problem = False
         template = cfg["templates"]["positive"]
@@ -299,13 +332,7 @@ def generate_auto_reply_for_review(review: Dict[str, Any], root_cause_id: Option
     else:
         # 4 estrelas
         if is_problem:
-            # Usuário deu 4 estrelas, mas relatou erro, bug, lentidão ou problema
-            template = (
-                cfg["templates"]["positive"] + 
-                " Notamos que você mencionou uma instabilidade ou dificuldade. "
-                "Para que nossa equipe técnica possa verificar e solucionar o ocorrido, pedimos que acesse o "
-                "Canal de Suporte Oficial: 👉 {canal_contato}"
-            )
+            template = cfg["templates"]["moderate"]
         else:
             template = cfg["templates"]["positive"]
 
@@ -322,42 +349,27 @@ def generate_auto_reply_for_review(review: Dict[str, Any], root_cause_id: Option
         org_name=org_name
     )
 
-    # REGRA OBRIGATÓRIA: Para todas as avaliações abaixo de 3 estrelas (1 e 2 estrelas),
-    # incluir o texto orientando a verificar na loja se existem atualizações para serem feitas
+    # Injeção de verificação de atualizações para avaliações abaixo de 3 estrelas (1 e 2 estrelas)
     if rating < 3:
-        update_notice = f"Recomendamos também verificar na {store_name} se existem atualizações para serem feitas no {app_name}."
-        if not re.search(r'verifique.*atualiza|atualizar.*app|atualizaç.*loja|atualizaç.*feitas', formatted, re.IGNORECASE):
+        if not re.search(r'atualizaç|atualizar', formatted, re.IGNORECASE):
+            update_text = "Verifique na loja se há atualizações para o app."
             if "Canal de Suporte Oficial:" in formatted:
-                formatted = formatted.replace("Canal de Suporte Oficial:", f"{update_notice} Canal de Suporte Oficial:")
+                formatted = formatted.replace("Canal de Suporte Oficial:", f"{update_text} Canal de Suporte Oficial:")
+            elif "Canal de Atendimento Oficial:" in formatted:
+                formatted = formatted.replace("Canal de Atendimento Oficial:", f"{update_text} Canal de Atendimento Oficial:")
             else:
-                formatted = f"{formatted} {update_notice}"
+                formatted = f"{formatted} {update_text}"
 
-    # Verificação estrita de segurança:
+    # Verificação estrita de segurança para 5 estrelas
     if rating >= 5:
-        # REGRA ABSOLUTA: 5 estrelas NUNCA exibe canal de suporte nem link
         formatted = strip_support_link(formatted)
     elif (rating <= 3 or is_problem) and (canal_contato not in formatted and "forms.cloud.microsoft" not in formatted and "mg.gov.br" not in formatted):
-        formatted = (
-            f"{formatted} Para que possamos analisar e solucionar sua situação, por favor acesse o "
-            f"Canal de Suporte Oficial: 👉 {canal_contato}"
-        )
+        formatted = f"{formatted} Canal de Suporte Oficial: 👉 {canal_contato}"
     elif not is_problem and rating >= 4:
-        # Se for 4 estrelas sem menção de problema/dificuldade, NUNCA exibe link de formulário
         formatted = strip_support_link(formatted)
-
-    # Substitui formatos legados para o formato novo padrão
-    formatted = re.sub(
-        r'Canal de Suporte Oficial citado pela IA.*?(👉\s*)?',
-        'Canal de Suporte Oficial: 👉 ',
-        formatted
-    )
-    formatted = re.sub(
-        r'Canal de Suporte Oficial \(.*\):\s*(👉\s*)?',
-        'Canal de Suporte Oficial: 👉 ',
-        formatted
-    )
 
     # Limpeza contra qualquer e-mail acidental
     formatted = re.sub(r'[\w\.-]+@[\w\.-]+\.\w+', '', formatted).strip()
 
-    return formatted
+    # REGRA FINAL INEGOCIÁVEL: Clampa estritamente para no máximo 350 caracteres
+    return enforce_char_limit(formatted, max_chars=350)

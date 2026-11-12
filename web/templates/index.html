@@ -4542,7 +4542,13 @@
                                             ${replyStatusBadge}
                                         </div>
 
-                                        <textarea id="reply-text-${r.id}" rows="3" class="w-full p-4 bg-white border border-slate-300 rounded-xl text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 shadow-sm" placeholder="Clique em 'Regenerar com IA' para criar uma resposta automática...">${escapeHtml(responseText)}</textarea>
+                                        <div class="flex justify-between items-center text-xs mb-1">
+    <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Texto da Resposta (Limite da Loja: 350 caracteres)</span>
+    <span id="char-count-${r.id}" class="text-xs font-bold ${responseText.length > 350 ? 'text-rose-600 font-extrabold' : 'text-slate-500'}">
+        ${responseText.length}/350 caracteres
+    </span>
+</div>
+<textarea id="reply-text-${r.id}" maxlength="350" rows="3" oninput="updateCharCount('${r.id}')" class="w-full p-3.5 bg-white border ${responseText.length > 350 ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-300 focus:ring-indigo-500'} rounded-xl text-sm leading-relaxed focus:outline-none focus:ring-2 text-slate-800 shadow-sm" placeholder="Clique em 'Regenerar com IA' para criar uma resposta automática...">${escapeHtml(responseText)}</textarea>
 
                                         <div class="flex flex-wrap justify-between items-center gap-2.5 pt-1">
                                             <div class="flex flex-wrap gap-2">
@@ -4750,12 +4756,33 @@
         let activeQuickConnectReviewId = null;
         let activeQuickConnectStore = 'google';
 
+        
+        function updateCharCount(reviewId) {
+            const textarea = document.getElementById(`reply-text-${reviewId}`);
+            const counter = document.getElementById(`char-count-${reviewId}`);
+            if (!textarea || !counter) return;
+            const len = textarea.value.length;
+            counter.textContent = `${len}/350 caracteres`;
+            if (len > 350) {
+                counter.className = "text-xs font-black text-rose-600";
+            } else if (len > 320) {
+                counter.className = "text-xs font-bold text-amber-600";
+            } else {
+                counter.className = "text-xs font-semibold text-slate-500";
+            }
+        }
+
         async function sendToStorePublish(reviewId) {
             const textarea = document.getElementById(`reply-text-${reviewId}`);
             const text = textarea ? textarea.value.trim() : '';
 
             if (!text) {
                 showAlert("Por favor, preencha o texto da resposta antes de mandar publicar.", "error");
+                return;
+            }
+
+            if (text.length > 350) {
+                showAlert(`A resposta possui ${text.length} caracteres. O limite máximo da Google Play Store é de 350 caracteres. Por favor, resuma o texto antes de mandar publicar.`, "warning");
                 return;
             }
 

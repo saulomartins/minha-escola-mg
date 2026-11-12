@@ -56,6 +56,11 @@ def reply_to_google_play(review_id: str, reply_text: str, service_account_info_o
         else:
             return False, "Formato de credencial do Google Play inválido."
 
+        # Garante limite estrito de 350 caracteres antes de enviar à API da Google Play
+        if len(reply_text) > 350:
+            from ai.auto_reply_templates import enforce_char_limit
+            reply_text = enforce_char_limit(reply_text, max_chars=350)
+
         # Atualiza token de acesso
         creds.refresh(GoogleAuthRequest())
         token = creds.token
