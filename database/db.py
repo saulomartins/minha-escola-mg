@@ -261,6 +261,20 @@ def init_db():
         """)
     except Exception as e:
         print(f"Erro ao sincronizar status de avaliações respondidas: {e}")
+
+    # Sincroniza status para avaliações que NÃO possuem resposta oficial do desenvolvedor na loja
+    # e que não foram publicadas para garantir que apareçam como pendentes no painel
+    try:
+        cursor.execute("""
+            UPDATE reviews 
+            SET status = 'pendente', published_to_store = 0 
+            WHERE (developer_response IS NULL OR TRIM(developer_response) = '') 
+              AND (published_to_store = 0 OR published_to_store IS NULL)
+              AND status != 'ignorada'
+              AND status != 'pendente'
+        """)
+    except Exception as e:
+        print(f"Erro ao sincronizar status de avaliações pendentes: {e}")
     
     # Tabela de usuários e permissões de acesso
     cursor.execute("""
@@ -442,8 +456,17 @@ def upsert_review(review: Dict[str, Any]) -> bool:
     
     if is_new:
         has_dev_resp = bool(review.get('developer_response') and str(review.get('developer_response')).strip())
-        initial_status = 'respondida' if has_dev_resp else review.get('status', 'pendente')
-        initial_published = 1 if has_dev_resp else (1 if review.get('published_to_store') else 0)
+        if has_dev_resp:
+            initial_status = 'respondida'
+            initial_published = 1
+        elif review.get('status') == 'ignorada':
+            initial_status = 'ignorada'
+            initial_published = 0
+        else:
+            initial_status = review.get('status', 'pendente')
+            if initial_status == 'respondida' and not (review.get('local_response') and str(review.get('local_response')).strip()):
+                initial_status = 'pendente'
+            initial_published = 1 if review.get('published_to_store') else 0
 
         current_app_id = review.get('app_id') or (lambda: (__import__('config').get_app_id()))()
         cursor.execute("""
@@ -490,8 +513,16 @@ def upsert_review(review: Dict[str, Any]) -> bool:
             content = ?,
             developer_response = COALESCE(?, developer_response),
             developer_response_date = COALESCE(?, developer_response_date),
-            status = CASE WHEN (? IS NOT NULL AND ? != '') THEN 'respondida' ELSE status END,
-            published_to_store = CASE WHEN (? IS NOT NULL AND ? != '') THEN 1 ELSE published_to_store END,
+            status = CASE 
+                WHEN (? IS NOT NULL AND ? != '') THEN 'respondida'
+                WHEN status = 'ignorada' THEN 'ignorada'
+                WHEN published_to_store = 1 THEN 'respondida'
+                ELSE 'pendente'
+            END,
+            published_to_store = CASE 
+                WHEN (? IS NOT NULL AND ? != '') THEN 1 
+                ELSE published_to_store 
+            END,
             device_brand = COALESCE(?, device_brand),
             device_model = COALESCE(?, device_model),
             os_name = COALESCE(?, os_name),

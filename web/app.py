@@ -1197,14 +1197,14 @@ def api_apply_all_auto_replies(request: Request, app_id: Optional[str] = None):
         
         reply_text = generate_auto_reply_for_review(r, root_cause_id=root_cause)
         
-        is_published = (r.get("published_to_store") == 1)
+        is_published = (r.get("published_to_store") == 1) or bool(r.get("developer_response") and str(r.get("developer_response")).strip())
         if not is_published:
             cursor.execute("""
                 UPDATE reviews 
                 SET root_cause_id = ?, 
                     ai_suggested_response = ?,
                     local_response = COALESCE(local_response, ?),
-                    status = 'respondida',
+                    status = 'pendente',
                     updated_at = ?
                 WHERE id = ?
             """, (root_cause, reply_text, reply_text, now, r["id"]))
@@ -1421,7 +1421,7 @@ def run_sync_and_auto_analyze():
     for r in google_reviews:
         upsert_review(r)
         
-    apple_reviews = fetch_apple_store_reviews(max_pages=5)
+    apple_reviews = fetch_apple_store_reviews(max_pages=10)
     for r in apple_reviews:
         upsert_review(r)
 
@@ -1611,7 +1611,7 @@ def api_sync(request: Request, app_id: Optional[str] = None):
             logger.error(f"Falha ao sincronizar via Google Play API ({active_app}): {e}")
 
     # 1. Coleta avaliações públicas para manter a base ampla
-    public_reviews = fetch_google_play_reviews(count=150, package_name=target_pkg, app_id=active_app)
+    public_reviews = fetch_google_play_reviews(count=200, package_name=target_pkg, app_id=active_app)
     new_google = 0
     for r in public_reviews:
         r["app_id"] = active_app
@@ -1625,7 +1625,7 @@ def api_sync(request: Request, app_id: Optional[str] = None):
             if upsert_review(r):
                 new_google += 1
 
-    apple_reviews = fetch_apple_store_reviews(max_pages=5, app_id=target_apple_id, target_app_id=active_app)
+    apple_reviews = fetch_apple_store_reviews(max_pages=10, app_id=target_apple_id, target_app_id=active_app)
     new_apple = 0
     for r in apple_reviews:
         r["app_id"] = active_app
