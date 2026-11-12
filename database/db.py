@@ -738,7 +738,15 @@ def get_stats(app_id: Optional[str] = None) -> Dict[str, Any]:
     cursor.execute("SELECT COUNT(*) as count FROM reviews WHERE status = 'respondida' AND published_to_store = 1 AND app_id = ?", (current_app_id,))
     published_store_count = cursor.fetchone()['count']
 
-    cursor.execute("SELECT COUNT(*) as count FROM reviews WHERE status = 'respondida' AND (published_to_store = 0 OR published_to_store IS NULL) AND app_id = ?", (current_app_id,))
+    cursor.execute("""
+        SELECT COUNT(*) as count 
+        FROM reviews 
+        WHERE (published_to_store = 0 OR published_to_store IS NULL)
+          AND (developer_response IS NULL OR TRIM(developer_response) = '')
+          AND status != 'ignorada'
+          AND ((local_response IS NOT NULL AND TRIM(local_response) != '') OR (ai_suggested_response IS NOT NULL AND TRIM(ai_suggested_response) != ''))
+          AND app_id = ?
+    """, (current_app_id,))
     pending_store_count = cursor.fetchone()['count']
     
     # Distribuição básica de SO e Marcas

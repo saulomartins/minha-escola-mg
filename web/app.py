@@ -1896,9 +1896,10 @@ def api_publish_batch(request: Request, store: Optional[str] = None):
     
     query = """
         SELECT * FROM reviews 
-        WHERE status = 'respondida' 
-          AND (published_to_store = 0 OR published_to_store IS NULL)
-          AND (local_response IS NOT NULL OR ai_suggested_response IS NOT NULL)
+        WHERE (published_to_store = 0 OR published_to_store IS NULL)
+          AND (developer_response IS NULL OR TRIM(developer_response) = '')
+          AND status != 'ignorada'
+          AND ((local_response IS NOT NULL AND TRIM(local_response) != '') OR (ai_suggested_response IS NOT NULL AND TRIM(ai_suggested_response) != ''))
           AND app_id = ?
     """
     params = [effective_app]
@@ -1944,11 +1945,14 @@ def api_publish_batch(request: Request, store: Optional[str] = None):
     failed_count = 0
     errors = []
     
+    from ai.auto_reply_templates import sanitize_forbidden_phrases, enforce_char_limit
+
     for r in rows:
-        resp_text = r.get("local_response") or r.get("ai_suggested_response") or ""
-        if not resp_text:
+        raw_resp = r.get("local_response") or r.get("ai_suggested_response") or ""
+        if not raw_resp:
             continue
             
+        resp_text = enforce_char_limit(sanitize_forbidden_phrases(raw_resp), max_chars=350)
         target_app = r.get("app_id") or effective_app
         pkg = get_google_play_package(target_app)
         
