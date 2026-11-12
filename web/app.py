@@ -1894,18 +1894,17 @@ def api_publish_batch(request: Request, store: Optional[str] = None):
     conn = get_connection()
     cursor = conn.cursor()
     
+    # Publicação em massa exclusiva para Android (Google Play Store)
     query = """
         SELECT * FROM reviews 
         WHERE (published_to_store = 0 OR published_to_store IS NULL)
           AND (developer_response IS NULL OR TRIM(developer_response) = '')
           AND status != 'ignorada'
           AND ((local_response IS NOT NULL AND TRIM(local_response) != '') OR (ai_suggested_response IS NOT NULL AND TRIM(ai_suggested_response) != ''))
+          AND store = 'google'
           AND app_id = ?
     """
     params = [effective_app]
-    if store and store != 'todas':
-        query += " AND store = ?"
-        params.append(store)
         
     cursor.execute(query, params)
     rows = [dict(r) for r in cursor.fetchall()]
@@ -1933,13 +1932,7 @@ def api_publish_batch(request: Request, store: Optional[str] = None):
             "message": f"Para mandar publicar as {len(rows)} respostas na Google Play, configure o arquivo JSON da Service Account da PRODEMGE para {get_app_name(effective_app)}."
         }
         
-    if has_apple and not (apple_k_id and apple_iss and apple_p8):
-        return {
-            "success": False,
-            "missing_credentials": True,
-            "store": "apple",
-            "message": f"Para mandar publicar as {len(rows)} respostas na App Store, configure as credenciais do App Store Connect para {get_app_name(effective_app)}."
-        }
+    # Apple App Store em lote desativada temporariamente (foco 100% Android)
         
     published_count = 0
     failed_count = 0

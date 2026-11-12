@@ -544,8 +544,8 @@
                         <button onclick="applyAllAutoReplies()" id="btn-apply-auto-replies" class="px-4 py-2.5 text-xs font-bold bg-slate-900 hover:bg-black text-white rounded-xl shadow-sm transition flex items-center gap-2" title="Gera respostas automáticas personalizadas para todas as avaliações de 1 a 5 estrelas">
                             <i class="fa-solid fa-bolt text-amber-300"></i> Gerar Respostas (1 a 5 ⭐)
                         </button>
-                        <button onclick="publishBatch()" id="btn-publish-batch" class="{% if can_publish_to_store %}flex{% else %}hidden{% endif %} px-4 py-2.5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm transition items-center gap-2" title="Mandar publicar em massa todas as respostas diretamente nas lojas oficiais (Google Play e App Store)">
-                            <i class="fa-solid fa-paper-plane"></i> Mandar Publicar em Massa (<span id="count-pending-publish">0</span>)
+                        <button onclick="publishBatch()" id="btn-publish-batch" class="{% if can_publish_to_store %}flex{% else %}hidden{% endif %} px-4 py-2.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm transition items-center gap-2" title="Mandar publicar em massa todas as respostas diretamente na Google Play Store (Android)">
+                            <i class="fa-brands fa-google-play"></i> Mandar Publicar no Google Play (<span id="count-pending-publish">0</span>)
                         </button>
                         <button onclick="exportToExcel('excel', 'all')" class="px-4 py-2.5 text-xs font-bold bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl shadow-sm transition flex items-center gap-2" title="Exportar TODOS os 500 comentários da base completa para Excel (.xlsx)">
                             <i class="fa-solid fa-file-excel text-emerald-200"></i> Exportar Todos (Excel)
@@ -4854,14 +4854,14 @@
                 return;
             }
 
-            if (!confirm(`Deseja mandar publicar ${pendingCount} respostas em massa diretamente nas lojas oficiais (Google Play e App Store)?`)) {
+            if (!confirm(`Deseja mandar publicar ${pendingCount} respostas em massa diretamente na Google Play Store (Android)?`)) {
                 return;
             }
 
             const btn = document.getElementById('btn-publish-batch');
             if (btn) {
                 btn.disabled = true;
-                btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Enviando ${pendingCount} respostas às lojas...`;
+                btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Publicando ${pendingCount} respostas no Google Play...`;
             }
 
             try {
@@ -4881,7 +4881,7 @@
             } finally {
                 if (btn) {
                     btn.disabled = false;
-                    btn.innerHTML = `<i class="fa-solid fa-paper-plane mr-1"></i> Mandar Publicar em Massa (<span id="count-pending-publish">0</span>)`;
+                    btn.innerHTML = `<i class="fa-brands fa-google-play mr-1"></i> Mandar Publicar no Google Play (<span id="count-pending-publish">0</span>)`;
                     await loadStats();
                 }
             }

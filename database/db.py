@@ -745,6 +745,7 @@ def get_stats(app_id: Optional[str] = None) -> Dict[str, Any]:
           AND (developer_response IS NULL OR TRIM(developer_response) = '')
           AND status != 'ignorada'
           AND ((local_response IS NOT NULL AND TRIM(local_response) != '') OR (ai_suggested_response IS NOT NULL AND TRIM(ai_suggested_response) != ''))
+          AND store = 'google'
           AND app_id = ?
     """, (current_app_id,))
     pending_store_count = cursor.fetchone()['count']
