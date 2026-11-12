@@ -181,7 +181,6 @@ def ensure_official_support_link(suggested_response: str, content: str, rating: 
     if is_problem:
         # Se for 1-3 estrelas OU 4 estrelas COM relato de problema, GARANTE o link específico
         if support_url not in cleaned:
-            # Remove qualquer link de suporte de outro app caso tenha ficado
             cleaned = re.sub(r'https?://forms\.cloud\.microsoft\S*', '', cleaned)
             cleaned = re.sub(r'https?://www\.mg\.gov\.br/atendimento\S*', '', cleaned)
             cleaned = cleaned.rstrip(' :👉-')
@@ -191,8 +190,30 @@ def ensure_official_support_link(suggested_response: str, content: str, rating: 
             )
     else:
         cleaned = strip_support_link(cleaned)
-            
-    return cleaned
+
+    # Injeção de verificação de atualizações na loja para avaliações de 1 a 3 estrelas (1, 2 e 3 estrelas)
+    if rating <= 3:
+        has_advice = bool(
+            re.search(r'verifique\s+(?:na\s+loja|se\s+h[aá]\s+atualiza)', cleaned, re.IGNORECASE) or
+            re.search(r'atualiza[çc][oõ]es\s+(?:na\s+loja|para\s+o\s+app|pendentes)', cleaned, re.IGNORECASE) or
+            re.search(r'mantenha\s+(?:o\s+app\s+)?atualizado', cleaned, re.IGNORECASE) or
+            re.search(r'vers[aã]o\s+mais\s+recente', cleaned, re.IGNORECASE)
+        )
+        if not has_advice:
+            update_text = "Verifique na loja se há atualizações para o app."
+            if "Canal de Suporte Oficial:" in cleaned:
+                cleaned = cleaned.replace("Canal de Suporte Oficial:", f"{update_text} Canal de Suporte Oficial:")
+            elif "Canal de Atendimento Oficial:" in cleaned:
+                cleaned = cleaned.replace("Canal de Atendimento Oficial:", f"{update_text} Canal de Atendimento Oficial:")
+            else:
+                cleaned = f"{cleaned} {update_text}"
+
+    # Sanitização estrita contra frases proibidas de incompatibilidade
+    from ai.auto_reply_templates import sanitize_forbidden_phrases, enforce_char_limit
+    cleaned = sanitize_forbidden_phrases(cleaned)
+
+    # Limite rígido inegociável de 350 caracteres
+    return enforce_char_limit(cleaned, max_chars=350)
 
 def heuristic_fallback_analysis(user_name: str, rating: int, content: str, app_id: Optional[str] = None) -> Dict[str, Any]:
     """
@@ -287,6 +308,8 @@ def heuristic_fallback_analysis(user_name: str, rating: int, content: str, app_i
             f"Para nos ajudar a solucionar qualquer dificuldade ou dúvida no aplicativo, "
             f"pedimos que acesse o Canal de Suporte Oficial: 👉 {support_url}"
         )
+
+    response = ensure_official_support_link(response, content, rating, app_id=target_app)
         
     return {
         "sentiment": sentiment,
@@ -344,10 +367,12 @@ Nome do usuário: {user_name}
 Nota: {rating} estrelas
 Comentário: "{content}"
 
-DIRETRIZ MANDATÓRIA:
-1. Para comentários com nota de 5 estrelas: NUNCA inclua o link do formulário nem a frase "Canal de Suporte Oficial". Apenas agradeça calorosamente pelo apoio, carinho e nota máxima.
-2. Para notas de 1 a 3 estrelas (ou 4 estrelas com relato de problema/dificuldade), a suggested_response DEVE OBRIGATORIAMENTE direcionar o usuário para:
+DIRETRIZES MANDATÓRIAS:
+1. Para comentários com nota de 5 estrelas: NUNCA inclua link nem menção a canal de suporte. Apenas agradeça calorosamente.
+2. Para notas de 1 a 3 estrelas (1, 2 e 3 estrelas): a resposta DEVE OBRIGATORIAMENTE conter a orientação para verificar na loja se há atualizações para o app, além de direcionar para:
 Canal de Suporte Oficial: 👉 {support_url}
+3. PROIBIÇÃO ABSOLUTA: JAMAIS utilize frases como "Google Play diz que seu dispositivo não é compatível com esta versão", "seu dispositivo não é compatível" ou qualquer variação semelhante.
+4. LIMITE MÁXIMO RÍGIDO: A resposta deve ter no máximo 350 caracteres no total (incluindo espaços).
 
 Retorne o JSON estrito com sentiment, category e suggested_response."""
 

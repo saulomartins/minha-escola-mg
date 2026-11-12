@@ -6,6 +6,51 @@ from config import get_app_name, get_organization_name, get_support_url, get_dom
 
 OFFICIAL_SUPPORT_FORM = get_support_url()
 
+def sanitize_forbidden_phrases(text: str) -> str:
+    """
+    Remove e higieniza qualquer mencao a frases proibidas como:
+    'Google Play diz que seu dispositivo nao e compativel com esta versao',
+    'dispositivo nao e compativel' ou qualquer variacao semelhante.
+    A resposta oficial JAMAIS deve confirmar ou ecoar que o dispositivo e incompativel.
+    """
+    if not text:
+        return ""
+    
+    bad_pattern = re.compile(
+        r'(?:google\s+play\s+diz|play\s+store\s+diz|loja\s+diz|'
+        r'dispositivo\s+n[aã]o\s+[eé]\s+compat[ií]vel|'
+        r'aparelho\s+n[aã]o\s+[eé]\s+compat[ií]vel|'
+        r'celular\s+n[aã]o\s+[eé]\s+compat[ií]vel|'
+        r'n[aã]o\s+[eé]\s+compat[ií]vel\s+com\s+esta\s+vers[aã]o|'
+        r'incompat[ií]vel\s+com\s+esta\s+vers[aã]o|'
+        r'incompat[ií]vel\s+com\s+seu\s+(?:dispositivo|aparelho|celular)|'
+        r'incompatibilidade)',
+        re.IGNORECASE
+    )
+    
+    if not bad_pattern.search(text):
+        return text
+
+    sentences = re.split(r'([.!?]+(?:\s+|$))', text)
+    cleaned_chunks = []
+    i = 0
+    while i < len(sentences):
+        s = sentences[i]
+        punct = sentences[i+1] if i + 1 < len(sentences) else ""
+        i += 2
+        if not s.strip():
+            continue
+        if bad_pattern.search(s):
+            greeting_match = re.match(r'^(Olá(?:,\s*[^!]+)?!\s*)', s.strip(), re.IGNORECASE)
+            greeting = greeting_match.group(1) if greeting_match else ""
+            cleaned_chunks.append(f"{greeting}Sentimos pelo transtorno relatado.")
+        else:
+            cleaned_chunks.append(s.strip() + (punct.rstrip() or "."))
+            
+    res = " ".join([c for c in cleaned_chunks if c.strip()]).strip()
+    res = re.sub(r'\s{2,}', ' ', res)
+    return res
+
 def enforce_char_limit(text: str, max_chars: int = 350) -> str:
     """
     Garante que a resposta nunca exceda o limite rígido da loja (350 caracteres, contando espaços),
@@ -349,9 +394,15 @@ def generate_auto_reply_for_review(review: Dict[str, Any], root_cause_id: Option
         org_name=org_name
     )
 
-    # Injeção de verificação de atualizações para avaliações abaixo de 3 estrelas (1 e 2 estrelas)
-    if rating < 3:
-        if not re.search(r'atualizaç|atualizar', formatted, re.IGNORECASE):
+    # Injeção de verificação de atualizações para TODAS as avaliações de 1 a 3 estrelas (1, 2 e 3 estrelas)
+    if rating <= 3:
+        has_store_update_advice = bool(
+            re.search(r'verifique\s+(?:na\s+loja|se\s+h[aá]\s+atualiza)', formatted, re.IGNORECASE) or
+            re.search(r'atualiza[çc][oõ]es\s+(?:na\s+loja|para\s+o\s+app|pendentes)', formatted, re.IGNORECASE) or
+            re.search(r'mantenha\s+(?:o\s+app\s+)?atualizado', formatted, re.IGNORECASE) or
+            re.search(r'vers[aã]o\s+mais\s+recente', formatted, re.IGNORECASE)
+        )
+        if not has_store_update_advice:
             update_text = "Verifique na loja se há atualizações para o app."
             if "Canal de Suporte Oficial:" in formatted:
                 formatted = formatted.replace("Canal de Suporte Oficial:", f"{update_text} Canal de Suporte Oficial:")
@@ -370,6 +421,9 @@ def generate_auto_reply_for_review(review: Dict[str, Any], root_cause_id: Option
 
     # Limpeza contra qualquer e-mail acidental
     formatted = re.sub(r'[\w\.-]+@[\w\.-]+\.\w+', '', formatted).strip()
+
+    # Sanitização estrita contra frases proibidas de incompatibilidade
+    formatted = sanitize_forbidden_phrases(formatted)
 
     # REGRA FINAL INEGOCIÁVEL: Clampa estritamente para no máximo 350 caracteres
     return enforce_char_limit(formatted, max_chars=350)

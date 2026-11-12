@@ -1774,6 +1774,11 @@ def api_reply(req: ReplyRequest, request: Request):
     published = False
     warning_message = None
 
+    # Higienização contra frases proibidas de incompatibilidade e clamp estrito a 350 caracteres
+    from ai.auto_reply_templates import sanitize_forbidden_phrases, enforce_char_limit
+    final_response_text = sanitize_forbidden_phrases(req.response_text)
+    final_response_text = enforce_char_limit(final_response_text, max_chars=350)
+
     # Se o usuário solicitou publicação direta na loja ou auto-publish está ligado
     should_send_store = req.send_to_store or (get_setting("auto_publish_direct", "false") == "true")
 
@@ -1791,7 +1796,7 @@ def api_reply(req: ReplyRequest, request: Request):
         if review["store"] == "google":
             sa_creds = resolve_google_play_service_account(target_app)
             if sa_creds and sa_creds.strip():
-                success, msg = reply_to_google_play(review["review_id"], req.response_text, sa_creds, package_name=pkg)
+                success, msg = reply_to_google_play(review["review_id"], final_response_text, sa_creds, package_name=pkg)
                 if success:
                     published = True
                 else:
@@ -1812,7 +1817,7 @@ def api_reply(req: ReplyRequest, request: Request):
         elif review["store"] == "apple":
             k_id, iss, p8 = resolve_apple_credentials(target_app)
             if k_id and iss and p8:
-                success, msg = reply_to_apple_store(review["review_id"], req.response_text, k_id, iss, p8)
+                success, msg = reply_to_apple_store(review["review_id"], final_response_text, k_id, iss, p8)
                 if success:
                     published = True
                 else:
@@ -1834,7 +1839,7 @@ def api_reply(req: ReplyRequest, request: Request):
     update_review_status(
         review_id=req.review_id,
         status="respondida",
-        response_text=req.response_text,
+        response_text=final_response_text,
         published_to_store=published
     )
 
