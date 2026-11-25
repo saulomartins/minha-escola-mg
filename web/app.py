@@ -785,9 +785,9 @@ def api_stats(request: Request, app_id: Optional[str] = None):
     return get_stats(app_id=effective_app)
 
 @app.get("/api/analytics/problems")
-def api_analytics_problems(request: Request, app_id: Optional[str] = None):
+def api_analytics_problems(request: Request, app_id: Optional[str] = None, days: Optional[int] = None):
     effective_app = resolve_authorized_app_id(request, app_id)
-    return get_detailed_problem_analytics(app_id=effective_app)
+    return get_detailed_problem_analytics(app_id=effective_app, days=days)
 
 @app.get("/api/analytics/templates")
 def api_analytics_templates():
@@ -795,28 +795,29 @@ def api_analytics_templates():
     return PROBLEM_TEMPLATES_CONFIG
 
 @app.get("/api/analytics/devices")
-def api_analytics_devices(request: Request, app_id: Optional[str] = None):
+def api_analytics_devices(request: Request, app_id: Optional[str] = None, days: Optional[int] = None):
     """Retorna diagnóstico completo sobre modelos de celulares, sistemas operacionais e versões"""
     effective_app = resolve_authorized_app_id(request, app_id)
-    return get_device_diagnostic(app_id=effective_app)
+    return get_device_diagnostic(app_id=effective_app, days=days)
 
 @app.get("/api/analytics/temporal")
-def api_analytics_temporal(request: Request, app_id: Optional[str] = None):
+def api_analytics_temporal(request: Request, app_id: Optional[str] = None, days: Optional[int] = None):
     """Retorna diagnóstico temporal completo: linha do tempo, faixas de envelhecimento, evolução mês a mês e tendências por causa-raiz"""
     effective_app = resolve_authorized_app_id(request, app_id)
-    return get_temporal_diagnostics(app_id=effective_app)
+    return get_temporal_diagnostics(app_id=effective_app, days=days)
 
 @app.get("/api/analytics/hardware-root-cause")
 def api_analytics_hardware_root_cause(
     request: Request,
     brand: Optional[str] = None,
     root_cause_id: Optional[str] = None,
-    app_id: Optional[str] = None
+    app_id: Optional[str] = None,
+    days: Optional[int] = None
 ):
     """Retorna análise cruzada de hardware (fabricantes e modelos) com causas-raiz de problemas."""
     from analytics.hardware_root_cause import get_hardware_root_cause_analytics
     effective_app = resolve_authorized_app_id(request, app_id)
-    return get_hardware_root_cause_analytics(filter_brand=brand, filter_root_cause_id=root_cause_id, app_id=effective_app)
+    return get_hardware_root_cause_analytics(filter_brand=brand, filter_root_cause_id=root_cause_id, app_id=effective_app, days=days)
 
 @app.get("/api/analytics/keyword-scan")
 def api_analytics_keyword_scan(request: Request, q: str = "", app_id: Optional[str] = None):

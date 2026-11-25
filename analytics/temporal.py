@@ -85,7 +85,7 @@ def format_relative_time(days: int) -> str:
         years = round(days / 365.25, 1)
         return f"Há {years} anos"
 
-def get_temporal_diagnostics(app_id: Optional[str] = None, domain: Optional[str] = None) -> Dict[str, Any]:
+def get_temporal_diagnostics(app_id: Optional[str] = None, domain: Optional[str] = None, days: Optional[int] = None) -> Dict[str, Any]:
     current_app_id = (app_id or (lambda: (__import__('config').get_app_id()))()).strip()
     current_domain = domain or (lambda: (__import__('config').get_domain(current_app_id)))()
     
@@ -115,13 +115,18 @@ def get_temporal_diagnostics(app_id: Optional[str] = None, domain: Optional[str]
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("""
+    query = """
         SELECT id, store, user_name, rating, title, content, review_date, root_cause_id, sentiment, 
                device_brand, device_model, status, developer_response, developer_response_date, ai_suggested_response
         FROM reviews
         WHERE app_id = ?
-        ORDER BY review_date ASC
-    """, (current_app_id,))
+    """
+    params = [current_app_id]
+    if days and int(days) > 0:
+        query += " AND review_date >= datetime((SELECT MAX(review_date) FROM reviews WHERE app_id = ?), '-' || ? || ' days')"
+        params.extend([current_app_id, str(days)])
+    query += " ORDER BY review_date ASC"
+    cursor.execute(query, params)
     raw_reviews = [dict(r) for r in cursor.fetchall()]
     conn.close()
     
@@ -636,6 +641,7 @@ def get_temporal_diagnostics(app_id: Optional[str] = None, domain: Optional[str]
         "months_labels": [m["label"] for m in monthly_series],
         "monthly_series": monthly_series,
         "cause_trends": cause_trends,
+        "days_filter": days,
         "top_problem_causes_chart": [
             {
                 "id": c["id"],

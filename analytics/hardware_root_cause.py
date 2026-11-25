@@ -46,11 +46,13 @@ def get_hardware_root_cause_analytics(
     filter_brand: Optional[str] = None,
     filter_root_cause_id: Optional[str] = None,
     app_id: Optional[str] = None,
-    domain: Optional[str] = None
+    domain: Optional[str] = None,
+    days: Optional[int] = None
 ) -> Dict[str, Any]:
     """
     Retorna métricas cruzadas entre Fabricantes, Modelos de Celular e Causas-Raiz.
     Suporta filtros opcionais de marca e causa-raiz especificamente para o aplicativo ativo (app_id).
+    Permite filtrar por janela de tempo recente (ex: 7, 14, 30 dias).
     """
     target_app_id = (app_id or (lambda: (__import__('config').get_app_id()))()).strip()
     target_domain = domain or (lambda: (__import__('config').get_domain(target_app_id)))()
@@ -69,15 +71,21 @@ def get_hardware_root_cause_analytics(
     conn = get_connection()
     cursor = conn.cursor()
     
-    cursor.execute("""
+    query = """
         SELECT 
             id, store, user_name, rating, title, content, 
             device_brand, device_model, os_name, os_version, 
             root_cause_id, review_date
         FROM reviews
         WHERE app_id = ?
-        ORDER BY review_date DESC
-    """, (target_app_id,))
+    """
+    params = [target_app_id]
+    if days and int(days) > 0:
+        query += " AND review_date >= datetime((SELECT MAX(review_date) FROM reviews WHERE app_id = ?), '-' || ? || ' days')"
+        params.extend([target_app_id, str(days)])
+    query += " ORDER BY review_date DESC"
+
+    cursor.execute(query, params)
     rows = [dict(r) for r in cursor.fetchall()]
     conn.close()
 
@@ -89,7 +97,8 @@ def get_hardware_root_cause_analytics(
             "by_brand": [],
             "by_model": [],
             "charts": {},
-            "filter_options": {"available_brands": [], "available_causes": []}
+            "filter_options": {"available_brands": [], "available_causes": []},
+            "days_filter": days
         }
 
     # Normalização e classificação garantida
@@ -406,5 +415,6 @@ def get_hardware_root_cause_analytics(
         "filter_options": {
             "available_brands": all_brands,
             "available_causes": available_causes
-        }
+        },
+        "days_filter": days
     }

@@ -486,37 +486,55 @@
         </div>
 
         <!-- Seletor de Visão Principal (Comentários vs Diagnóstico de Aparelhos/SO vs Complexidade vs Temporal) -->
-        <div id="nav-tabs-container" class="flex flex-wrap items-center gap-3 bg-white p-3 rounded-2xl shadow-sm border border-slate-200/90 no-print">
-            <button onclick="switchMainView('reviews')" id="nav-btn-reviews" class="nav-view-btn active py-2.5 px-4 rounded-xl font-bold text-xs sm:text-[13px] transition flex items-center justify-center gap-2 whitespace-nowrap shadow-sm text-center">
-                <i class="fa-solid fa-list-check"></i> <span>1. Comentários</span>
-            </button>
-            <button onclick="switchMainView('devices')" id="nav-btn-devices" class="nav-view-btn py-2.5 px-4 rounded-xl font-bold text-xs sm:text-[13px] transition flex items-center justify-center gap-2 whitespace-nowrap text-slate-600 hover:bg-slate-50 border border-slate-200/80 text-center">
-                <i class="fa-solid fa-mobile-screen-button text-purple-600"></i> <span>2. Celulares & SO</span>
-            </button>
-            <button onclick="switchMainView('analytics')" id="nav-btn-analytics" class="nav-view-btn py-2.5 px-4 rounded-xl font-bold text-xs sm:text-[13px] transition flex items-center justify-center gap-2 whitespace-nowrap text-slate-600 hover:bg-slate-50 border border-slate-200/80 text-center">
-                <i class="fa-solid fa-chart-line text-indigo-600"></i> <span>3. Causas-Raiz</span>
-            </button>
-            <button onclick="switchMainView('temporal')" id="nav-btn-temporal" class="nav-view-btn py-2.5 px-4 rounded-xl font-bold text-xs sm:text-[13px] transition flex items-center justify-center gap-2 whitespace-nowrap text-slate-600 hover:bg-slate-50 border border-slate-200/80 text-center">
-                <i class="fa-solid fa-calendar-days text-amber-500"></i> <span>4. Tendências</span>
-            </button>
-            <button onclick="switchMainView('hardware-rc')" id="nav-btn-hardware-rc" class="nav-view-btn py-2.5 px-4 rounded-xl font-bold text-xs sm:text-[13px] transition flex items-center justify-center gap-2 whitespace-nowrap text-slate-600 hover:bg-slate-50 border border-slate-200/80 text-center">
-                <i class="fa-solid fa-microchip text-rose-500"></i> <span>5. Matriz HW x Causa</span>
-            </button>
-            <button onclick="switchMainView('scanner')" id="nav-btn-scanner" class="nav-view-btn py-2.5 px-4 rounded-xl font-bold text-xs sm:text-[13px] transition flex items-center justify-center gap-2 whitespace-nowrap text-slate-600 hover:bg-slate-50 border border-slate-200/80 text-center">
-                <i class="fa-solid fa-magnifying-glass-chart text-cyan-600"></i> <span>6. Varredura</span>
-            </button>
-            {% if app_config.features.enable_fale_conosco %}
-            <button onclick="switchMainView('support')" id="nav-btn-support" class="nav-view-btn py-2.5 px-4 rounded-xl font-bold text-xs sm:text-[13px] transition flex items-center justify-center gap-2 whitespace-nowrap text-slate-600 hover:bg-slate-50 border border-slate-200/80 text-center">
-                <i class="fa-solid fa-headset text-blue-600"></i> <span>7. Fale Conosco</span>
-                <span id="badge-support-count" class="ml-1 px-1.5 py-0.5 text-[10px] font-extrabold bg-blue-100 text-blue-800 rounded-full">1.957</span>
-            </button>
-            {% endif %}
-            {% if current_user and current_user.role == 'admin' %}
-            <button onclick="switchMainView('users')" id="nav-btn-users" class="nav-view-btn py-2.5 px-4 rounded-xl font-bold text-xs sm:text-[13px] transition flex items-center justify-center gap-2 whitespace-nowrap text-slate-600 hover:bg-slate-50 border border-slate-200/80 text-center">
-                <i class="fa-solid fa-users-gear text-emerald-600"></i> <span>8. Acessos</span>
-                <span id="badge-pending-count" class="hidden ml-1 px-2 py-0.5 text-[10px] font-extrabold bg-amber-500 text-white rounded-full animate-pulse">0</span>
-            </button>
-            {% endif %}
+        <div id="nav-tabs-container" class="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-2xl shadow-sm border border-slate-200/90 no-print">
+            <div class="flex flex-wrap items-center gap-2">
+                <button onclick="switchMainView('reviews')" id="nav-btn-reviews" class="nav-view-btn active py-2.5 px-4 rounded-xl font-bold text-xs sm:text-[13px] transition flex items-center justify-center gap-2 whitespace-nowrap shadow-sm text-center">
+                    <i class="fa-solid fa-list-check"></i> <span>1. Comentários</span>
+                </button>
+                <button onclick="switchMainView('devices')" id="nav-btn-devices" class="nav-view-btn py-2.5 px-4 rounded-xl font-bold text-xs sm:text-[13px] transition flex items-center justify-center gap-2 whitespace-nowrap text-slate-600 hover:bg-slate-50 border border-slate-200/80 text-center">
+                    <i class="fa-solid fa-mobile-screen-button text-purple-600"></i> <span>2. Celulares & SO</span>
+                </button>
+                <button onclick="switchMainView('analytics')" id="nav-btn-analytics" class="nav-view-btn py-2.5 px-4 rounded-xl font-bold text-xs sm:text-[13px] transition flex items-center justify-center gap-2 whitespace-nowrap text-slate-600 hover:bg-slate-50 border border-slate-200/80 text-center">
+                    <i class="fa-solid fa-chart-line text-indigo-600"></i> <span>3. Causas-Raiz</span>
+                </button>
+                <button onclick="switchMainView('temporal')" id="nav-btn-temporal" class="nav-view-btn py-2.5 px-4 rounded-xl font-bold text-xs sm:text-[13px] transition flex items-center justify-center gap-2 whitespace-nowrap text-slate-600 hover:bg-slate-50 border border-slate-200/80 text-center">
+                    <i class="fa-solid fa-calendar-days text-amber-500"></i> <span>4. Tendências</span>
+                </button>
+                <button onclick="switchMainView('hardware-rc')" id="nav-btn-hardware-rc" class="nav-view-btn py-2.5 px-4 rounded-xl font-bold text-xs sm:text-[13px] transition flex items-center justify-center gap-2 whitespace-nowrap text-slate-600 hover:bg-slate-50 border border-slate-200/80 text-center">
+                    <i class="fa-solid fa-microchip text-rose-500"></i> <span>5. Matriz HW x Causa</span>
+                </button>
+                <button onclick="switchMainView('scanner')" id="nav-btn-scanner" class="nav-view-btn py-2.5 px-4 rounded-xl font-bold text-xs sm:text-[13px] transition flex items-center justify-center gap-2 whitespace-nowrap text-slate-600 hover:bg-slate-50 border border-slate-200/80 text-center">
+                    <i class="fa-solid fa-magnifying-glass-chart text-cyan-600"></i> <span>6. Varredura</span>
+                </button>
+                {% if app_config.features.enable_fale_conosco %}
+                <button onclick="switchMainView('support')" id="nav-btn-support" class="nav-view-btn py-2.5 px-4 rounded-xl font-bold text-xs sm:text-[13px] transition flex items-center justify-center gap-2 whitespace-nowrap text-slate-600 hover:bg-slate-50 border border-slate-200/80 text-center">
+                    <i class="fa-solid fa-headset text-blue-600"></i> <span>7. Fale Conosco</span>
+                    <span id="badge-support-count" class="ml-1 px-1.5 py-0.5 text-[10px] font-extrabold bg-blue-100 text-blue-800 rounded-full">1.957</span>
+                </button>
+                {% endif %}
+                {% if current_user and current_user.role == 'admin' %}
+                <button onclick="switchMainView('users')" id="nav-btn-users" class="nav-view-btn py-2.5 px-4 rounded-xl font-bold text-xs sm:text-[13px] transition flex items-center justify-center gap-2 whitespace-nowrap text-slate-600 hover:bg-slate-50 border border-slate-200/80 text-center">
+                    <i class="fa-solid fa-users-gear text-emerald-600"></i> <span>8. Acessos</span>
+                    <span id="badge-pending-count" class="hidden ml-1 px-2 py-0.5 text-[10px] font-extrabold bg-amber-500 text-white rounded-full animate-pulse">0</span>
+                </button>
+                {% endif %}
+            </div>
+
+            <!-- Seletor de Janela Temporal de Curto Prazo / Analíticos -->
+            <div class="flex items-center gap-2 bg-gradient-to-r from-indigo-50 to-emerald-50 border border-indigo-200/80 px-3 py-1.5 rounded-xl shadow-xs">
+                <label for="global-filter-days" class="text-xs font-black text-indigo-950 whitespace-nowrap flex items-center gap-1.5">
+                    <i class="fa-solid fa-clock-rotate-left text-indigo-600"></i> Janela:
+                </label>
+                <select id="global-filter-days" onchange="onGlobalDaysFilterChange(this.value)" class="text-xs font-bold py-1 px-2.5 bg-white border border-indigo-200 rounded-lg text-slate-800 shadow-xs hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+                    <option value="">Todo o Histórico</option>
+                    <option value="7">⚡ Últimos 7 Dias (Ações Recentes)</option>
+                    <option value="14">⚡ Últimos 14 Dias (Curto Prazo)</option>
+                    <option value="30">📅 Últimos 30 Dias (Mês Vigente)</option>
+                </select>
+                <span id="global-period-badge" class="hidden sm:inline-block px-2 py-0.5 text-[11px] font-black rounded-md bg-white border border-indigo-200 text-indigo-700 shadow-2xs">
+                    Histórico Completo
+                </span>
+            </div>
         </div>
 
         <!-- ================= VISÃO 1: LISTA DE AVALIAÇÕES ================= -->
@@ -740,6 +758,9 @@
                 <div>
                     <span class="px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/30 text-indigo-200 border border-indigo-400/20 uppercase tracking-wider">
                         Inteligência de Suporte & Engenharia
+                    </span>
+                    <span class="report-period-indicator ml-2 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white/10 text-indigo-200 border border-white/20">
+                        Período: Todo o Histórico
                     </span>
                     <h2 class="text-xl font-bold mt-2 flex items-center gap-2">
                         <i class="fa-solid fa-chart-line text-indigo-300"></i> Diagnóstico de Causas-Raiz & Complexidade Técnica
@@ -994,6 +1015,9 @@
                     <span class="px-3 py-1 rounded-full text-xs font-bold bg-purple-500/30 text-purple-200 border border-purple-400/20 uppercase tracking-wider">
                         Ciclo de Vida de Hardware & Sistemas
                     </span>
+                    <span class="report-period-indicator ml-2 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white/10 text-purple-200 border border-white/20">
+                        Período: Todo o Histórico
+                    </span>
                     <h2 class="text-xl font-bold mt-2 flex items-center gap-2">
                         <i class="fa-solid fa-mobile-screen-button text-purple-300"></i> Diagnóstico de Celulares & Sistemas Operacionais (SO)
                     </h2>
@@ -1131,6 +1155,9 @@
                     <div class="flex items-center gap-2">
                         <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/30 text-amber-300 border border-amber-400/40 uppercase tracking-wide">
                             Linha do Tempo & Sazonalidade
+                        </span>
+                        <span class="report-period-indicator px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white/10 text-amber-200 border border-white/20">
+                            Período: Todo o Histórico
                         </span>
                     </div>
                     <h2 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
@@ -1446,6 +1473,9 @@
                             Correlação Hardware & Engenharia
                         </span>
                         <span class="text-xs text-rose-200 font-semibold">Fabricantes • Modelos • Causas-Raiz</span>
+                        <span class="report-period-indicator ml-2 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white/10 text-rose-200 border border-white/20">
+                            Período: Todo o Histórico
+                        </span>
                     </div>
                     <h2 class="text-xl font-black tracking-tight text-white flex items-center gap-2">
                         <i class="fa-solid fa-microchip text-rose-400"></i> Matriz de Hardware x Causas-Raiz de Problemas
@@ -3344,6 +3374,22 @@
                 window.selectedDaysFilter = null;
             }
 
+            const gSel = document.getElementById('global-filter-days');
+            if (gSel) gSel.value = window.selectedDaysFilter || '';
+            const gBadge = document.getElementById('global-period-badge');
+            if (gBadge) {
+                if (!window.selectedDaysFilter) {
+                    gBadge.innerText = 'Histórico Completo';
+                    gBadge.className = 'hidden sm:inline-block px-2 py-0.5 text-[11px] font-black rounded-md bg-white border border-indigo-200 text-indigo-700 shadow-2xs';
+                } else {
+                    gBadge.innerText = `Últimos ${window.selectedDaysFilter} Dias`;
+                    gBadge.className = 'hidden sm:inline-block px-2 py-0.5 text-[11px] font-black rounded-md bg-emerald-100 border border-emerald-300 text-emerald-800 shadow-2xs';
+                }
+            }
+            document.querySelectorAll('.report-period-indicator').forEach(el => {
+                el.innerText = window.selectedDaysFilter ? `Período: Últimos ${window.selectedDaysFilter} Dias` : 'Período: Todo o Histórico';
+            });
+
             document.querySelectorAll('.smart-chip').forEach(chip => {
                 const chipType = chip.getAttribute('data-chip');
                 if (chipType === type) {
@@ -3354,6 +3400,57 @@
             });
 
             loadReviews();
+        }
+
+        function onGlobalDaysFilterChange(val) {
+            window.selectedDaysFilter = val ? parseInt(val) : null;
+            
+            const gSel = document.getElementById('global-filter-days');
+            if (gSel) gSel.value = val || '';
+
+            const badge = document.getElementById('global-period-badge');
+            if (badge) {
+                if (!val) {
+                    badge.innerText = 'Histórico Completo';
+                    badge.className = 'hidden sm:inline-block px-2 py-0.5 text-[11px] font-black rounded-md bg-white border border-indigo-200 text-indigo-700 shadow-2xs';
+                } else {
+                    badge.innerText = `Últimos ${val} Dias`;
+                    badge.className = 'hidden sm:inline-block px-2 py-0.5 text-[11px] font-black rounded-md bg-emerald-100 border border-emerald-300 text-emerald-800 shadow-2xs';
+                }
+            }
+
+            document.querySelectorAll('.report-period-indicator').forEach(el => {
+                el.innerText = val ? `Período: Últimos ${val} Dias` : 'Período: Todo o Histórico';
+            });
+
+            // Atualiza chips da aba de comentários se aplicável
+            document.querySelectorAll('.smart-chip').forEach(chip => {
+                const cType = chip.getAttribute('data-chip');
+                if (val && cType === `days_${val}`) {
+                    chip.className = 'smart-chip active px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap bg-indigo-600 text-white shadow-sm';
+                } else if (cType && cType.startsWith('days_')) {
+                    chip.className = 'smart-chip px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 shadow-sm';
+                }
+            });
+
+            // Recarrega a view ativa
+            const isReviews = !document.getElementById('view-reviews')?.classList.contains('hidden');
+            const isDevices = !document.getElementById('view-devices')?.classList.contains('hidden');
+            const isAnalytics = !document.getElementById('view-analytics')?.classList.contains('hidden');
+            const isTemporal = !document.getElementById('view-temporal')?.classList.contains('hidden');
+            const isHardwareRc = !document.getElementById('view-hardware-rc')?.classList.contains('hidden');
+
+            if (isDevices) {
+                loadDeviceAnalytics();
+            } else if (isAnalytics) {
+                loadProblemAnalytics();
+            } else if (isTemporal) {
+                loadTemporalAnalytics();
+            } else if (isHardwareRc) {
+                loadHardwareRootCauseAnalytics();
+            } else if (isReviews) {
+                loadReviews();
+            }
         }
 
         let currentViewMode = localStorage.getItem('reviews_view_mode') || 'grid';
@@ -4159,7 +4256,8 @@
         async function loadDeviceAnalytics() {
             try {
                 const activeApp = (document.getElementById('input-app-id') ? document.getElementById('input-app-id').value : '') || 'minha_escola_mg';
-                const res = await fetch('/api/analytics/devices?app_id=' + encodeURIComponent(activeApp));
+                const daysParam = window.selectedDaysFilter ? `&days=${encodeURIComponent(window.selectedDaysFilter)}` : '';
+                const res = await fetch('/api/analytics/devices?app_id=' + encodeURIComponent(activeApp) + daysParam);
                 const data = await res.json();
 
                 // 1. KPIs Android vs iOS (Dinâmicos baseados no app ativo)
@@ -5425,7 +5523,8 @@
         async function loadProblemAnalytics() {
             try {
                 const activeApp = (document.getElementById('input-app-id') ? document.getElementById('input-app-id').value : '') || 'minha_escola_mg';
-                const res = await fetch('/api/analytics/problems?app_id=' + encodeURIComponent(activeApp));
+                const daysParam = window.selectedDaysFilter ? `&days=${encodeURIComponent(window.selectedDaysFilter)}` : '';
+                const res = await fetch('/api/analytics/problems?app_id=' + encodeURIComponent(activeApp) + daysParam);
                 const data = await res.json();
                 if (!data || !data.charts) return;
 
@@ -6249,7 +6348,8 @@
         async function loadTemporalAnalytics() {
             try {
                 const activeApp = (document.getElementById('input-app-id') ? document.getElementById('input-app-id').value : '') || 'minha_escola_mg';
-                const res = await fetch('/api/analytics/temporal?app_id=' + encodeURIComponent(activeApp));
+                const daysParam = window.selectedDaysFilter ? `&days=${encodeURIComponent(window.selectedDaysFilter)}` : '';
+                const res = await fetch('/api/analytics/temporal?app_id=' + encodeURIComponent(activeApp) + daysParam);
                 const data = await res.json();
                 currentTemporalData = data;
                 
@@ -6965,7 +7065,8 @@ async function uploadPlayConsoleCsv(input) {
 
             try {
                 const activeApp = (document.getElementById('input-app-id') ? document.getElementById('input-app-id').value : '') || 'minha_escola_mg';
-                const res = await fetch('/api/analytics/hardware-root-cause?app_id=' + encodeURIComponent(activeApp));
+                const daysParam = window.selectedDaysFilter ? `&days=${encodeURIComponent(window.selectedDaysFilter)}` : '';
+                const res = await fetch('/api/analytics/hardware-root-cause?app_id=' + encodeURIComponent(activeApp) + daysParam);
                 if (!res.ok) throw new Error('Falha ao carregar dados analíticos de hardware.');
                 const data = await res.json();
                 globalHardwareRcData = data;

@@ -949,19 +949,26 @@ def get_stats(app_id: Optional[str] = None) -> Dict[str, Any]:
         "short_term_metrics": short_term_metrics
     }
 
-def get_device_diagnostic(app_id: Optional[str] = None) -> Dict[str, Any]:
+def get_device_diagnostic(app_id: Optional[str] = None, days: Optional[int] = None) -> Dict[str, Any]:
     """
     Retorna diagnóstico analítico completo e dinâmico sobre:
     - Modelos de celulares e fabricantes identificados para o app ativo
     - Sistemas Operacionais (Android vs iOS) e suas distribuições reais
     - Versões de SO com índices reais de insatisfação / falhas técnicas
     - Alertas dinâmicos de incompatibilidade gerados a partir dos dados do app
+    Permite filtrar por janela de tempo recente (ex: 7, 14, 30 dias).
     """
     conn = get_connection()
     cursor = conn.cursor()
     current_app_id = app_id or (lambda: (__import__('config').get_app_id()))()
     
-    cursor.execute("SELECT COUNT(*) as total FROM reviews WHERE app_id = ?", (current_app_id,))
+    where_clause = "WHERE app_id = ?"
+    params = [current_app_id]
+    if days and int(days) > 0:
+        where_clause += " AND review_date >= datetime((SELECT MAX(review_date) FROM reviews WHERE app_id = ?), '-' || ? || ' days')"
+        params.extend([current_app_id, str(days)])
+    
+    cursor.execute(f"SELECT COUNT(*) as total FROM reviews {where_clause}", params)
     real_total = cursor.fetchone()['total']
     
     if real_total == 0:
@@ -976,10 +983,11 @@ def get_device_diagnostic(app_id: Optional[str] = None) -> Dict[str, Any]:
             "os_versions": [],
             "app_versions": [],
             "explicit_reviews": [],
+            "days_filter": days,
             "alerts": [{
                 "type": "info",
                 "title": "Aguardando Sincronização do Aplicativo",
-                "description": "Nenhuma avaliação encontrada ainda para este aplicativo. Clique no botão 'Sincronizar Lojas' ou importe os dados do console para gerar a matriz de hardware real."
+                "description": "Nenhuma avaliação encontrada para o período selecionado."
             }],
             "stuck_android_12_diagnostic": {
                 "total_stuck_reviews": 0,
@@ -993,16 +1001,16 @@ def get_device_diagnostic(app_id: Optional[str] = None) -> Dict[str, Any]:
     total_reviews = real_total
 
     # 1. Distribuição de Sistemas Operacionais
-    cursor.execute("""
+    cursor.execute(f"""
         SELECT 
             COALESCE(os_name, 'Android') as os,
             COUNT(*) as count,
             AVG(rating) as avg_rating,
             SUM(CASE WHEN rating <= 2 THEN 1 ELSE 0 END) as negative_count
         FROM reviews
-        WHERE app_id = ?
+        {where_clause}
         GROUP BY os
-    """, (current_app_id,))
+    """, params)
     os_rows = cursor.fetchall()
     os_breakdown = []
     for r in os_rows:
@@ -1017,20 +1025,20 @@ def get_device_diagnostic(app_id: Optional[str] = None) -> Dict[str, Any]:
         })
         
     # 2. Fabricantes identificados
-    cursor.execute("""
+    cursor.execute(f"""
         SELECT 
             device_brand,
             COUNT(*) as count,
             AVG(rating) as avg_rating,
             SUM(CASE WHEN rating <= 2 THEN 1 ELSE 0 END) as negative_count
         FROM reviews
-        WHERE app_id = ? 
+        {where_clause} 
           AND device_brand IS NOT NULL 
           AND device_brand != '' 
           AND device_brand != 'Não especificado'
         GROUP BY device_brand
         ORDER BY count DESC
-    """, (current_app_id,))
+    """, params)
     brand_rows = cursor.fetchall()
     brands = []
     for r in brand_rows:
@@ -1043,18 +1051,18 @@ def get_device_diagnostic(app_id: Optional[str] = None) -> Dict[str, Any]:
         })
         
     # 3. Modelos de celular específicos citados/detectados
-    cursor.execute("""
+    cursor.execute(f"""
         SELECT 
             id, store, device_brand, device_model, os_name, os_version, rating, content, root_cause_id
         FROM reviews
-        WHERE app_id = ?
+        {where_clause}
           AND device_model IS NOT NULL 
           AND device_model != '' 
           AND device_model != 'Não especificado'
           AND device_model != 'Não informado'
           AND device_model NOT IN ('Dispositivo Android', 'Android Geral')
         ORDER BY review_date DESC
-    """, (current_app_id,))
+    """, params)
     explicit_reviews = [dict(row) for row in cursor.fetchall()]
     
     # Agrupamento de modelos citados
@@ -1108,20 +1116,20 @@ def get_device_diagnostic(app_id: Optional[str] = None) -> Dict[str, Any]:
     top_models.sort(key=lambda x: x["count"], reverse=True)
     
     # 4. Versões de SO citadas/detectadas
-    cursor.execute("""
+    cursor.execute(f"""
         SELECT 
             os_version,
             COUNT(*) as count,
             AVG(rating) as avg_rating,
             SUM(CASE WHEN rating <= 2 THEN 1 ELSE 0 END) as negative_count
         FROM reviews
-        WHERE app_id = ?
+        {where_clause}
           AND os_version IS NOT NULL 
           AND os_version != '' 
           AND os_version NOT IN ('Android (Geral)', 'iOS (Geral)', 'Android', 'iOS', 'Não especificado')
         GROUP BY os_version
         ORDER BY count DESC
-    """, (current_app_id,))
+    """, params)
     os_versions = []
     for r in cursor.fetchall():
         os_life = get_os_lifecycle(r['os_version'])
@@ -1136,17 +1144,17 @@ def get_device_diagnostic(app_id: Optional[str] = None) -> Dict[str, Any]:
         })
         
     # 5. Versões do App instaladas
-    cursor.execute("""
+    cursor.execute(f"""
         SELECT 
             app_version,
             COUNT(*) as count,
             AVG(rating) as avg_rating
         FROM reviews
-        WHERE app_id = ? AND app_version IS NOT NULL AND app_version != ''
+        {where_clause} AND app_version IS NOT NULL AND app_version != ''
         GROUP BY app_version
         ORDER BY count DESC
         LIMIT 5
-    """, (current_app_id,))
+    """, params)
     app_versions = [
         {"version": r['app_version'], "count": r['count'], "avg_rating": round(r['avg_rating'] or 0.0, 2)}
         for r in cursor.fetchall()
@@ -1216,12 +1224,12 @@ def get_device_diagnostic(app_id: Optional[str] = None) -> Dict[str, Any]:
 
     # 7. Diagnóstico Especial: Aparelhos e Comentários sem Atualização para Android 13+ (Presos no Android <= 12)
     from analytics.device_lifecycle import evaluate_stuck_android_12
-    cursor.execute("""
+    cursor.execute(f"""
         SELECT id, store, user_name, rating, content, review_date, device_brand, device_model, os_name, os_version
         FROM reviews
-        WHERE app_id = ?
+        {where_clause}
         ORDER BY review_date DESC
-    """, (current_app_id,))
+    """, params)
     all_revs = [dict(row) for row in cursor.fetchall()]
     
     stuck_reviews = []
@@ -1306,7 +1314,8 @@ def get_device_diagnostic(app_id: Optional[str] = None) -> Dict[str, Any]:
         "app_versions": app_versions,
         "explicit_reviews": explicit_reviews,
         "alerts": alerts,
-        "stuck_android_12_diagnostic": stuck_android_12_diagnostic
+        "stuck_android_12_diagnostic": stuck_android_12_diagnostic,
+        "days_filter": days
     }
 
 

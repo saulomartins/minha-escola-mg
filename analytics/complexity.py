@@ -102,21 +102,27 @@ def classify_text_issue(content: str, title: str = "", rating: int = 3, domain: 
     outros_cfg = next((c for c in causes if c["id"] == "outros_problemas"), causes[-1])
     return outros_cfg
 
-def get_detailed_problem_analytics(app_id: Optional[str] = None, domain: Optional[str] = None) -> Dict[str, Any]:
+def get_detailed_problem_analytics(app_id: Optional[str] = None, domain: Optional[str] = None, days: Optional[int] = None) -> Dict[str, Any]:
     """
     Retorna a matriz de complexidade técnica, causas-raiz ofensoras e diagnóstico
     cruzado por Sistema Operacional especificamente para o aplicativo ativo (app_id).
+    Permite filtrar por janela de dias móveis (ex: 7, 14, 30 dias).
     """
     target_app_id = app_id or (lambda: (__import__('config').get_app_id()))()
     target_domain = domain or (lambda: (__import__('config').get_domain(target_app_id)))()
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("""
+    query = """
         SELECT id, store, user_name, rating, title, content, review_date, 
                os_name, os_version, device_brand, device_model, root_cause_id 
         FROM reviews 
         WHERE app_id = ?
-    """, (target_app_id,))
+    """
+    params = [target_app_id]
+    if days and int(days) > 0:
+        query += " AND review_date >= datetime((SELECT MAX(review_date) FROM reviews WHERE app_id = ?), '-' || ? || ' days')"
+        params.extend([target_app_id, str(days)])
+    cursor.execute(query, params)
     rows = [dict(r) for r in cursor.fetchall()]
     conn.close()
 
