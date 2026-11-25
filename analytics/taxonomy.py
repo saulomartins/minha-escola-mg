@@ -208,9 +208,27 @@ DOMAIN_PACKS: Dict[str, List[Dict[str, Any]]] = {
             "complexity_score": 3,
             "recommendation": "Desenvolver cache offline no app e exibir um indicador claro com a data/hora da última sincronização do Diário Escolar Digital (DED).",
             "templates": {
-                "critical": "Olá, {nome}! Entendemos a importância de acompanhar o boletim. As notas exibidas no {app_name} dependem da sincronização e homologação feitas pelos professores no sistema escolar. Caso o bimestre já tenha encerrado e as notas não apareçam, consulte a coordenação da sua escola ou relate no Canal de Suporte Oficial: 👉 {canal_contato}",
-                "moderate": "Olá, {nome}! Agradecemos pelo seu relato. A atualização das notas no aplicativo ocorre conforme os professores realizam o lançamento oficial no sistema escolar. Havendo dúvidas ou divergências não solucionadas pela escola, relate pelo Canal de Suporte Oficial: 👉 {canal_contato}",
+                "critical": "Olá, {nome}! No fechamento de bimestre, as notas são lançadas gradualmente pela escola no Diário Escolar. Verifique na loja se há atualizações para o app. Havendo dúvidas ou divergências, consulte sua escola ou relate pelo Canal de Suporte Oficial: 👉 {canal_contato}",
+                "moderate": "Olá, {nome}! As notas no app são sincronizadas conforme o lançamento oficial dos professores na sua escola. Verifique na loja se há atualizações para o app. Persistindo dúvidas, acione o Canal de Suporte Oficial: 👉 {canal_contato}",
                 "positive": "Olá, {nome}! Ficamos muito felizes com a sua avaliação positiva! O acompanhamento das notas é fundamental e estamos empenhados em manter tudo sempre sincronizado para você. Bons estudos!"
+            }
+        },
+        {
+            "id": "cesec_eja_modalidade",
+            "name": "Acesso para Estudantes CESEC e EJA",
+            "keywords": [
+                "cesec", "eja", "educacao de jovens", "jovens e adultos", "unidade cesec",
+                "matricula cesec", "aluno cesec", "estudante cesec"
+            ],
+            "severity": "Média",
+            "severity_color": "#eab308",
+            "complexity": "Média",
+            "complexity_score": 2,
+            "recommendation": "Exibir aviso no app orientando estudantes da modalidade CESEC/EJA a utilizarem o portal web oficial da Educação MG.",
+            "templates": {
+                "critical": "Olá, {nome}! Alunos de unidades CESEC/EJA utilizam o portal web oficial da rede estadual. Verifique na loja se há atualizações para o app ou consulte sua escola. Canal de Suporte Oficial: 👉 {canal_contato}",
+                "moderate": "Olá, {nome}! Estudantes do CESEC/EJA possuem portal web específico para acompanhamento escolar. Para dúvidas ou suporte, conte com o Canal de Suporte Oficial: 👉 {canal_contato}",
+                "positive": "Olá, {nome}! Ficamos muito felizes com suas {estrelas} estrelas no {app_name}! Estamos à disposição para apoiar sua jornada escolar. Muito obrigado!"
             }
         },
         {

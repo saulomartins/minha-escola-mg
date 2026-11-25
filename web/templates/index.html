@@ -376,6 +376,84 @@
             </div>
         </div>
 
+        <!-- Painel Executivo: Condução e Evolução do Projeto -->
+        <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-5 text-white shadow-sm border border-indigo-800/60 no-print">
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> CONDUÇÃO ATIVA & EM EVOLUÇÃO
+                        </span>
+                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-500/20 text-indigo-200 border border-indigo-500/30">
+                            Fila Zerada (100% Respondido)
+                        </span>
+                    </div>
+                    <h3 class="text-base sm:text-lg font-black text-white flex items-center gap-2">
+                        <i class="fa-solid fa-compass text-indigo-400"></i> Plano Estratégico de Condução e Resolução de Pontos Críticos
+                    </h3>
+                    <p class="text-xs text-slate-300 max-w-3xl">
+                        Monitoramento contínuo de satisfação dos estudantes e responsáveis com atuação proativa nos três pilares operacionais do aplicativo.
+                    </p>
+                </div>
+                <div class="flex items-center gap-3 w-full md:w-auto">
+                    <div class="bg-indigo-900/60 border border-indigo-700/50 rounded-xl px-3.5 py-2 text-center flex-1 md:flex-initial">
+                        <p class="text-[10px] uppercase font-bold text-indigo-300">Google Play</p>
+                        <p class="text-sm font-black text-amber-300 flex items-center justify-center gap-1">4.4 <i class="fa-solid fa-star text-[11px]"></i></p>
+                    </div>
+                    <div class="bg-indigo-900/60 border border-indigo-700/50 rounded-xl px-3.5 py-2 text-center flex-1 md:flex-initial">
+                        <p class="text-[10px] uppercase font-bold text-indigo-300">App Store</p>
+                        <p class="text-sm font-black text-amber-300 flex items-center justify-center gap-1">4.3 <i class="fa-solid fa-star text-[11px]"></i></p>
+                    </div>
+                    <div class="bg-emerald-950/70 border border-emerald-600/50 rounded-xl px-3.5 py-2 text-center flex-1 md:flex-initial">
+                        <p class="text-[10px] uppercase font-bold text-emerald-300">Pendências</p>
+                        <p class="text-sm font-black text-emerald-400">0 Fila</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grid dos 3 Pilares Estratégicos -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5 mt-4 pt-4 border-t border-indigo-800/60 text-xs">
+                <!-- Pilar 1: Login & Autenticação -->
+                <div class="bg-slate-800/60 rounded-xl p-3 border border-slate-700/60 space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-slate-200 flex items-center gap-1.5">
+                            <i class="fa-solid fa-key text-indigo-400"></i> 1. Acesso & Autenticação
+                        </span>
+                        <span class="text-[10px] font-bold text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded-full">Prioridade 1</span>
+                    </div>
+                    <p class="text-slate-300 text-[11px] leading-relaxed">
+                        Direcionamento inteligente para validação de CPF e fluxo específico para estudantes de unidades <b>CESEC e EJA</b> via portal web.
+                    </p>
+                </div>
+
+                <!-- Pilar 2: Sazonalidade Escolar -->
+                <div class="bg-slate-800/60 rounded-xl p-3 border border-slate-700/60 space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-slate-200 flex items-center gap-1.5">
+                            <i class="fa-solid fa-graduation-cap text-cyan-400"></i> 2. Boletim & Fechamento
+                        </span>
+                        <span class="text-[10px] font-bold text-cyan-300 bg-cyan-500/20 px-2 py-0.5 rounded-full">Sazonal</span>
+                    </div>
+                    <p class="text-slate-300 text-[11px] leading-relaxed">
+                        Orientação sobre lançamento gradual de notas pelos professores no Diário Escolar Digital no encerramento de bimestre.
+                    </p>
+                </div>
+
+                <!-- Pilar 3: Atendimento e Retenção -->
+                <div class="bg-slate-800/60 rounded-xl p-3 border border-slate-700/60 space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-slate-200 flex items-center gap-1.5">
+                            <i class="fa-solid fa-heart text-rose-400"></i> 3. Conversão de Satisfação
+                        </span>
+                        <span class="text-[10px] font-bold text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded-full">Retenção Ativa</span>
+                    </div>
+                    <p class="text-slate-300 text-[11px] leading-relaxed">
+                        Atendimento humanizado via formulário oficial da Prodemge, convertendo usuários com queixas em avaliações de <b>5 estrelas</b>.
+                    </p>
+                </div>
+            </div>
+        </div>
+
         <!-- Seletor de Visão Principal (Comentários vs Diagnóstico de Aparelhos/SO vs Complexidade vs Temporal) -->
         <div id="nav-tabs-container" class="flex flex-wrap items-center gap-3 bg-white p-3 rounded-2xl shadow-sm border border-slate-200/90 no-print">
             <button onclick="switchMainView('reviews')" id="nav-btn-reviews" class="nav-view-btn active py-2.5 px-4 rounded-xl font-bold text-xs sm:text-[13px] transition flex items-center justify-center gap-2 whitespace-nowrap shadow-sm text-center">
@@ -438,6 +516,7 @@
                             {% else %}
                             <option value="login_sessao_recorrente">🔴 Instabilidade de Login, Conexão e Sessão</option>
                             <option value="gov_br_cpf">🏛️ Falha no Gov.br e Vínculo de CPF</option>
+                            <option value="cesec_eja_modalidade">🎓 Acesso CESEC & EJA (Portal Web)</option>
                             <option value="senha_recuperacao">🔑 Recuperação de Senha e Redefinição</option>
                             <option value="lentidao_tela_preta">⏳ Lentidão Extrema e Tela Preta</option>
                             <option value="boletim_notas">📊 Boletim em Branco e Notas Ausentes</option>

@@ -152,9 +152,22 @@ PROBLEM_TEMPLATES_CONFIG = {
         "severity": "Alta",
         "complexity": "Alta",
         "templates": {
-            "critical": "Olá, {nome}! Entendemos a importância do boletim. As notas dependem do lançamento no Diário Escolar Digital. Verifique na loja se há atualizações do app ou consulte sua escola. Canal de Suporte Oficial: 👉 {canal_contato}",
-            "moderate": "Olá, {nome}! A atualização das notas no app ocorre conforme o lançamento oficial pelos professores. Havendo dúvidas ou divergências, relate pelo Canal de Suporte Oficial: 👉 {canal_contato}",
+            "critical": "Olá, {nome}! No fechamento de bimestre, as notas são lançadas gradualmente pela escola no Diário Escolar. Verifique na loja se há atualizações para o app. Havendo dúvidas ou divergências, consulte sua escola ou relate pelo Canal de Suporte Oficial: 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! A atualização das notas no app reflete o lançamento oficial dos professores na sua escola. Verifique na loja se há atualizações para o app. Persistindo dúvidas, acione o Canal de Suporte Oficial: 👉 {canal_contato}",
             "positive": "Olá, {nome}! Ficamos muito felizes com a sua avaliação positiva! O acompanhamento das notas é fundamental e estamos empenhados em manter tudo sincronizado. Bons estudos!"
+        }
+    },
+    "cesec_eja_modalidade": {
+        "id": "cesec_eja_modalidade",
+        "name": "Acesso para Estudantes CESEC e EJA",
+        "keywords": ["cesec", "eja", "educação de jovens", "jovens e adultos", "unidade cesec", "matrícula cesec", "aluno cesec", "estudante cesec"],
+        "description": "Estudantes matriculados no CESEC ou EJA que possuem portal web específico para acompanhamento.",
+        "severity": "Média",
+        "complexity": "Média",
+        "templates": {
+            "critical": "Olá, {nome}! Alunos de unidades CESEC/EJA utilizam o portal web oficial da rede estadual. Verifique na loja se há atualizações para o app ou consulte sua escola. Canal de Suporte Oficial: 👉 {canal_contato}",
+            "moderate": "Olá, {nome}! Estudantes do CESEC/EJA possuem portal web específico para acompanhamento escolar. Para dúvidas ou orientações, conte com o Canal de Suporte Oficial: 👉 {canal_contato}",
+            "positive": "Olá, {nome}! Ficamos muito felizes com suas {estrelas} estrelas no {app_name}! Estamos à disposição para apoiar sua jornada escolar. Muito obrigado!"
         }
     },
     "faltas_frequencia": {
