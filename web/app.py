@@ -880,6 +880,7 @@ def api_reviews(
     device_brand: Optional[str] = None,
     search: Optional[str] = None,
     stuck_android_12: Optional[bool] = None,
+    days: Optional[int] = None,
     limit: int = 100,
     offset: int = 0,
     app_id: Optional[str] = None
@@ -895,6 +896,7 @@ def api_reviews(
         device_brand=device_brand,
         search=search,
         stuck_android_12=stuck_android_12,
+        days=days,
         limit=limit,
         offset=offset,
         app_id=effective_app

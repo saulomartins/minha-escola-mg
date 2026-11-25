@@ -408,6 +408,13 @@
                         <p class="text-[10px] uppercase font-bold text-emerald-300">Pendências</p>
                         <p class="text-sm font-black text-emerald-400">0 Fila</p>
                     </div>
+                    <div class="bg-emerald-950/90 border border-emerald-500/70 rounded-xl px-3.5 py-2 text-center flex-1 md:flex-initial shadow-sm">
+                        <p class="text-[10px] uppercase font-bold text-emerald-300 flex items-center justify-center gap-1">
+                            <i class="fa-solid fa-bolt text-amber-300"></i> Últimos 7 Dias
+                        </p>
+                        <p class="text-sm font-black text-emerald-300 flex items-center justify-center gap-1" id="stat-term-7d">3.5 <i class="fa-solid fa-star text-[11px] text-amber-300"></i></p>
+                        <p class="text-[9px] text-emerald-400 font-bold" id="stat-term-7d-sub">🚀 +1.08★ Recente</p>
+                    </div>
                 </div>
             </div>
 
@@ -450,6 +457,30 @@
                     <p class="text-slate-300 text-[11px] leading-relaxed">
                         Atendimento humanizado via formulário oficial da Prodemge, convertendo usuários com queixas em avaliações de <b>5 estrelas</b>.
                     </p>
+                </div>
+            </div>
+
+            <!-- Termômetro de Impacto Imediato (Tempo Curto) -->
+            <div class="mt-4 pt-3.5 border-t border-indigo-800/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                <div class="flex items-center gap-2">
+                    <span class="font-bold text-slate-200 flex items-center gap-1.5">
+                        <i class="fa-solid fa-gauge-high text-emerald-400"></i> Termômetro de Impacto Recente:
+                    </span>
+                    <span class="text-slate-300 text-[11px]">Evolução rápida das ações tomadas:</span>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[11px] font-bold">
+                        ⚡ 7 Dias: <b class="text-white" id="badge-term-7d">3.52 ★</b> (60% Positivas)
+                    </span>
+                    <span class="px-2.5 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-[11px] font-bold">
+                        ⚡ 14 Dias: <b class="text-white" id="badge-term-14d">3.05 ★</b> (46% Positivas)
+                    </span>
+                    <span class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 text-[11px] font-semibold">
+                        ⚡ 30 Dias: <b class="text-white" id="badge-term-30d">2.85 ★</b> (40% Positivas)
+                    </span>
+                    <span class="px-2.5 py-1 rounded-lg bg-rose-950/60 text-rose-300 border border-rose-800/40 text-[11px] font-semibold">
+                        Histórico Antigo: 2.01 ★ (18% Positivas)
+                    </span>
                 </div>
             </div>
         </div>
@@ -598,6 +629,15 @@
                         <i class="fa-solid fa-landmark text-blue-500"></i> Falhas Gov.br / CPF
                     </button>
                     {% endif %}
+                    <button type="button" onclick="applySmartFilter('days_7')" data-chip="days_7" class="smart-chip px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-300 shadow-sm">
+                        <i class="fa-solid fa-bolt text-emerald-600"></i> ⚡ Últimos 7 Dias (3.5★)
+                    </button>
+                    <button type="button" onclick="applySmartFilter('days_14')" data-chip="days_14" class="smart-chip px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap bg-cyan-50 text-cyan-800 hover:bg-cyan-100 border border-cyan-300 shadow-sm">
+                        <i class="fa-solid fa-calendar-week text-cyan-600"></i> Últimos 14 Dias
+                    </button>
+                    <button type="button" onclick="applySmartFilter('days_30')" data-chip="days_30" class="smart-chip px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap bg-slate-50 text-slate-800 hover:bg-slate-100 border border-slate-300 shadow-sm">
+                        <i class="fa-solid fa-calendar-days text-slate-600"></i> Últimos 30 Dias
+                    </button>
                     <button type="button" onclick="applySmartFilter('positive')" data-chip="positive" class="smart-chip px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap bg-white text-emerald-700 hover:bg-emerald-50 border border-emerald-200 shadow-sm">
                         <i class="fa-solid fa-star text-emerald-500"></i> Elogios (5 ⭐)
                     </button>
@@ -3283,6 +3323,25 @@
             } else if (type === 'positive') {
                 if (ratingSelect) ratingSelect.value = '5';
                 if (statusSelect) statusSelect.value = 'todos';
+            } else if (type === 'days_7') {
+                window.selectedDaysFilter = 7;
+                if (ratingSelect) ratingSelect.value = '0';
+                if (statusSelect) statusSelect.value = 'todos';
+                if (rootCauseSelect) rootCauseSelect.value = 'todos';
+            } else if (type === 'days_14') {
+                window.selectedDaysFilter = 14;
+                if (ratingSelect) ratingSelect.value = '0';
+                if (statusSelect) statusSelect.value = 'todos';
+                if (rootCauseSelect) rootCauseSelect.value = 'todos';
+            } else if (type === 'days_30') {
+                window.selectedDaysFilter = 30;
+                if (ratingSelect) ratingSelect.value = '0';
+                if (statusSelect) statusSelect.value = 'todos';
+                if (rootCauseSelect) rootCauseSelect.value = 'todos';
+            }
+
+            if (!type.startsWith('days_')) {
+                window.selectedDaysFilter = null;
             }
 
             document.querySelectorAll('.smart-chip').forEach(chip => {
@@ -4297,6 +4356,26 @@
                 if (countBadge) {
                     countBadge.innerText = pendingCount;
                 }
+
+                // Atualiza Termômetro de Curto Prazo (Impacto Imediato)
+                if (data.short_term_metrics && data.short_term_metrics.days_7) {
+                    const m7 = data.short_term_metrics.days_7;
+                    const elTerm7d = document.getElementById('stat-term-7d');
+                    if (elTerm7d) elTerm7d.innerHTML = `${m7.avg_rating.toFixed(1)} <i class="fa-solid fa-star text-[11px] text-amber-300"></i>`;
+                    const elTermSub = document.getElementById('stat-term-7d-sub');
+                    if (elTermSub) elTermSub.innerText = `🚀 ${m7.diff_vs_total}★ Recente`;
+
+                    const elBadge7d = document.getElementById('badge-term-7d');
+                    if (elBadge7d) elBadge7d.innerText = `${m7.avg_rating.toFixed(2)} ★ (${m7.pos_pct}% Positivas)`;
+                    
+                    const m14 = data.short_term_metrics.days_14;
+                    const elBadge14d = document.getElementById('badge-term-14d');
+                    if (elBadge14d && m14) elBadge14d.innerText = `${m14.avg_rating.toFixed(2)} ★ (${m14.pos_pct}% Positivas)`;
+
+                    const m30 = data.short_term_metrics.days_30;
+                    const elBadge30d = document.getElementById('badge-term-30d');
+                    if (elBadge30d && m30) elBadge30d.innerText = `${m30.avg_rating.toFixed(2)} ★ (${m30.pos_pct}% Positivas)`;
+                }
             } catch (err) {
                 console.error('Erro ao carregar estatísticas:', err);
             }
@@ -4317,6 +4396,7 @@
             "faltas_frequencia": { name: "Faltas / Frequência", color: "bg-blue-50 text-blue-700 border-blue-200" },
             "crash_fechamento": { name: "Crash / Fechamento", color: "bg-rose-50 text-rose-700 border-rose-200" },
             "acesso_responsaveis": { name: "Acesso Pais / Filhos", color: "bg-purple-50 text-purple-700 border-purple-200" },
+            "cesec_eja_modalidade": { name: "Acesso CESEC / EJA", color: "bg-amber-50 text-amber-800 border-amber-300" },
             "usabilidade_interface": { name: "Usabilidade / Interface", color: "bg-teal-50 text-teal-800 border-teal-300" },
             // Causas MG App Cidadão
             "agendamento_uai_cin": { name: "Agendamento UAI / CIN", color: "bg-orange-50 text-orange-800 border-orange-300" },
@@ -4347,6 +4427,9 @@
             });
             if (filterStuckAndroidOnly) {
                 params.append('stuck_android_12', 'true');
+            }
+            if (window.selectedDaysFilter) {
+                params.append('days', window.selectedDaysFilter);
             }
 
             try {

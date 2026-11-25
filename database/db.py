@@ -615,6 +615,7 @@ def get_reviews(
     device_brand: Optional[str] = None,
     search: Optional[str] = None,
     stuck_android_12: Optional[bool] = None,
+    days: Optional[int] = None,
     limit: int = 100,
     offset: int = 0,
     app_id: Optional[str] = None
@@ -647,6 +648,9 @@ def get_reviews(
     if device_brand and device_brand != 'todas':
         query += " AND device_brand = ?"
         params.append(device_brand)
+    if days and int(days) > 0:
+        query += " AND review_date >= datetime((SELECT MAX(review_date) FROM reviews WHERE app_id = ?), '-' || ? || ' days')"
+        params.extend([current_app_id, str(days)])
     if search:
         query += " AND (id LIKE ? OR content LIKE ? OR user_name LIKE ? OR title LIKE ? OR device_model LIKE ?)"
         term = f"%{search}%"
@@ -848,6 +852,70 @@ def get_stats(app_id: Optional[str] = None) -> Dict[str, Any]:
         "total_combined": total_downloads_val
     }
 
+    # Métricas de Curto Prazo (Últimos 7, 14 e 30 dias)
+    cursor.execute("""
+        SELECT 
+            COUNT(*) as count,
+            AVG(rating) as avg_rating,
+            SUM(CASE WHEN rating >= 4 THEN 1 ELSE 0 END) as pos_count
+        FROM reviews 
+        WHERE app_id = ? AND review_date >= datetime((SELECT MAX(review_date) FROM reviews WHERE app_id = ?), '-7 days')
+    """, (current_app_id, current_app_id))
+    r7 = cursor.fetchone()
+    count_7d = r7['count'] or 0
+    avg_7d = round(r7['avg_rating'] or 0.0, 2)
+    pos_pct_7d = round((r7['pos_count'] / count_7d) * 100, 1) if count_7d > 0 else 0.0
+    diff_7d = round(avg_7d - (avg_total or 0.0), 2)
+
+    cursor.execute("""
+        SELECT 
+            COUNT(*) as count,
+            AVG(rating) as avg_rating,
+            SUM(CASE WHEN rating >= 4 THEN 1 ELSE 0 END) as pos_count
+        FROM reviews 
+        WHERE app_id = ? AND review_date >= datetime((SELECT MAX(review_date) FROM reviews WHERE app_id = ?), '-14 days')
+    """, (current_app_id, current_app_id))
+    r14 = cursor.fetchone()
+    count_14d = r14['count'] or 0
+    avg_14d = round(r14['avg_rating'] or 0.0, 2)
+    pos_pct_14d = round((r14['pos_count'] / count_14d) * 100, 1) if count_14d > 0 else 0.0
+    diff_14d = round(avg_14d - (avg_total or 0.0), 2)
+
+    cursor.execute("""
+        SELECT 
+            COUNT(*) as count,
+            AVG(rating) as avg_rating,
+            SUM(CASE WHEN rating >= 4 THEN 1 ELSE 0 END) as pos_count
+        FROM reviews 
+        WHERE app_id = ? AND review_date >= datetime((SELECT MAX(review_date) FROM reviews WHERE app_id = ?), '-30 days')
+    """, (current_app_id, current_app_id))
+    r30 = cursor.fetchone()
+    count_30d = r30['count'] or 0
+    avg_30d = round(r30['avg_rating'] or 0.0, 2)
+    pos_pct_30d = round((r30['pos_count'] / count_30d) * 100, 1) if count_30d > 0 else 0.0
+    diff_30d = round(avg_30d - (avg_total or 0.0), 2)
+
+    short_term_metrics = {
+        "days_7": {
+            "count": count_7d,
+            "avg_rating": avg_7d,
+            "pos_pct": pos_pct_7d,
+            "diff_vs_total": f"+{diff_7d}" if diff_7d > 0 else str(diff_7d)
+        },
+        "days_14": {
+            "count": count_14d,
+            "avg_rating": avg_14d,
+            "pos_pct": pos_pct_14d,
+            "diff_vs_total": f"+{diff_14d}" if diff_14d > 0 else str(diff_14d)
+        },
+        "days_30": {
+            "count": count_30d,
+            "avg_rating": avg_30d,
+            "pos_pct": pos_pct_30d,
+            "diff_vs_total": f"+{diff_30d}" if diff_30d > 0 else str(diff_30d)
+        }
+    }
+
     conn.close()
     return {
         "total": total,
@@ -877,7 +945,8 @@ def get_stats(app_id: Optional[str] = None) -> Dict[str, Any]:
         "published_store_count": published_store_count,
         "pending_store_count": pending_store_count,
         "os_distribution": os_dist,
-        "brand_distribution": brand_dist
+        "brand_distribution": brand_dist,
+        "short_term_metrics": short_term_metrics
     }
 
 def get_device_diagnostic(app_id: Optional[str] = None) -> Dict[str, Any]:
